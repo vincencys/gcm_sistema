@@ -1,0 +1,75 @@
+{% extends '_layout/base.html' %}
+{% block title %}Gráficos Abordados{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Gráficos · Abordados{% if user_nome %} — {{ user_nome }}{% endif %}</h1>
+      <p class="text-slate-600 text-sm">Linha do tempo com total de abordados por dia.</p>
+      <div class="mt-2 flex flex-wrap gap-2">
+        <a href="{% url 'core:estatisticas' %}" class="btn btn-outline">← Estatísticas</a>
+        <a href="{% url 'core:estatisticas_abordados' %}?de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}" class="btn btn-outline">Abordados (Lista)</a>
+      </div>
+    </div>
+    <form method="get" class="bg-white border rounded-xl shadow-sm p-3 flex flex-wrap items-end gap-3">
+      <input type="hidden" name="tab" value="{{ tab }}" />
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">GCM (opcional)</label>
+        <select name="user" class="input min-w-[260px] js-choices">
+          <option value="">— Todos —</option>
+          {% for u in user_options %}
+            <option value="{{ u.id }}" {% if u.id == uid %}selected{% endif %}>{{ u.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">De</label>
+        <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Até</label>
+        <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input" />
+      </div>
+      <button class="btn btn-primary" type="submit">Aplicar</button>
+    </form>
+  </div>
+
+  <div class="flex gap-2 mb-6">
+    {% for key,label in abas %}
+      <a href="?tab={{ key }}&user={{ uid }}" class="px-3 py-1.5 rounded-md border text-sm {% if tab == key %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="bg-white rounded-xl border shadow-sm p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Série por Dia</h2>
+      <div class="flex items-center gap-3">
+        <div class="text-sm text-slate-500">Total no período: <span class="font-semibold text-slate-700">{{ total }}</span></div>
+        <a class="btn btn-success btn-sm" href="{% url 'core:estatisticas_abordados' %}?de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}&export=csv">Baixar CSV</a>
+      </div>
+    </div>
+    <canvas id="chartSerie"></canvas>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  const serie = JSON.parse('\n' + '{{ serie_por_dia|default:"[]"|escapejs }}');
+  const labels = serie.map(x => new Date(x.dia).toLocaleDateString('pt-BR'));
+  const data = serie.map(x => x.qtd);
+  const ctx = document.getElementById('chartSerie');
+  if(ctx){
+    new Chart(ctx,{
+      type:'line',
+      data:{labels,datasets:[{label:'Abordados',data,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.2)',tension:.25,fill:true}]},
+      options:{
+        scales:{y:{beginAtZero:true,ticks:{precision:0}}},
+        plugins:{
+          tooltip:{callbacks:{label:(ctx)=>{const idx=ctx.dataIndex;const vals=ctx.dataset.data;let sum=0;for(let i=0;i<=idx;i++){sum+=Number(vals[i]||0);}const cur=Number(vals[idx]||0);return `Qtd: ${cur} · Acumulado: ${sum}`;}}}
+        }
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{# Barra de filtros customizada para BOs #}
+<form id="filterbar" hx-get="{% url 'bogcmi:table' %}" hx-target="#results" hx-push-url="true"
+  hx-trigger="submit" class="grid md:grid-cols-6 gap-3 p-4 text-xs md:text-sm">
+  {# Linha 1: Viatura, Motorista, Encarregado, Status, Emissão ≥, Emissão ≤ #}
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Viatura</label>
+    <select name="viatura" class="w-full border rounded px-2 py-2 bg-white">
+      <option value="">------</option>
+      {% for v in viaturas %}
+        <option value="{{ v.id }}" {% if request.GET.viatura|default:'' == v.id|stringformat:'s' %}selected{% endif %}>{{ v.prefixo }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Número</label>
+    <input type="text" name="numero" value="{{ request.GET.numero }}" placeholder="Ex: #2 ou 2/2025" class="w-full border rounded px-2 py-2" autocomplete="off" />
+  </div>
+  <div class="relative">
+    <label class="block text-xs font-medium text-slate-600 mb-1">Motorista</label>
+    <input type="text" data-filter-target="motorista" placeholder="Buscar..." class="mb-1 w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring" />
+    <select name="motorista" id="sel-motorista" class="w-full border rounded px-2 py-2 bg-white filtro-select" data-filter-source="motorista">
+      <option value="">------</option>
+      {% for p in perfis %}
+        <option value="{{ p.user.id }}" {% if request.GET.motorista|default:'' == p.user.id|stringformat:'s' %}selected{% endif %}>{{ p.matricula }} - {{ p.user.get_full_name|default:p.user.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="relative">
+    <label class="block text-xs font-medium text-slate-600 mb-1">Encarregado</label>
+    <input type="text" data-filter-target="encarregado" placeholder="Buscar..." class="mb-1 w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring" />
+    <select name="encarregado" id="sel-encarregado" class="w-full border rounded px-2 py-2 bg-white filtro-select" data-filter-source="encarregado">
+      <option value="">------</option>
+      {% for p in perfis %}
+        <option value="{{ p.user.id }}" {% if request.GET.encarregado|default:'' == p.user.id|stringformat:'s' %}selected{% endif %}>{{ p.matricula }} - {{ p.user.get_full_name|default:p.user.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+    <select name="status" class="w-full border rounded px-2 py-2 bg-white">
+      <option value="">---</option>
+      <option value="EDICAO" {% if request.GET.status == 'EDICAO' %}selected{% endif %}>Em edição</option>
+      <option value="FINALIZADO" {% if request.GET.status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Flagrante</label>
+    <select name="flagrante" class="w-full border rounded px-2 py-2 bg-white">
+      <option value="">---</option>
+      <option value="sim" {% if request.GET.flagrante == 'sim' %}selected{% endif %}>Sim</option>
+      <option value="nao" {% if request.GET.flagrante == 'nao' %}selected{% endif %}>Não</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Emissão ≥</label>
+    <input type="date" name="emissao_de" value="{{ request.GET.emissao_de }}" class="w-full border rounded px-2 py-2" />
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Emissão ≤</label>
+    <input type="date" name="emissao_ate" value="{{ request.GET.emissao_ate }}" class="w-full border rounded px-2 py-2" />
+  </div>
+
+  {# Linha 2: Código de Ocorrência (select) #}
+  <div class="md:col-span-2 relative">
+    <label class="block text-xs font-medium text-slate-600 mb-1">Código de Ocorrência</label>
+    <input type="text" data-filter-target="codnatureza" placeholder="Buscar por código ou descrição..." class="mb-1 w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring" autocomplete="off" />
+    <select name="cod_natureza" class="w-full border rounded px-2 py-2 bg-white filtro-select" data-filter-source="codnatureza">
+      <option value="">Selecione...</option>
+      {% for c in codigos %}
+        <option value="{{ c.sigla }}" {% if request.GET.cod_natureza|default:'' == c.sigla %}selected{% endif %}>{{ c.sigla }} - {{ c.descricao }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {# campo Número movido para linha 1 ao lado de Viatura #}
+  <div class="md:col-span-2">
+    <label class="block text-xs font-medium text-slate-600 mb-1">Envolvido</label>
+    <input type="text" name="envolvido" value="{{ request.GET.envolvido }}" placeholder="Nome, CPF ou Vulgo..." class="w-full border rounded px-2 py-2" autocomplete="off" />
+  </div>
+  <div class="md:col-span-2 flex items-end gap-2">
+    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow text-sm" type="submit">Pesquisar</button>
+    <a href="{% url 'bogcmi:lista' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm">Limpar</a>
+    <span class="text-xs text-slate-500 ml-auto pr-1">Use o botão Pesquisar para aplicar</span>
+  </div>
+</form>
+
+<script>
+// Filtro de busca local para selects extensos (motorista / encarregado)
+(function(){
+  function applyFilter(input){
+    const term = input.value.toLowerCase();
+    const sel = document.querySelector('select[data-filter-source="'+ input.dataset.filterTarget +'"]');
+    if(!sel) return;
+    Array.from(sel.options).forEach(opt => {
+      if(opt.value === '') { opt.hidden = false; return; }
+      const txt = opt.text.toLowerCase();
+      opt.hidden = term && !txt.includes(term);
+    });
+  }
+  document.querySelectorAll('input[data-filter-target]').forEach(inp => {
+    inp.addEventListener('input', ()=> applyFilter(inp));
+    // Se já houver valor (ex: página recarregada), aplica
+    if(inp.value) applyFilter(inp);
+  });
+})();
+</script>
+

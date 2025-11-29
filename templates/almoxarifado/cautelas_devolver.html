@@ -1,0 +1,27 @@
+{% extends "_layout/base.html" %}
+{% block title %}Devolver Cautela #{{ c.id }}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <div class="flex items-center justify-between mb-3">
+    <h1 class="text-2xl font-bold">Devolver Cautela #{{ c.id }}</h1>
+    <a class="link" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">⟵ Voltar</a>
+  </div>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+      <label class="block text-sm font-medium">Checklist de Retorno (JSON)</label>
+      {{ form.checklist_retorno }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium">Munição devolvida (JSON)</label>
+      {{ form.municao_devolvida }}
+      <p class="text-xs text-gray-500">Formato: { municao_id: quantidade }</p>
+    </div>
+    <div class="pt-2 flex gap-2">
+      <button type="submit" class="btn btn-primary">Devolver</button>
+      <a href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}" class="btn">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

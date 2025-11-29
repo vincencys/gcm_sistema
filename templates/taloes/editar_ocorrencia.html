@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Editar Ocorrência — Talões{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'taloes:detalhe' pk=talao_pk|default:talao.pk %}" class="link">&larr; Voltar ao Talão #{{ talao_pk|default:talao.pk }}</a>
+</div>
+
+<h1 class="text-lg font-semibold mb-3">Talão #{{ talao.pk }} — Ocorrência e Local</h1>
+
+<form method="post" class="bg-white border rounded p-4">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn">Salvar</button>
+</form>
+{% endblock %}

@@ -1,0 +1,16 @@
+
+{% extends "_layout/base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Abrir Viatura{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-3">Abrir Viatura</h1>
+<form method="post" class="grid md:grid-cols-2 gap-4">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <div class="col-span-2">
+    <button class="btn btn-primary">Salvar</button>
+    <a href="{% url 'taloes:minhas' %}" class="btn">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+

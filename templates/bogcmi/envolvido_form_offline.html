@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Formulário Offline - Envolvido</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{font-family:system-ui,-apple-system,Arial,sans-serif;margin:16px;background:#f8fafc;color:#0f172a}
+    h1{font-size:18px;margin:0 0 12px;font-weight:600}
+    fieldset{border:1px solid #cbd5e1;padding:12px 14px;margin-bottom:16px;border-radius:6px;background:#fff}
+    legend{padding:0 6px;font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.5px}
+    label{display:block;font-size:11px;font-weight:600;margin-bottom:2px;color:#475569}
+    input,select,textarea{width:100%;padding:6px 8px;border:1px solid #94a3b8;border-radius:4px;background:#fff;font-size:13px;box-sizing:border-box}
+    input:focus,select:focus,textarea:focus{outline:2px solid #6366f1;outline-offset:1px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+    .row{display:flex;gap:10px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+    button,.btn{cursor:pointer;border:0;border-radius:4px;font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 14px}
+    .btn-primary{background:#2563eb;color:#fff}
+    .btn-outline{background:#fff;color:#1e293b;border:1px solid #64748b}
+    .btn-warn{background:#d97706;color:#fff}
+  .sig-box{border:1px dashed #64748b;height:110px;border-radius:4px;position:relative;background:#fff;margin-top:4px}
+  .sig-box canvas{width:100%;height:100%}
+  .sig-preview{border:1px dashed #64748b;height:110px;border-radius:4px;position:relative;background:#fff;margin-top:4px;display:flex;align-items:center;justify-content:center}
+  .sig-preview img{max-width:100%;max-height:100%;object-fit:contain}
+    .muted{font-size:11px;color:#64748b}
+    .badge{display:inline-block;background:#334155;color:#fff;padding:2px 6px;font-size:10px;border-radius:4px;margin-left:6px}
+    .two{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    @media print{.no-print{display:none!important}body{background:#fff;margin:8px}fieldset{break-inside:avoid-page}}
+    @media (max-width:640px){
+      .actions .btn{width:100%;text-align:center}
+    }
+  </style>
+</head>
+<body>
+  <h1>Formulário Offline do Envolvido <span class="badge">BO {{ bo.numero|default:bo.id }}</span></h1>
+  <p class="muted">Preencha os campos. Ao voltar ao sistema, importe / transcreva ou use a opção de anexar este PDF/print. Assinatura digital desenhada já é suficiente.</p>
+
+  <form id="form-offline">
+    <fieldset>
+      <legend>Identificação</legend>
+      <div class="grid">
+        <div><label>Nome *</label><input name="nome" required></div>
+        <div><label>Nome Social</label><input name="nome_social"></div>
+        <div><label>Telefone *</label><input name="telefone" required></div>
+        <div><label>Condição *</label>
+          <select name="condicao" required>
+            <option value="">Selecione</option>
+            <option>Vítima</option>
+            <option>Autor</option>
+            <option>Testemunha</option>
+            <option>Envolvido</option>
+            <option>Parte não definida</option>
+          </select>
+        </div>
+        <div><label>Outra Condição</label><input name="outra_condicao"></div>
+        <div><label>RG</label><input name="rg"></div>
+        <div><label>CPF</label><input name="cpf"></div>
+        <div><label>Outro Documento</label><input name="outro_documento"></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Filiação e Dados Gerais</legend>
+      <div class="grid">
+        <div><label>Nome do Pai</label><input name="nome_pai"></div>
+        <div><label>Nome da Mãe</label><input name="nome_mae"></div>
+        <div><label>Data Nascimento</label><input type="date" name="data_nascimento"></div>
+        <div><label>Estado Civil</label>
+          <select name="estado_civil">
+            <option value="">Selecione...</option>
+            <option>Solteiro(a)</option>
+            <option>Casado(a)</option>
+            <option>Divorciado(a)</option>
+            <option>Viúvo(a)</option>
+            <option>União Estável</option>
+            <option>Separado(a)</option>
+          </select>
+        </div>
+        <div><label>Gênero</label>
+          <select name="genero">
+            <option value="">Selecione...</option>
+            <option>Masculino</option>
+            <option>Feminino</option>
+            <option>Não Binário</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div><label>Cutis</label>
+          <select name="cutis">
+            <option value="">Selecione...</option>
+            <option>Branca</option>
+            <option>Negra</option>
+            <option>Parda</option>
+            <option>Amarela</option>
+            <option>Indígena</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div><label>Profissão</label><input name="profissao"></div>
+        <div><label>Vulgo</label><input name="vulgo"></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Endereço</legend>
+      <div class="grid">
+        <div><label>CEP</label><input name="cep"></div>
+        <div><label>Endereço</label><input name="endereco"></div>
+        <div><label>Número</label><input name="numero"></div>
+        <div><label>Ponto Referência</label><input name="ponto_referencia"></div>
+        <div><label>Bairro</label><input name="bairro"></div>
+        <div><label>Cidade</label><input name="cidade" value="IBIUNA"></div>
+        <div><label>UF</label>
+          <select name="uf">
+            <option value="SP" selected>SP</option>
+            <option value="RJ">RJ</option>
+            <option value="MG">MG</option>
+            <option value="ES">ES</option>
+            <option value="PR">PR</option>
+            <option value="SC">SC</option>
+            <option value="RS">RS</option>
+            <option value="BA">BA</option>
+            <option value="PE">PE</option>
+            <option value="CE">CE</option>
+            <option value="GO">GO</option>
+            <option value="DF">DF</option>
+            <option value="AM">AM</option>
+            <option value="PA">PA</option>
+            <option value="MT">MT</option>
+            <option value="MS">MS</option>
+            <option value="MA">MA</option>
+            <option value="PB">PB</option>
+            <option value="RN">RN</option>
+            <option value="PI">PI</option>
+            <option value="AL">AL</option>
+            <option value="SE">SE</option>
+            <option value="TO">TO</option>
+            <option value="AP">AP</option>
+            <option value="RR">RR</option>
+          </select>
+        </div>
+        <div><label>País Natural</label><input name="pais_natural" value="Brasil"></div>
+        <div><label>UF Natural</label>
+          <select name="uf_natural">
+            <option value="SP" selected>SP</option>
+            <option value="RJ">RJ</option>
+            <option value="MG">MG</option>
+            <option value="ES">ES</option>
+            <option value="PR">PR</option>
+            <option value="SC">SC</option>
+            <option value="RS">RS</option>
+            <option value="BA">BA</option>
+            <option value="PE">PE</option>
+            <option value="CE">CE</option>
+            <option value="GO">GO</option>
+            <option value="DF">DF</option>
+            <option value="AM">AM</option>
+            <option value="PA">PA</option>
+            <option value="MT">MT</option>
+            <option value="MS">MS</option>
+            <option value="MA">MA</option>
+            <option value="PB">PB</option>
+            <option value="RN">RN</option>
+            <option value="PI">PI</option>
+            <option value="AL">AL</option>
+            <option value="SE">SE</option>
+            <option value="TO">TO</option>
+            <option value="AP">AP</option>
+            <option value="RR">RR</option>
+          </select>
+        </div>
+        <div><label>Cidade Natural</label><input name="cidade_natural" value="IBIUNA"></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Observações</legend>
+      <div class="grid two">
+        <div><label>Sinais</label><textarea name="sinais" rows="4"></textarea></div>
+        <div><label>Dados Adicionais / Versão</label><textarea name="dados_adicionais" rows="4"></textarea></div>
+        <div><label>Providência</label>
+          <select name="providencia">
+            <option value="">Selecione...</option>
+            <option>Encaminhado</option>
+            <option>Orientado</option>
+            <option>Advertido</option>
+            <option>Preso</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Assinatura Digital (Desenho)</legend>
+      <div class="sig-box" id="sig-box"><canvas id="sig-canvas"></canvas></div>
+      <div class="actions no-print">
+        <button type="button" id="sig-clear" class="btn btn-outline">Limpar</button>
+        <button type="button" id="sig-capturar" class="btn btn-primary">Capturar Assinatura</button>
+      </div>
+      <input type="hidden" name="assinatura_base64" id="assinatura_base64">
+      <div>
+        <label class="muted" style="display:block;margin-top:8px">Assinatura Capturada (fixa)</label>
+        <div class="sig-preview" id="sig-captured"><img id="sig-preview" alt="Prévia da assinatura" /></div>
+      </div>
+      <p class="muted">A imagem capturada (base64) pode ser anexada depois. Não é obrigatório para enviar o formulário digitado.</p>
+    </fieldset>
+    <div class="actions no-print">
+      <button type="button" id="btn-exportar" class="btn btn-primary">Salvar Local (JSON)</button>
+      <button type="button" id="btn-imprimir" class="btn btn-outline">Imprimir / PDF</button>
+      <button type="button" id="btn-baixar-html" class="btn btn-outline">Baixar Formulário (HTML)</button>
+      <button type="button" id="btn-limpar-tudo" class="btn btn-warn">Limpar Tudo</button>
+    </div>
+  </form>
+
+  <div class="no-print" style="margin-top:24px;font-size:11px;color:#475569">
+    <strong>Como usar offline:</strong>
+    <ol style="margin:6px 0 0 18px;padding:0">
+      <li>Preencha os campos, desenhe a assinatura se quiser.</li>
+      <li>Clique em "Salvar Local (JSON)" para guardar no navegador (localStorage).</li>
+      <li>Quando voltar ao sistema, abra a Qualificação de Envolvidos &gt; escolha "Importar Offline" (iremos criar esse botão) e selecione o JSON exportado ou recupere automaticamente da lista local.</li>
+      <li>Revise e salve para enviar ao BO.</li>
+    </ol>
+  </div>
+
+  <script>
+    (function(){
+      const STORAGE_KEY = 'bogcmi-offline-envolvidos:bo:{{ bo.id }}';
+      const form = document.getElementById('form-offline');
+      const sigCanvas = document.getElementById('sig-canvas');
+      const sigBox = document.getElementById('sig-box');
+      const sigClear = document.getElementById('sig-clear');
+      const sigCapturar = document.getElementById('sig-capturar');
+      const sigHidden = document.getElementById('assinatura_base64');
+      const ctx = sigCanvas.getContext('2d');
+      let desenhando = false;
+      const sigPreviewImg = document.getElementById('sig-preview');
+      const sigCaptured = document.getElementById('sig-captured');
+      function resizeCanvas(preserve){
+        let snapshot = null;
+        if(preserve){
+          try{ snapshot = sigCanvas.toDataURL('image/png'); }catch(_){ snapshot = null; }
+        }
+        sigCanvas.width = sigBox.clientWidth; sigCanvas.height = sigBox.clientHeight;
+        ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#0f172a';
+        if(preserve && snapshot){
+          const img = new Image();
+          img.onload = ()=>{ try{ ctx.drawImage(img, 0, 0, sigCanvas.width, sigCanvas.height); }catch(_){ } };
+          img.src = snapshot;
+        }
+      }
+      window.addEventListener('resize', ()=>resizeCanvas(true));
+      resizeCanvas(false);
+      function pos(e){ const r=sigCanvas.getBoundingClientRect(); return {x:(e.touches?e.touches[0].clientX:e.clientX)-r.left, y:(e.touches?e.touches[0].clientY:e.clientY)-r.top}; }
+      function start(e){ desenhando=true; ctx.beginPath(); const p=pos(e); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+      function move(e){ if(!desenhando) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+      function end(e){ desenhando=false; e.preventDefault(); }
+      sigCanvas.addEventListener('mousedown', start); sigCanvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+      sigCanvas.addEventListener('touchstart', start, {passive:false}); sigCanvas.addEventListener('touchmove', move,{passive:false}); sigCanvas.addEventListener('touchend', end);
+      sigClear.addEventListener('click', ()=>{ ctx.clearRect(0,0,sigCanvas.width,sigCanvas.height); /* não limpa a captura fixa */ });
+      sigCapturar.addEventListener('click', ()=>{
+        try{
+          const data = sigCanvas.toDataURL('image/png');
+          sigHidden.value = data;
+          if(sigPreviewImg){ sigPreviewImg.src = data; }
+        }catch(e){ alert('Falha ao capturar assinatura'); }
+      });
+  document.getElementById('btn-imprimir').addEventListener('click', ()=>window.print());
+  document.getElementById('btn-baixar-html').addEventListener('click', ()=>gerarHTMLStandalone());
+  document.getElementById('btn-limpar-tudo').addEventListener('click', ()=>{ if(confirm('Limpar todos os campos?')){ form.reset(); ctx.clearRect(0,0,sigCanvas.width,sigCanvas.height); sigHidden.value=''; if(sigPreviewImg){ sigPreviewImg.removeAttribute('src'); } salvarLocal(); }});
+      function coletar(){ const fd=new FormData(form); const obj={}; fd.forEach((v,k)=>obj[k]=v); obj._ts = Date.now(); return obj; }
+      function salvarLocal(){
+        let lista = [];
+        try{ lista = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){}
+        const obj = coletar(); lista.push(obj); localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+      }
+      document.getElementById('btn-exportar').addEventListener('click', ()=>{
+        salvarLocal();
+        const blob = new Blob([JSON.stringify(coletar(), null, 2)], {type:'application/json'});
+        const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='envolvido-offline-bo{{ bo.id }}-'+Date.now()+'.json'; a.click();
+      });
+      async function gerarHTMLStandalone(){
+        try{
+          const clone = document.documentElement.cloneNode(true);
+          const btn = clone.querySelector('#btn-baixar-html');
+          if(btn) btn.textContent = 'Arquivo Local';
+          // Nota informativa no topo
+          const nota = document.createElement('div');
+          nota.innerHTML = '<div style="font:12px system-ui;margin:10px 0;padding:8px 10px;border:1px solid #94a3b8;border-radius:6px;background:#f1f5f9">Arquivo standalone gerado para uso completamente offline. Salve registros em JSON e importe depois no sistema. Chave localStorage: '+STORAGE_KEY+'</div>';
+          const formClonado = clone.querySelector('#form-offline');
+          formClonado?.parentNode?.insertBefore(nota, formClonado);
+          // Não há imagens externas aqui, mas se futuramente adicionar, já deixamos rotina genérica
+          const imgs = clone.querySelectorAll('img');
+          for(const img of imgs){
+            const src = img.getAttribute('src');
+            if(!src || src.startsWith('data:')) continue;
+            try { const blob = await fetch(src).then(r=>r.blob());
+              const dataUrl = await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); });
+              img.setAttribute('src', dataUrl);
+            } catch(e){}
+          }
+          const htmlFinal='<!DOCTYPE html>\n'+clone.outerHTML;
+          const blob = new Blob([htmlFinal],{type:'text/html'});
+          const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='formulario_envolvido_offline_bo{{ bo.id }}.html'; a.click();
+        }catch(err){
+          alert('Erro gerando HTML offline: '+err);
+          console.error(err);
+        }
+      }
+    })();
+  </script>
+  <script>
+    // Máscara e validação de CPF no offline
+    (function(){
+      const cpf = document.querySelector('input[name="cpf"]');
+      if(!cpf) return;
+      function digits(v){ return (v||'').replace(/\D+/g,''); }
+      function mask(v){
+        const d = digits(v).slice(0,11);
+        let out='';
+        if(d.length<=3) return d;
+        out = d.substring(0,3)+'.'+d.substring(3,6);
+        if(d.length>6) out += '.'+d.substring(6,9);
+        if(d.length>9) out += '-'+d.substring(9,11);
+        return out;
+      }
+      function valid(v){
+        const d = digits(v);
+        if(d.length!==11) return false;
+        if(/^(\d)\1{10}$/.test(d)) return false;
+        const n = d.split('').map(x=>parseInt(x,10));
+        let s=0; for(let i=0;i<9;i++) s += n[i]*(10-i);
+        let r=(s*10)%11; if(r===10) r=0; if(n[9]!==r) return false;
+        s=0; for(let i=0;i<10;i++) s += n[i]*(11-i);
+        r=(s*10)%11; if(r===10) r=0; return n[10]===r;
+      }
+      function setNote(ok){
+        let note = cpf.parentElement.querySelector('.cpf-note');
+        if(!note){ note = document.createElement('div'); note.className='cpf-note muted'; cpf.parentElement.appendChild(note); }
+        if(!cpf.value.trim()){ note.textContent=''; return; }
+        note.textContent = ok ? 'CPF válido' : 'CPF inválido';
+        note.style.color = ok ? '#047857' : '#b91c1c';
+      }
+      cpf.addEventListener('input', ()=>{ cpf.value = mask(cpf.value); });
+      cpf.addEventListener('blur', ()=> setNote(!cpf.value.trim() || valid(cpf.value)) );
+      // Bloquear ações principais se CPF estiver preenchido e inválido
+      function enforceBefore(action){
+        return function(ev){
+          const v = (cpf.value||'').trim();
+          if(v && !valid(v)){
+            ev.preventDefault();
+            setNote(false);
+            alert('CPF inválido. Corrija antes de continuar.');
+            return;
+          }
+          try{ action(ev); }catch(_){ }
+        }
+      }
+      const btnExportar = document.getElementById('btn-exportar');
+      if(btnExportar){
+        const orig = btnExportar.onclick; btnExportar.onclick = null;
+        btnExportar.addEventListener('click', enforceBefore(function(){ orig && orig(); }));
+      }
+    })();
+  </script>
+</body>
+</html>

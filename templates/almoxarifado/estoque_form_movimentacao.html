@@ -1,0 +1,72 @@
+{% extends "_layout/base.html" %}
+{% block title %}Movimentar Estoque - {{ produto.nome }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Movimentar Estoque</h1>
+    <p class="text-sm text-slate-600 mt-1">Registre entrada ou saída de itens do estoque</p>
+  </div>
+  <!-- Card: Resumo do Produto -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6">
+    <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9M9 22h6" />
+        </svg>
+        Detalhes do Produto
+      </h2>
+    </div>
+    <div class="p-6 space-y-2 text-sm">
+      <div><span class="text-slate-500">Produto:</span> <b>{{ produto.nome }}</b></div>
+      <div><span class="text-slate-500">Estoque atual:</span> {{ produto.estoque_atual }} {{ produto.unidade }}</div>
+      <div><span class="text-slate-500">Mínimo:</span> {{ produto.estoque_minimo }}</div>
+    </div>
+  </div>
+  <form method="post" class="space-y-6">{% csrf_token %}
+    <!-- Card: Movimentação -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-14" />
+          </svg>
+          Movimentação
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Tipo</label>
+            {{ form.tipo }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Quantidade</label>
+            {{ form.quantidade }}
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Observação</label>
+          {{ form.observacao }}
+        </div>
+      </div>
+    </div>
+    <!-- Card: Ações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Registrar
+        </button>
+        <a href="{% url 'core:almoxarifado:estoque' %}" class="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "_layout/base.html" %}
+{% block title %}Registrar{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Registrar novo usuário</h1>
+<form method="post" class="space-y-3 max-w-lg">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="block text-sm font-medium">Usuário</label>{{ form.username }}</div>
+    <div><label class="block text-sm font-medium">Email</label>{{ form.email }}</div>
+    <div><label class="block text-sm font-medium">Nome</label>{{ form.first_name }}</div>
+    <div><label class="block text-sm font-medium">Sobrenome</label>{{ form.last_name }}</div>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="block text-sm font-medium">Senha</label>{{ form.password1 }}</div>
+    <div><label class="block text-sm font-medium">Confirmar Senha</label>{{ form.password2 }}</div>
+  </div>
+  <button class="btn btn-primary">Criar conta</button>
+</form>
+{% endblock %}

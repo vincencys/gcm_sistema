@@ -1,0 +1,40 @@
+# === Core (Django + REST) ===
+Django>=5.2,<5.3
+djangorestframework>=3.15,<3.16
+django-filter>=24.2,<25.0
+
+# === Realtime (Channels/ASGI) ===
+channels>=4.1,<4.2
+daphne>=4.1,<4.2
+
+# === Broker/Cache & Tarefas ===
+redis>=5.0,<6.0
+celery>=5.4,<5.5
+
+# === Arquivos estáticos / imagens / PDFs ===
+pillow>=11.2,<12
+reportlab>=4.2,<5.0
+PyPDF2>=3.0,<4.0
+whitenoise>=6.7,<7
+
+# === Forms/UI ===
+django-crispy-forms>=2.1,<2.2
+crispy-tailwind==0.5.0
+
+# === IA Integration ===
+requests>=2.32,<3.0
+
+# === Produção (Linux) ===
+gunicorn>=21.2,<22
+
+# === Banco de dados (Postgres) ===
+psycopg[binary]>=3.1,<3.2
+
+# === Monitoramento ===
+sentry-sdk[django]>=2.18,<3.0
+
+# === Fuso horário no Windows ===
+tzdata>=2024.1 ; platform_system == "Windows"
+
+# === Push Notifications ===
+firebase-admin>=6.5,<7.0

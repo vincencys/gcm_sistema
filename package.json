@@ -1,0 +1,23 @@
+{
+  "name": "gcm_sistema",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./static/src/tailwind.css -o ./static/build/tailwind.css --minify",
+    "build:css:watch": "tailwindcss -i ./static/src/tailwind.css -o ./static/build/tailwind.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pdfjs-dist": "^4.3.136"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.14"
+  }
+}

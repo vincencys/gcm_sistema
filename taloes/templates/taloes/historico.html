@@ -1,0 +1,59 @@
+{% extends "_layout/base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="grid md:grid-cols-4 gap-6">
+  <aside>
+    <h2 class="font-semibold mb-2">Dias</h2>
+    <ul class="space-y-1">
+      {% for d in dias_links %}
+        <li>
+          <a class="hover:underline {% if d == dia %}font-semibold{% endif %}" href="{% url 'taloes:historico' %}?data={{ d|date:'Y-m-d' }}">
+            {{ d|date:"d/m/Y" }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <section class="md:col-span-3">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-xl font-semibold">Histórico — {{ dia|date:"d/m/Y" }}</h1>
+      <form method="get" class="flex gap-2">
+        <input class="input" type="date" name="data" value="{{ dia|date:'Y-m-d' }}">
+        <button class="btn">Ir</button>
+      </form>
+    </div>
+
+    <div class="space-y-3">
+      {% for t in taloes %}
+      <div class="border rounded p-4">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">Talão #{{ t.pk }} — VTR {{ t.viatura.prefixo }}</div>
+          <div class="badge {% if t.status == 'ABERTO' %}badge-success{% else %}badge{% endif %}">{{ t.status }}</div>
+        </div>
+        <div class="text-sm text-slate-600 mt-1">
+          Início: {{ t.iniciado_em|date:"d/m/Y H:i" }}
+          {% if t.encerrado_em %} • Fim: {{ t.encerrado_em|date:"d/m/Y H:i" }}{% endif %}
+          • KM: {{ t.km_inicial }}{% if t.km_final %} → {{ t.km_final }}{% endif %}
+        </div>
+        {% if t.codigo_ocorrencia %}
+          <div class="text-sm mt-1">
+            Código: <b>{{ t.codigo_ocorrencia.sigla }}</b> — {{ t.codigo_ocorrencia.descricao }}
+            {% if t.local_bairro %}<span class="text-slate-500">({{ t.local_bairro }})</span>{% endif %}
+          </div>
+        {% endif %}
+        {% if t.relatorio %}
+          <div class="text-sm mt-2 whitespace-pre-wrap p-2 bg-slate-50 rounded">{{ t.relatorio }}</div>
+        {% endif %}
+        <div class="mt-2">
+          <a class="btn" href="{% url 'taloes:detalhe' t.pk %}">Abrir</a>
+        </div>
+      </div>
+      {% empty %}
+        <p>Sem talões no dia selecionado.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

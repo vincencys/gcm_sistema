@@ -1,0 +1,35 @@
+{% load static %}
+{% comment %} Se você tiver um base.html, troque para: {% extends "base.html" %} {% endcomment %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Editar equipe do Talão #{{ talao.pk }}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="p-4 bg-gray-100">
+  <div class="max-w-3xl mx-auto bg-white border rounded-lg p-4">
+    <h1 class="text-xl font-semibold mb-2">
+      Editar equipe — Talão #{{ talao.pk }}
+    </h1>
+    <div class="text-sm opacity-80 mb-4">
+      VTR: {{ talao.viatura.prefixo|default:"(sem viatura)" }} · Capacidade: {{ cap }}
+    </div>
+
+    {% if messages %}
+      <ul class="mb-3">
+        {% for message in messages %}
+          <li class="p-2 border rounded mb-1">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <form method="post" action="" class="space-y-3">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-primary">Salvar</button>
+      <a href="{% url 'taloes:detalhe' talao.pk %}" class="btn">Cancelar</a>
+    </form>
+  </div>
+</body>
+</html>

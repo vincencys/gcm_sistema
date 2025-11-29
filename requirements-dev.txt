@@ -1,0 +1,17 @@
+# Inclui tudo de produção
+
+# Ferramentas de debug
+django-debug-toolbar>=4.4,<4.5
+ipython>=8.26,<9
+
+# Qualidade de código
+black>=24.8,<25
+ruff>=0.6,<0.7
+isort>=5.13,<6
+
+# Testes
+pytest>=8.3,<9
+pytest-django>=4.9,<5
+coverage>=7.6,<8
+pyotp
+qrcode[pil]

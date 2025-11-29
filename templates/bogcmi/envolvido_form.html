@@ -1,0 +1,746 @@
+{% extends "base.html" %}
+{% block title %}Qualificação do Envolvido{% endblock %}
+{% block content %}
+<div class="flex flex-col md:flex-row gap-6">
+  <!-- Navegação lateral (mobile em linha, desktop vertical) -->
+  <aside class="w-full md:w-56 bg-white rounded-lg shadow p-4 mb-4 md:mb-0">
+    <nav class="flex flex-row md:flex-col gap-2">
+      <button type="button" class="nav-btn bg-indigo-100 text-indigo-700 font-bold rounded px-3 py-2 w-1/2 md:w-auto text-sm md:text-base" data-tab="envolvido">Envolvidos</button>
+      <button type="button" class="nav-btn rounded px-3 py-2 w-1/2 md:w-auto text-sm md:text-base" data-tab="anexos">Anexos</button>
+    </nav>
+  </aside>
+	<div class="flex-1">
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-lg shadow p-4 sm:p-6 flex flex-col gap-8">
+			{% csrf_token %}
+        <div class="flex flex-col sm:flex-row sm:justify-end gap-2 mb-2 -mt-2">
+          <a href="{% url 'bogcmi:envolvido_form_offline' %}{% if request.GET.bo %}?bo={{ request.GET.bo }}{% endif %}" target="_blank" class="px-4 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shadow w-full sm:w-auto text-center">Baixar Formulário OFFline</a>
+      </div>
+			<!-- Tab Envolvidos -->
+			<div id="tab-envolvido" class="tab-content">
+				{% if form.errors %}
+  <div class="text-red-600 mb-4">
+    <strong>Erros no preenchimento:</strong>
+    <ul>
+      {% for field in form %}
+        {% for error in field.errors %}
+          <li>{{ field.label }}: {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+<!-- Dados Pessoais -->
+<h2 class="text-lg font-bold mb-2">Dados Pessoais</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div><label class="font-semibold">(*)Nome</label><input type="text" name="nome" class="input w-full" required value="{{ envolvido.nome|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Nome Social</label><input type="text" name="nome_social" class="input w-full" value="{{ envolvido.nome_social|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">(*)Telefone</label><input type="text" name="telefone" class="input w-full" required value="{{ envolvido.telefone|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Nome do Pai</label><input type="text" name="nome_pai" class="input w-full" value="{{ envolvido.nome_pai|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Nome da Mãe</label><input type="text" name="nome_mae" class="input w-full" value="{{ envolvido.nome_mae|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">RG</label><input type="text" name="rg" class="input w-full" value="{{ envolvido.rg|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">CPF</label><input type="text" name="cpf" class="input w-full" value="{{ envolvido.cpf|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Outro Documento</label><input type="text" name="outro_documento" class="input w-full" value="{{ envolvido.outro_documento|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">(*)Condição</label><select name="condicao" class="input w-full border rounded-lg px-3 py-2" required>
+        <option value="">Selecione</option>
+        <option value="Vítima" {% if envolvido.condicao == 'Vítima' %}selected{% endif %}>Vítima</option>
+        <option value="Autor" {% if envolvido.condicao == 'Autor' %}selected{% endif %}>Autor</option>
+        <option value="Testemunha" {% if envolvido.condicao == 'Testemunha' %}selected{% endif %}>Testemunha</option>
+        <option value="Envolvido" {% if envolvido.condicao == 'Envolvido' %}selected{% endif %}>Envolvido</option>
+        <option value="Parte não definida" {% if envolvido.condicao == 'Parte não definida' %}selected{% endif %}>Parte não definida</option>
+    </select></div>
+    <div><label class="font-semibold">Outra Condição</label><input type="text" name="outra_condicao" class="input w-full" value="{{ envolvido.outra_condicao|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Data de Nascimento</label><input type="date" name="data_nascimento" class="input w-full border rounded-lg px-3 py-2" value="{{ envolvido.data_nascimento|date:'Y-m-d' }}"></div>
+    <div><label class="font-semibold">Estado Civil</label><select name="estado_civil" class="input w-full border rounded-lg px-3 py-2">
+        <option value="">Selecione...</option>
+        <option value="Solteiro(a)" {% if envolvido.estado_civil == 'Solteiro(a)' %}selected{% endif %}>Solteiro(a)</option>
+        <option value="Casado(a)" {% if envolvido.estado_civil == 'Casado(a)' %}selected{% endif %}>Casado(a)</option>
+        <option value="Divorciado(a)" {% if envolvido.estado_civil == 'Divorciado(a)' %}selected{% endif %}>Divorciado(a)</option>
+        <option value="Viúvo(a)" {% if envolvido.estado_civil == 'Viúvo(a)' %}selected{% endif %}>Viúvo(a)</option>
+        <option value="União Estável" {% if envolvido.estado_civil == 'União Estável' %}selected{% endif %}>União Estável</option>
+        <option value="Separado(a)" {% if envolvido.estado_civil == 'Separado(a)' %}selected{% endif %}>Separado(a)</option>
+    </select></div>
+    <div><label class="font-semibold">Gênero</label><select name="genero" class="input w-full border rounded-lg px-3 py-2">
+        <option value="">Selecione...</option>
+        <option value="Masculino" {% if envolvido.genero == 'Masculino' %}selected{% endif %}>Masculino</option>
+        <option value="Feminino" {% if envolvido.genero == 'Feminino' %}selected{% endif %}>Feminino</option>
+        <option value="Não Binário" {% if envolvido.genero == 'Não Binário' %}selected{% endif %}>Não Binário</option>
+        <option value="Outro" {% if envolvido.genero == 'Outro' %}selected{% endif %}>Outro</option>
+    </select></div>
+    <div><label class="font-semibold">Cutis</label><select name="cutis" class="input w-full border rounded-lg px-3 py-2">
+        <option value="">Selecione...</option>
+        <option value="Branca" {% if envolvido.cutis == 'Branca' %}selected{% endif %}>Branca</option>
+        <option value="Negra" {% if envolvido.cutis == 'Negra' %}selected{% endif %}>Negra</option>
+        <option value="Parda" {% if envolvido.cutis == 'Parda' %}selected{% endif %}>Parda</option>
+        <option value="Amarela" {% if envolvido.cutis == 'Amarela' %}selected{% endif %}>Amarela</option>
+        <option value="Indígena" {% if envolvido.cutis == 'Indígena' %}selected{% endif %}>Indígena</option>
+        <option value="Outro" {% if envolvido.cutis == 'Outro' %}selected{% endif %}>Outro</option>
+    </select></div>
+</div>
+<!-- Endereço -->
+<h2 class="text-lg font-bold mb-2">Endereço</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div><label class="font-semibold">CEP</label><input type="text" name="cep" class="input w-full" value="{{ envolvido.cep|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Endereço</label><input type="text" name="endereco" class="input w-full" value="{{ envolvido.endereco|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Número</label><input type="text" name="numero" class="input w-full" value="{{ envolvido.numero|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Ponto de Referência</label><input type="text" name="ponto_referencia" class="input w-full" value="{{ envolvido.ponto_referencia|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Bairro</label><input type="text" name="bairro" class="input w-full" value="{{ envolvido.bairro|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">Cidade</label><input type="text" name="cidade" class="input w-full" value="{{ envolvido.cidade|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">UF</label><select name="uf" class="input w-full border rounded-lg px-3 py-2">
+        <option value="SP" {% if envolvido.uf == 'SP' %}selected{% endif %}>SP</option>
+        <option value="RJ" {% if envolvido.uf == 'RJ' %}selected{% endif %}>RJ</option>
+        <option value="MG" {% if envolvido.uf == 'MG' %}selected{% endif %}>MG</option>
+        <option value="ES" {% if envolvido.uf == 'ES' %}selected{% endif %}>ES</option>
+        <option value="PR" {% if envolvido.uf == 'PR' %}selected{% endif %}>PR</option>
+        <option value="SC" {% if envolvido.uf == 'SC' %}selected{% endif %}>SC</option>
+        <option value="RS" {% if envolvido.uf == 'RS' %}selected{% endif %}>RS</option>
+        <option value="BA" {% if envolvido.uf == 'BA' %}selected{% endif %}>BA</option>
+        <option value="PE" {% if envolvido.uf == 'PE' %}selected{% endif %}>PE</option>
+        <option value="CE" {% if envolvido.uf == 'CE' %}selected{% endif %}>CE</option>
+        <option value="GO" {% if envolvido.uf == 'GO' %}selected{% endif %}>GO</option>
+        <option value="DF" {% if envolvido.uf == 'DF' %}selected{% endif %}>DF</option>
+        <option value="AM" {% if envolvido.uf == 'AM' %}selected{% endif %}>AM</option>
+        <option value="PA" {% if envolvido.uf == 'PA' %}selected{% endif %}>PA</option>
+        <option value="MT" {% if envolvido.uf == 'MT' %}selected{% endif %}>MT</option>
+        <option value="MS" {% if envolvido.uf == 'MS' %}selected{% endif %}>MS</option>
+        <option value="MA" {% if envolvido.uf == 'MA' %}selected{% endif %}>MA</option>
+        <option value="PB" {% if envolvido.uf == 'PB' %}selected{% endif %}>PB</option>
+        <option value="RN" {% if envolvido.uf == 'RN' %}selected{% endif %}>RN</option>
+        <option value="PI" {% if envolvido.uf == 'PI' %}selected{% endif %}>PI</option>
+        <option value="AL" {% if envolvido.uf == 'AL' %}selected{% endif %}>AL</option>
+        <option value="SE" {% if envolvido.uf == 'SE' %}selected{% endif %}>SE</option>
+        <option value="TO" {% if envolvido.uf == 'TO' %}selected{% endif %}>TO</option>
+        <option value="AP" {% if envolvido.uf == 'AP' %}selected{% endif %}>AP</option>
+        <option value="RR" {% if envolvido.uf == 'RR' %}selected{% endif %}>RR</option>
+    </select></div>
+</div>
+<!-- Naturalidade -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div><label class="font-semibold">País Natural</label><input type="text" name="pais_natural" class="input w-full" value="{{ envolvido.pais_natural|default_if_none:'' }}"></div>
+    <div><label class="font-semibold">UF Natural</label><select name="uf_natural" class="input w-full border rounded-lg px-3 py-2">
+        <option value="SP" {% if envolvido.uf_natural == 'SP' %}selected{% endif %}>SP</option>
+        <option value="RJ" {% if envolvido.uf_natural == 'RJ' %}selected{% endif %}>RJ</option>
+        <option value="MG" {% if envolvido.uf_natural == 'MG' %}selected{% endif %}>MG</option>
+        <option value="ES" {% if envolvido.uf_natural == 'ES' %}selected{% endif %}>ES</option>
+        <option value="PR" {% if envolvido.uf_natural == 'PR' %}selected{% endif %}>PR</option>
+        <option value="SC" {% if envolvido.uf_natural == 'SC' %}selected{% endif %}>SC</option>
+        <option value="RS" {% if envolvido.uf_natural == 'RS' %}selected{% endif %}>RS</option>
+        <option value="BA" {% if envolvido.uf_natural == 'BA' %}selected{% endif %}>BA</option>
+        <option value="PE" {% if envolvido.uf_natural == 'PE' %}selected{% endif %}>PE</option>
+        <option value="CE" {% if envolvido.uf_natural == 'CE' %}selected{% endif %}>CE</option>
+        <option value="GO" {% if envolvido.uf_natural == 'GO' %}selected{% endif %}>GO</option>
+        <option value="DF" {% if envolvido.uf_natural == 'DF' %}selected{% endif %}>DF</option>
+        <option value="AM" {% if envolvido.uf_natural == 'AM' %}selected{% endif %}>AM</option>
+        <option value="PA" {% if envolvido.uf_natural == 'PA' %}selected{% endif %}>PA</option>
+        <option value="MT" {% if envolvido.uf_natural == 'MT' %}selected{% endif %}>MT</option>
+        <option value="MS" {% if envolvido.uf_natural == 'MS' %}selected{% endif %}>MS</option>
+        <option value="MA" {% if envolvido.uf_natural == 'MA' %}selected{% endif %}>MA</option>
+        <option value="PB" {% if envolvido.uf_natural == 'PB' %}selected{% endif %}>PB</option>
+        <option value="RN" {% if envolvido.uf_natural == 'RN' %}selected{% endif %}>RN</option>
+        <option value="PI" {% if envolvido.uf_natural == 'PI' %}selected{% endif %}>PI</option>
+        <option value="AL" {% if envolvido.uf_natural == 'AL' %}selected{% endif %}>AL</option>
+        <option value="SE" {% if envolvido.uf_natural == 'SE' %}selected{% endif %}>SE</option>
+        <option value="TO" {% if envolvido.uf_natural == 'TO' %}selected{% endif %}>TO</option>
+        <option value="AP" {% if envolvido.uf_natural == 'AP' %}selected{% endif %}>AP</option>
+        <option value="RR" {% if envolvido.uf_natural == 'RR' %}selected{% endif %}>RR</option>
+    </select></div>
+    <div><label class="font-semibold">Cidade Natural</label><input type="text" name="cidade_natural" class="input w-full" value="{{ envolvido.cidade_natural|default_if_none:'' }}"></div>
+</div>
+<!-- Documentos -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div><label class="font-semibold">Outro Documento</label><input type="text" name="outro_documento" class="input w-full" value="{{ envolvido.outro_documento|default_if_none:'' }}"></div>
+
+<!-- Dados Profissionais -->
+    <div><label class="font-semibold">Profissão</label><input type="text" name="profissao" class="input w-full" value="{{ envolvido.profissao|default_if_none:'' }}"></div>
+   </div>
+
+<!-- Observações -->
+<div class="flex flex-col gap-4 mb-4">
+  <div><label class="font-semibold">Sinais</label><textarea name="sinais" class="input w-full border rounded-lg px-3 py-2" rows="3">{{ envolvido.sinais|default_if_none:'' }}</textarea></div>
+  <div>
+    <div class="flex items-center gap-2 mb-1 text-sm">
+      <span class="text-slate-500">Apoio IA:</span>
+      <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 transition">Gemini</a>
+      <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 transition">ChatGPT</a>
+    </div>
+    <label class="font-semibold">Dados Adicionais ou Versão do Envolvido</label>
+    <textarea id="dados-adicionais-textarea" name="dados_adicionais" class="input w-full border rounded-lg px-3 py-2" rows="10" {% if envolvido.assinatura %}disabled readonly data-locked="1"{% endif %}>{{ envolvido.dados_adicionais|default_if_none:'' }}</textarea>
+    {% if envolvido.assinatura %}
+      <p class="mt-1 text-xs text-slate-500">Campo bloqueado porque já existe assinatura deste Envolvido.</p>
+    {% endif %}
+    <div class="mt-2 flex items-center gap-3 flex-wrap">
+      <button type="button" id="btn-voice-envolvido" class="px-4 py-2 text-sm md:text-base rounded-lg border-2 border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold transition {% if envolvido.assinatura %}opacity-50 cursor-not-allowed{% endif %}" title="Ditado por voz (pt-BR)" {% if envolvido.assinatura %}disabled{% endif %}>🎤 Ditado</button>
+      <button type="button" id="btn-voice-insert-envolvido" class="px-4 py-2 text-sm md:text-base rounded-lg border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold transition disabled:opacity-50 {% if envolvido.assinatura %}opacity-50 cursor-not-allowed{% endif %}" {% if envolvido.assinatura %}disabled{% endif %}>Inserir Prévia</button>
+    </div>
+    <div id="voice-preview-envolvido" class="hidden mt-1 text-[12px] text-slate-600">
+      <span class="text-slate-400">Prévia:</span>
+      <span id="voice-preview-text-envolvido"></span>
+    </div>
+  </div>
+</div>
+<!-- Providência -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div><label class="font-semibold">Providência</label><select name="providencia" class="input w-full border rounded-lg px-3 py-2">
+        <option value="">Selecione...</option>
+        <option value="Encaminhado" {% if envolvido.providencia == 'Encaminhado' %}selected{% endif %}>Encaminhado</option>
+        <option value="Orientado" {% if envolvido.providencia == 'Orientado' %}selected{% endif %}>Orientado</option>
+        <option value="Advertido" {% if envolvido.providencia == 'Advertido' %}selected{% endif %}>Advertido</option>
+        <option value="Preso" {% if envolvido.providencia == 'Preso' %}selected{% endif %}>Preso</option>
+        <option value="Outro" {% if envolvido.providencia == 'Outro' %}selected{% endif %}>Outro</option>
+    </select></div>
+</div>
+<!-- Assinatura -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div class="flex flex-col gap-2">
+        <label class="font-semibold">Assinatura</label>
+    <div class="flex flex-col md:flex-row gap-2 items-center">
+      <button type="button" id="btn-assinar-digital" class="px-4 py-2 rounded bg-indigo-600 text-white font-bold">Assinar Digitalmente</button>
+        </div>
+    </div>
+    <div>
+        <label class="font-semibold">Assinatura Atual</label>
+        <div class="border rounded-lg p-2 min-h-[40px] bg-white">
+            {% if envolvido.assinatura %}
+                <img src="{{ envolvido.assinatura.url }}" alt="Assinatura" class="max-h-24">
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2">
+    <label class="font-semibold">Assinatura</label>
+  <input type="file" name="assinatura" id="assinatura-file" accept="image/*" class="input w-full sm:w-auto">
+  <button type="button" id="btn-inserir-assinatura" class="px-4 py-2 bg-purple-600 text-white rounded w-full sm:w-auto">Inserir</button>
+</div>
+<div id="assinatura-atual" class="mt-2">
+    {% if envolvido.assinatura %}
+        <img src="{{ envolvido.assinatura.url }}" alt="Assinatura" class="max-h-24">
+    {% endif %}
+</div>
+<script>
+document.getElementById('btn-inserir-assinatura').onclick = function() {
+    const input = document.getElementById('assinatura-file');
+    const preview = document.getElementById('assinatura-atual');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Assinatura" class="max-h-24">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+</script>
+			</div>
+			<!-- Tab Anexos -->
+			<div id="tab-anexos" class="tab-content hidden">
+				<div class="md:col-span-3">
+					<label class="font-semibold">Anexar Arquivos</label>
+					<input type="file" name="anexos" multiple class="input w-full">
+					<div id="msg-anexo" class="text-sm text-rose-600 mt-2"></div>
+				</div>
+			</div>
+<div class="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+  <button type="submit" class="px-6 py-2 rounded-lg bg-green-600 text-white font-bold shadow hover:bg-green-700 transition w-full sm:w-auto">Salvar</button>
+  <button type="button" class="px-6 py-2 rounded-lg bg-gray-400 text-white font-bold shadow btn-cancelar-envolvido hover:bg-gray-500 transition w-full sm:w-auto">Cancelar</button>
+  <a href="/bogcmi/novo/" class="px-6 py-2 rounded-lg bg-slate-500 text-white font-bold shadow hover:bg-slate-600 transition inline-block text-center w-full sm:w-auto">Voltar</a>
+</div>
+		</form>
+	</div>
+</div>
+<!-- Modal Assinatura Digital (Canvas) -->
+<div id="modal-assinatura" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden" style="overscroll-behavior: contain;">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md flex flex-col gap-4">
+    <h3 class="text-lg font-bold mb-2">Assinatura Digital</h3>
+    <label class="font-semibold">Desenhe sua assinatura abaixo:</label>
+  <canvas id="canvas-assinatura" width="350" height="120" class="border rounded-lg bg-slate-50 cursor-crosshair" style="touch-action: none; user-select: none; -webkit-user-select: none; overscroll-behavior: contain; width: 100%; height: 140px;"></canvas>
+    <div class="flex justify-end gap-2 mt-2">
+      <button type="button" id="btn-limpar-assinatura" class="px-4 py-2 rounded bg-gray-400 text-white font-bold">Limpar</button>
+      <button type="button" id="btn-salvar-assinatura" class="px-4 py-2 rounded bg-green-600 text-white font-bold">Salvar</button>
+      <button type="button" id="btn-fechar-assinatura" class="px-4 py-2 rounded bg-rose-600 text-white font-bold">Fechar</button>
+    </div>
+  </div>
+</div>
+<script>
+function setActiveTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(function(el) {
+    el.classList.add('hidden');
+  });
+  document.querySelectorAll('.nav-btn').forEach(function(btn) {
+    btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'font-bold');
+  });
+  const activeTab = document.getElementById('tab-' + tab);
+  if (activeTab) activeTab.classList.remove('hidden');
+  const activeBtn = document.querySelector('.nav-btn[data-tab="' + tab + '"]');
+  if (activeBtn) activeBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'font-bold');
+}
+// Modal assinatura digital (canvas)
+document.addEventListener('DOMContentLoaded', function() {
+  // Seleciona o botão por id (mais robusto)
+  var btnAssinar = document.getElementById('btn-assinar-digital');
+  var modalAssinatura = document.getElementById('modal-assinatura');
+  var btnSalvarAssinatura = document.getElementById('btn-salvar-assinatura');
+  var btnLimparAssinatura = document.getElementById('btn-limpar-assinatura');
+  var btnFecharAssinatura = document.getElementById('btn-fechar-assinatura');
+  var canvas = document.getElementById('canvas-assinatura');
+  var ctx = canvas.getContext('2d');
+  var desenhando = false;
+  var lastX = 0, lastY = 0;
+  
+  // Ajuste de definição em telas de alta densidade (DPR) e ao abrir o modal
+  function resizeCanvasForDPR() {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    try { ctx.setTransform(1,0,0,1,0,0); } catch(e) {}
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    try { ctx.setTransform(ratio, 0, 0, ratio, 0, 0); } catch(e) {}
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#222';
+  }
+  // Funções de desenho
+  function startDraw(e) {
+    if (e && e.cancelable) e.preventDefault();
+    desenhando = true;
+    [lastX, lastY] = getPos(e);
+  }
+  function endDraw(e) {
+    if (e && e.cancelable) e.preventDefault();
+    desenhando = false;
+  }
+  function draw(e) {
+    if (e && e.cancelable) e.preventDefault();
+    if (!desenhando) return;
+    const [x, y] = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    [lastX, lastY] = [x, y];
+  }
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) {
+      return [e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top];
+    } else {
+      return [e.clientX - rect.left, e.clientY - rect.top];
+    }
+  }
+  // Eventos mouse/touch
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('mouseleave', endDraw);
+  canvas.addEventListener('mousemove', draw);
+  // Listeners de toque não-passivos para permitir preventDefault e impedir rolagem
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchend', endDraw, { passive: false });
+  canvas.addEventListener('touchcancel', endDraw, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  // Bloqueia rolagem dentro do modal ao arrastar
+  if (modalAssinatura) {
+    modalAssinatura.addEventListener('touchmove', function(e){
+      if (e && e.cancelable) e.preventDefault();
+    }, { passive: false });
+  }
+  // Abrir modal
+  if(btnAssinar && modalAssinatura) {
+    btnAssinar.addEventListener('click', function() {
+      modalAssinatura.classList.remove('hidden');
+      // trava scroll do body enquanto modal aberto
+      try { document.body.dataset.prevOverflow = document.body.style.overflow || ''; document.body.style.overflow = 'hidden'; } catch(_){ }
+      resizeCanvasForDPR();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+  }
+  // Limpar assinatura
+  if(btnLimparAssinatura) {
+    btnLimparAssinatura.addEventListener('click', function() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+  }
+  // Fechar modal
+  if(btnFecharAssinatura) {
+    btnFecharAssinatura.addEventListener('click', function() {
+      modalAssinatura.classList.add('hidden');
+      // libera scroll do body
+      try { document.body.style.overflow = document.body.dataset.prevOverflow || ''; delete document.body.dataset.prevOverflow; } catch(_){ }
+    });
+  }
+  // Salvar assinatura
+  var campoAssinaturaAtual = null;
+  var labels = document.querySelectorAll('label.font-semibold');
+  labels.forEach(function(label) {
+    if(label.textContent.trim() === 'Assinatura Atual') {
+      campoAssinaturaAtual = label.parentElement.querySelector('div');
+    }
+  });
+  if(btnSalvarAssinatura && campoAssinaturaAtual) {
+    btnSalvarAssinatura.addEventListener('click', function() {
+      var imgData = canvas.toDataURL('image/png');
+      campoAssinaturaAtual.innerHTML = `<img src="${imgData}" alt="Assinatura" class="max-h-24">`;
+      modalAssinatura.classList.add('hidden');
+      // libera scroll do body
+      try { document.body.style.overflow = document.body.dataset.prevOverflow || ''; delete document.body.dataset.prevOverflow; } catch(_){ }
+      // Salva no input file para enviar ao backend
+      fetch(imgData)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], "assinatura.png", {type: "image/png"});
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          document.querySelector('input[type="file"][name="assinatura"]').files = dt.files;
+        });
+    });
+  }
+});
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+	btn.onclick = function() {
+		setActiveTab(btn.getAttribute('data-tab'));
+	};
+});
+window.addEventListener('DOMContentLoaded', function() {
+	setActiveTab('envolvido');
+});
+function validarAnexos(input) {
+	const msg = document.getElementById('msg-anexo');
+	msg.textContent = '';
+	for (let file of input.files) {
+		if (file.size > 30 * 1024 * 1024) {
+			msg.textContent = 'Arquivo "' + file.name + '" excede o limite de 30 MB.';
+			input.value = '';
+			break;
+		}
+	}
+}
+document.addEventListener('click', function(e) {
+	if (e.target.classList.contains('btn-cancelar-envolvido')) {
+		if (confirm('Deseja cancelar? Os dados não serão salvos.')) {
+			window.history.back();
+		}
+	}
+});
+
+// ===========================================
+// SISTEMA DE PERSISTÊNCIA DE DADOS - ENVOLVIDO
+// ===========================================
+// ================= PERSISTÊNCIA ENVOLVIDO (v2 com diagnóstico) =================
+// Chave dinâmica + fallback legacy
+const CHAVE_ENVOLVIDO = 'envolvido-form-data:' + (location.pathname || 'default');
+const CHAVE_ENVOLVIDO_FALLBACK = 'envolvido-form-data'; // compat / debug
+console.debug('[ENVOLVIDO] Script de persistência carregado. Path:', location.pathname, 'Chave:', CHAVE_ENVOLVIDO);
+
+function coletarDadosFormulario(form){
+  const dados = {};
+  form.querySelectorAll('input, select, textarea').forEach(campo => {
+    if (!campo.name) return;
+    if (['file','submit','button','password'].includes(campo.type)) return;
+    if (campo.type === 'radio') {
+      // Apenas salva radio selecionado (agrupado pelo name)
+      if (campo.checked) dados[campo.name] = campo.value;
+    } else if (campo.type === 'checkbox') {
+      dados[campo.name] = campo.checked;
+    } else {
+      dados[campo.name] = campo.value;
+    }
+  });
+  return dados;
+}
+
+function salvarDadosEnvolvido(origem){
+  const form = document.querySelector('form');
+  if(!form) return;
+  const dados = coletarDadosFormulario(form);
+  try {
+    const payload = {dados, ts: Date.now(), path: location.pathname};
+    localStorage.setItem(CHAVE_ENVOLVIDO, JSON.stringify(payload));
+    // Também grava fallback para facilitar inspeção manual
+    localStorage.setItem(CHAVE_ENVOLVIDO_FALLBACK, JSON.stringify(payload));
+    if (origem) console.debug('[ENVOLVIDO] Salvo ('+origem+')', payload);
+  } catch(e){
+    // Se storage estiver cheio, ignora silenciosamente
+    console.warn('[ENVOLVIDO] Falha ao salvar dados:', e);
+  }
+}
+
+function carregarDadosEnvolvido(){
+  let registro = localStorage.getItem(CHAVE_ENVOLVIDO);
+  if(!registro) {
+    // tenta fallback
+    registro = localStorage.getItem(CHAVE_ENVOLVIDO_FALLBACK);
+    if (registro) console.debug('[ENVOLVIDO] Usando fallback');
+  }
+  if(!registro) return;
+  let payload;
+  try { payload = JSON.parse(registro); } catch { return; }
+  if(!payload || !payload.dados) return;
+  const dados = payload.dados;
+  const form = document.querySelector('form');
+  if(!form) return;
+
+  // Não sobrescrever se já está editando (heurística: se nome tem valor e localStorage também tem, só aplica aos campos vazios)
+  const campoNome = form.querySelector('[name="nome"]');
+  const editando = campoNome && campoNome.value && campoNome.value.trim().length > 0;
+  console.debug('[ENVOLVIDO] Carregando dados. Campos existentes? editando=', editando, 'Total campos salvos:', Object.keys(dados).length);
+
+  Object.entries(dados).forEach(([nome, valor]) => {
+    const campo = form.querySelector(`[name="${nome}"]`);
+    if(!campo) return;
+    if (editando && campo.value && campo.value.trim() !== '') return; // preserva backend
+    if (campo.type === 'radio') {
+      // Marca radio correspondente
+      const radio = form.querySelector(`input[type="radio"][name="${nome}"][value="${valor}"]`);
+      if (radio) radio.checked = true;
+    } else if (campo.type === 'checkbox') {
+      campo.checked = !!valor;
+    } else {
+      campo.value = valor;
+    }
+  });
+}
+
+function limparDadosEnvolvido(){
+  localStorage.removeItem(CHAVE_ENVOLVIDO);
+  localStorage.removeItem(CHAVE_ENVOLVIDO_FALLBACK);
+  console.debug('[ENVOLVIDO] Rascunho removido');
+}
+
+function instalarAutoSaveEnvolvido(){
+  const form = document.querySelector('form');
+  if(!form) return;
+  form.querySelectorAll('input, select, textarea').forEach(campo => {
+    if (['file','submit','button','password'].includes(campo.type)) return;
+    campo.addEventListener('input', () => salvarDadosEnvolvido('input:'+campo.name));
+    campo.addEventListener('change', () => salvarDadosEnvolvido('change:'+campo.name));
+  });
+  // Limpa ao submeter com sucesso
+  form.addEventListener('submit', () => limparDadosEnvolvido());
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  carregarDadosEnvolvido();
+  instalarAutoSaveEnvolvido();
+  // Marca visual para confirmar que o script rodou (atributo no <html>)
+  try { document.documentElement.setAttribute('envolvido-cache','on'); } catch {}
+  console.debug('[ENVOLVIDO] Inicialização concluída.');
+  // Força primeiro salvamento após 1s para garantir que algo exista se usuário só der F5
+  setTimeout(() => salvarDadosEnvolvido('primeiro-snapshot'), 1000);
+  // Se quiser expor um botão de limpar rascunho futuramente basta remover hidden
+  const form = document.querySelector('form');
+  if (form && !form.querySelector('#btn-limpar-rascunho-envolvido')) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'btn-limpar-rascunho-envolvido';
+    btn.textContent = 'Limpar Rascunho';
+    btn.className = 'hidden px-3 py-1 bg-rose-600 text-white rounded text-sm ml-auto';
+    btn.addEventListener('click', () => { limparDadosEnvolvido(); alert('Rascunho removido.'); });
+    form.appendChild(btn);
+  }
+});
+
+window.addEventListener('beforeunload', () => salvarDadosEnvolvido('beforeunload'));
+</script>
+
+<!-- Ditado por voz (Dados Adicionais do Envolvido) -->
+<script>
+function setupDictation(opts){
+  const btn = document.getElementById(opts.btnId);
+  const insertBtn = document.getElementById(opts.insertBtnId);
+  const previewWrap = document.getElementById(opts.previewWrapId);
+  const previewText = document.getElementById(opts.previewTextId);
+  const textarea = document.getElementById(opts.textareaId);
+  if(!btn || !textarea) return;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const Cap = window.Capacitor || null;
+  const isCapNative = !!(Cap && (typeof Cap.isNativePlatform === 'function' ? Cap.isNativePlatform() : Cap.isNativePlatform));
+  const capPlugin = Cap && Cap.Plugins ? Cap.Plugins.SpeechRecognition : null;
+
+  let listening = false; let capListeners = []; let usingCap=false; let engine=null; let starting=false; let stopping=false;
+  let partialBuffer='';
+  // Controle manual e reinício automático
+  let userWantsListening = false; let restartTimer = null; let restartDelayMs = 300;
+
+  function setPreview(text){ if(previewText){ previewText.textContent = text || ''; } if(previewWrap){ previewWrap.classList.toggle('hidden', !(text && text.trim().length)); } if(insertBtn){ insertBtn.disabled = !(text && text.trim().length); } }
+  function setListening(on){ listening=on; if(on){ btn.textContent='⏹️ Parar'; btn.classList.remove('bg-sky-50'); btn.classList.add('bg-rose-50','border-rose-200','text-rose-700','hover:bg-rose-100'); if(previewWrap) previewWrap.classList.remove('hidden'); } else { btn.textContent='🎤 Ditado'; btn.classList.remove('bg-rose-50','border-rose-200','text-rose-700','hover:bg-rose-100'); btn.classList.add('bg-sky-50'); setPreview(''); } }
+  function flushPartial(){ if(!userWantsListening){ partialBuffer=''; setPreview(''); return; } if(partialBuffer && partialBuffer.trim()){ setPreview(partialBuffer.trim()); } }
+
+  async function startCap(){ if(!capPlugin) throw new Error('Capacitor Speech plugin não disponível'); try{ if(capPlugin.requestPermission) await capPlugin.requestPermission(); }catch(e){}
+    try{ if(capPlugin.requestPermissions) await capPlugin.requestPermissions(); }catch(e){}
+    const res = capPlugin.checkPermissions ? await capPlugin.checkPermissions() : (capPlugin.checkPermission ? await capPlugin.checkPermission() : {granted:true}); const ok = res && (res.speechRecognition==='granted' || res.state==='granted' || res.granted===true); if(!ok) throw new Error('Permissão de microfone negada');
+    if(capPlugin.addListener){
+      const l1 = capPlugin.addListener('partialResults', (data)=>{ if(!userWantsListening){ try{ capPlugin.stop && capPlugin.stop(); }catch(_){ } return; } const t = data && data.matches && data.matches[0]; if(t){ partialBuffer=String(t); setPreview(partialBuffer); } });
+      capListeners.push(l1);
+      const l2 = capPlugin.addListener('listeningState', (d)=>{ if(d && d.status==='stopped'){ if(userWantsListening){ flushPartial(); } setListening(false); engine=null; usingCap=false; if(userWantsListening && !stopping) scheduleRestart('cap-stopped'); } else if(d && d.status==='started'){ partialBuffer=''; setListening(true); engine='cap'; usingCap=true; restartDelayMs = 300; } });
+      capListeners.push(l2);
+    }
+    if(capPlugin.start) await capPlugin.start({ language:'pt-BR', partialResults:true, popup:false, maxResults:1 });
+    usingCap=true; engine='cap'; setListening(true); restartDelayMs = 300;
+  }
+  async function stopCap(){ try{ if(capPlugin && capPlugin.stop) await capPlugin.stop(); }catch(e){} try{ capListeners.forEach(l=>l && l.remove && l.remove()); }catch(e){} try{ if(capPlugin && typeof capPlugin.removeAllListeners==='function') capPlugin.removeAllListeners(); }catch(e){} capListeners=[]; usingCap=false; engine=null; partialBuffer=''; setListening(false); }
+  function initWeb(){ const SR = SpeechRecognition; if(!SR) return null; const rec = new SR(); rec.lang='pt-BR'; rec.interimResults=true; rec.continuous=true; let webInterim=''; rec.addEventListener('start', ()=>{ if(!userWantsListening){ try{ rec.stop(); }catch(_){} try{ if(typeof rec.abort==='function') rec.abort(); }catch(_){} return; } setListening(true); engine='web'; }); rec.addEventListener('end', ()=>{ if(userWantsListening && webInterim && webInterim.trim()){ const w=webInterim.trim(); setPreview(w); webInterim=''; } setListening(false); engine=null; if(userWantsListening && !stopping) scheduleRestart('web-end'); }); rec.addEventListener('error', (e)=>{ console.error('Speech error', e); setListening(false); if(userWantsListening && !stopping) scheduleRestart('web-error'); }); rec.addEventListener('result', (ev)=>{ let interim=''; let finalChunk=''; for(let i=ev.resultIndex;i<ev.results.length;i++){ const r=ev.results[i]; if(r.isFinal) finalChunk += r[0].transcript; else interim += r[0].transcript; } if(!userWantsListening) return; webInterim = interim || ''; if(interim){ setPreview(interim.trim()); } if(finalChunk){ const f=finalChunk.trim(); setPreview(f); webInterim=''; } }); return rec; }
+  const recognition = initWeb();
+  async function start(){ if(starting || listening) return; starting=true; try{ if(isCapNative && capPlugin){ await startCap(); } else if(recognition){ try{ if(!window.isSecureContext && !/^localhost$|^127\.0\.0\.1$/.test(location.hostname)){ alert('Navegador bloqueou microfone: use HTTPS ou localhost.'); return; } }catch(_){ } try{ recognition.start(); }catch(e){} } else if(capPlugin){ await startCap(); } else { alert('Ditado não suportado neste dispositivo'); } } finally { starting=false; } }
+  async function stop(){ if(stopping) return; stopping=true; try{ try{ if(capPlugin && typeof capPlugin.stop==='function') await capPlugin.stop(); }catch(_){ } try{ if(recognition){ try{ recognition.stop(); }catch(_){ } try{ if(typeof recognition.abort==='function') recognition.abort(); }catch(_){ } } }catch(_){ } try{ capListeners.forEach(l=>l && l.remove && l.remove()); }catch(_){ } try{ if(capPlugin && typeof capPlugin.removeAllListeners==='function') capPlugin.removeAllListeners(); }catch(_){ } capListeners=[]; usingCap=false; engine=null; partialBuffer=''; setListening(false); } finally { stopping=false; } }
+  async function forceStopAll(){
+    try{ userWantsListening=false; }catch(_){ }
+    try{ if(restartTimer){ clearTimeout(restartTimer); restartTimer=null; } }catch(_){ }
+    try{ if(capPlugin && typeof capPlugin.stop==='function') await capPlugin.stop(); }catch(_){ }
+    try{ if(capPlugin && typeof capPlugin.removeAllListeners==='function') await capPlugin.removeAllListeners(); }catch(_){ }
+    try{ if(recognition){ try{ recognition.stop(); }catch(_){ } try{ if(typeof recognition.abort==='function') recognition.abort(); }catch(_){ } } }catch(_){ }
+    try{ capListeners.forEach(l=>l && l.remove && l.remove()); }catch(_){ }
+    try{ if(capPlugin && typeof capPlugin.removeAllListeners==='function') capPlugin.removeAllListeners(); }catch(_){ }
+    capListeners=[]; usingCap=false; engine=null; partialBuffer=''; setListening(false);
+  }
+  btn.addEventListener('click', async ()=>{
+    if(!userWantsListening){
+      userWantsListening = true;
+      if(restartTimer){ clearTimeout(restartTimer); restartTimer=null; }
+      await start();
+    } else {
+      // Força atualização imediata do botão/estado ao parar
+      userWantsListening = false;
+      setPreview('');
+      setListening(false);
+      try{ forceStopAll(); }catch(_){ }
+    }
+  });
+  if(insertBtn){ insertBtn.addEventListener('click', ()=>{ const pv = (previewText && previewText.textContent) ? previewText.textContent.trim() : ''; if(!pv) return; let base = textarea.value || ''; if(base && !/\n\s*$/.test(base)) base = base.replace(/\s*$/, '') + "\n"; textarea.value = base + pv + ' '; setPreview(''); try{ textarea.focus(); const end = textarea.value.length; textarea.setSelectionRange(end,end); textarea.scrollTop = textarea.scrollHeight; }catch(_){ } }); }
+  if(recognition){ recognition.addEventListener('error', async (e)=>{ const code = (e && (e.error||e.message)) || ''; const recover = ['not-allowed','service-not-allowed','audio-capture','network'].includes(String(code)); if(isCapNative && capPlugin && recover){ try{ await startCap(); }catch(_){ } } }); }
+  function scheduleRestart(reason){ if(!userWantsListening) return; if(restartTimer) clearTimeout(restartTimer); restartTimer = setTimeout(async ()=>{ restartTimer=null; if(!userWantsListening || listening || starting) return; try{ await start(); restartDelayMs = Math.min(restartDelayMs+200, 1500); }catch(_){ } }, restartDelayMs); }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  // Se o campo está bloqueado (já assinado), não inicializa ditado
+  var locked = false;
+  try { locked = !!document.getElementById('dados-adicionais-textarea')?.dataset?.locked; } catch(_) {}
+  if (locked) return;
+  setupDictation({
+    btnId: 'btn-voice-envolvido',
+    insertBtnId: 'btn-voice-insert-envolvido',
+    previewWrapId: 'voice-preview-envolvido',
+    previewTextId: 'voice-preview-text-envolvido',
+    textareaId: 'dados-adicionais-textarea'
+  });
+});
+</script>
+
+<!-- Auto-preenchimento por CPF -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const cpfInput = document.querySelector('input[name="cpf"]');
+  if(!cpfInput) return;
+  const form = cpfInput.closest('form');
+  function onlyDigits(v){ return (v||'').replace(/\D+/g,''); }
+  function maskCPF(v){
+    const d = onlyDigits(v).slice(0,11);
+    const p1 = d.substring(0,3);
+    const p2 = d.substring(3,6);
+    const p3 = d.substring(6,9);
+    const p4 = d.substring(9,11);
+    let out = '';
+    if(p1) out += p1;
+    if(p2) out += (out?'.':'') + p2;
+    if(p3) out += (out?'.':'') + p3;
+    if(p4) out += (out?'-':'') + p4;
+    return out;
+  }
+  function cpfIsValid(raw){
+    const d = onlyDigits(raw);
+    if(d.length !== 11) return false;
+    if(/^(\d)\1{10}$/.test(d)) return false;
+    const nums = d.split('').map(n=>parseInt(n,10));
+    let s = 0; for(let i=0;i<9;i++) s += nums[i]*(10-i);
+    let r = (s*10)%11; if(r===10) r=0; if(nums[9]!==r) return false;
+    s = 0; for(let i=0;i<10;i++) s += nums[i]*(11-i);
+    r = (s*10)%11; if(r===10) r=0; return nums[10]===r;
+  }
+  function setCpfValidity(ok){
+    if(!form) return;
+    // Adiciona/atualiza mensagem ao lado do campo
+    let note = cpfInput.parentElement.querySelector('.cpf-note');
+    if(!note){ note = document.createElement('div'); note.className='cpf-note mt-1 text-xs'; cpfInput.parentElement.appendChild(note); }
+    if(!cpfInput.value.trim()){
+      note.textContent=''; note.classList.remove('text-rose-700','text-emerald-700');
+      cpfInput.classList.remove('border-rose-500');
+      return;
+    }
+    if(ok){
+      note.textContent='CPF válido'; note.classList.remove('text-rose-700'); note.classList.add('text-emerald-700');
+      cpfInput.classList.remove('border-rose-500');
+    } else {
+      note.textContent='CPF inválido'; note.classList.remove('text-emerald-700'); note.classList.add('text-rose-700');
+      cpfInput.classList.add('border-rose-500');
+    }
+  }
+  // Máscara enquanto digita
+  cpfInput.addEventListener('input', function(){
+    const pos = cpfInput.selectionStart;
+    const masked = maskCPF(cpfInput.value);
+    cpfInput.value = masked;
+  });
+  // Validação ao sair do campo
+  function validateCpfField(){
+    const v = cpfInput.value || '';
+    if(!v.trim()) { setCpfValidity(true); return; }
+    setCpfValidity(cpfIsValid(v));
+  }
+  cpfInput.addEventListener('blur', validateCpfField);
+  cpfInput.addEventListener('change', validateCpfField);
+  // Bloquear envio se CPF preenchido e inválido
+  if(form){
+    form.addEventListener('submit', function(e){
+      const v = (cpfInput.value||'').trim();
+      if(!v) return;
+      if(!cpfIsValid(v)){
+        e.preventDefault();
+        setCpfValidity(false);
+        alert('CPF inválido. Corrija para prosseguir.');
+      }
+    });
+  }
+  async function lookupCPF(){
+    const raw = cpfInput.value || '';
+    const digits = onlyDigits(raw);
+    if(digits.length < 11) return; // CPF incompleto
+    try{
+      const url = `/bogcmi/api/envolvido-por-cpf/?cpf=${encodeURIComponent(raw)}`;
+      const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if(!resp.ok) return;
+      const data = await resp.json();
+      if(!data || !data.found) return;
+      const form = cpfInput.closest('form');
+      if(!form) return;
+      const map = data;
+      const fields = ['nome','nome_social','telefone','nome_pai','nome_mae','rg','cpf','outro_documento','data_nascimento','estado_civil','genero','cutis','cep','endereco','numero','ponto_referencia','bairro','cidade','uf','pais_natural','uf_natural','cidade_natural','profissao','trabalho','vulgo','sinais','dados_adicionais'];
+      let filled = 0;
+      fields.forEach(fn => {
+        const el = form.querySelector(`[name="${fn}"]`);
+        if(!el) return;
+        const incoming = (map[fn] ?? '').toString();
+        if(!incoming) return;
+        // Não sobrescreve se já tem valor
+        const current = (el.value || '').toString();
+        if(current && current.trim().length) return;
+        el.value = incoming;
+        filled++;
+      });
+      if(filled > 0){
+        try{ salvarDadosEnvolvido('cpf-lookup'); }catch(_){ }
+        // Feedback leve ao usuário
+        const note = document.createElement('div');
+        note.textContent = `Dados preenchidos a partir do cadastro (CPF).`;
+        note.className = 'mt-2 text-xs text-emerald-700';
+        cpfInput.parentElement.appendChild(note);
+        setTimeout(()=>{ try{ note.remove(); }catch(_){ } }, 4000);
+      }
+    }catch(e){
+      // silencioso
+    }
+  }
+  cpfInput.addEventListener('blur', lookupCPF);
+  cpfInput.addEventListener('change', lookupCPF);
+});
+</script>
+{% endblock %}

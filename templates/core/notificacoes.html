@@ -1,0 +1,575 @@
+{% extends "_layout/base.html" %}
+{% load static %}
+{% block title %}Notificações{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-3 md:px-0">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">Notificações</h1>
+        {% if total_pendentes %}<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-xs">{{ total_pendentes }}</span>{% endif %}
+      </div>
+    <div class="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end">
+  {% if request.user.username|lower == 'moises' %}
+  <button id="btn-push-teste" onclick="enviarPushTeste()" 
+              class="px-2 py-1 md:px-3 md:py-2 border rounded hover:bg-slate-50 flex items-center gap-2 text-xs md:text-sm">
+        <span>📲</span>
+        <span class="text-xs md:text-sm">Teste</span>
+      </button>
+  {% endif %}
+  <button onclick="abrirConfigNotif()" 
+      class="px-2 py-1 md:px-3 md:py-2 border rounded hover:bg-slate-50 flex items-center gap-2 text-xs md:text-sm">
+    <span>⚙️</span>
+    <span class="text-xs md:text-sm">Permissões</span>
+  </button>
+  <button onclick="notificacaoLocalTeste()" 
+      class="px-2 py-1 md:px-3 md:py-2 border rounded hover:bg-slate-50 flex items-center gap-2 text-xs md:text-sm">
+    <span>🔔</span>
+    <span class="text-xs md:text-sm">Notificação Local</span>
+  </button>
+      <button onclick="toggleSom()" 
+              class="px-2 py-1 md:px-3 md:py-2 border rounded hover:bg-slate-50 flex items-center gap-2 text-xs md:text-sm">
+        <span id="som-status">🔊</span>
+        <span id="som-text" class="text-xs md:text-sm">Som Ligado</span>
+      </button>
+      <button onclick="location.reload()" 
+              class="px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs md:text-sm">
+        🔄 Atualizar
+      </button>
+    </div>
+    </div>
+  </div>
+  
+  <div class="space-y-6">
+
+  {% if resumo_tipos %}
+  <!-- Resumo por tipo -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <!-- Despachos -->
+    <div class="bg-white border rounded-lg p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-slate-600">Despachos Pendentes</div>
+        <span class="px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-xs">{{ resumo_tipos.despachos }}</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">Ocorrências despachadas para suas viaturas</p>
+    </div>
+    <!-- Ofícios Internos -->
+    <div class="bg-white border rounded-lg p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-slate-600">Ofícios Internos</div>
+        <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs">{{ resumo_tipos.oficios }}</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">Aguardando sua decisão</p>
+    </div>
+    <!-- Assinaturas -->
+    <div class="bg-white border rounded-lg p-4">
+      <div class="text-sm text-slate-600">Assinaturas</div>
+      <div class="mt-2 grid grid-cols-3 gap-2 text-center">
+  {% if request.user.username|lower == 'comandante' or request.user.username|lower == 'subcomandante' %}
+          <a href="{% url 'common:documentos_pendentes_ronda' %}" class="block border rounded p-2 hover:bg-slate-50">
+            <div class="text-[11px] text-slate-500">Ronda</div>
+            <div class="text-base font-semibold">{{ resumo_tipos.assinaturas.ronda }}</div>
+          </a>
+          <a href="{% url 'common:documentos_pendentes_bogcm' %}" class="block border rounded p-2 hover:bg-slate-50">
+            <div class="text-[11px] text-slate-500">BOGCMI</div>
+            <div class="text-base font-semibold">{{ resumo_tipos.assinaturas.bogcmi }}</div>
+          </a>
+          <div class="block border rounded p-2 opacity-50">
+            <div class="text-[11px] text-slate-500">Livro</div>
+            <div class="text-base font-semibold">0</div>
+          </div>
+  {% elif request.user.username|lower == 'administrativo' or request.user.username|lower == 'admnistrativo' %}
+          <div class="block border rounded p-2 opacity-50">
+            <div class="text-[11px] text-slate-500">Ronda</div>
+            <div class="text-base font-semibold">0</div>
+          </div>
+          <div class="block border rounded p-2 opacity-50">
+            <div class="text-[11px] text-slate-500">BOGCMI</div>
+            <div class="text-base font-semibold">0</div>
+          </div>
+          <a href="{% url 'common:documentos_pendentes_livro' %}" class="block border rounded p-2 hover:bg-slate-50">
+            <div class="text-[11px] text-slate-500">Livro</div>
+            <div class="text-base font-semibold">{{ resumo_tipos.assinaturas.livro }}</div>
+          </a>
+        {% else %}
+          <div class="block border rounded p-2 opacity-50">
+            <div class="text-[11px] text-slate-500">Ronda</div>
+            <div class="text-base font-semibold">0</div>
+          </div>
+          <div class="block border rounded p-2 opacity-50">
+            <div class="text-[11px] text-slate-500">BOGCMI</div>
+            <div class="text-base font-semibold">0</div>
+          </div>
+          <div class="block border rounded p-2 opacity-50">
+            <div class="text-[11px] text-slate-500">Livro</div>
+            <div class="text-base font-semibold">0</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Status das Viaturas Ativas -->
+  {% if taloes_ativos %}
+  <div class="bg-white border rounded-lg p-4">
+    <h2 class="text-lg font-semibold mb-3">🚔 Suas Viaturas Ativas</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {% for talao in taloes_ativos %}
+        <div class="border rounded p-3 bg-green-50">
+          <div class="font-medium">Viatura {{ talao.viatura.prefixo }}</div>
+          <div class="text-sm text-slate-600">{{ talao.viatura.placa }}</div>
+          <div class="text-xs text-green-600 font-medium">Talão #{{ talao.pk }} - {{ talao.status }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Seus BO's Ativos (em edição) -->
+  {% if bos_ativos %}
+  <div class="bg-white border rounded-lg p-4">
+    <h2 class="text-lg font-semibold mb-3">📄 Seus BO's Ativos</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {% for bo in bos_ativos %}
+        <div class="border rounded p-3 bg-slate-50">
+          <div class="flex items-center justify-between">
+            <div class="font-medium">BO{% if bo.numero %} Nº {{ bo.numero }}{% else %} #{{ bo.pk }}{% endif %}</div>
+            <span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs">Em edição</span>
+          </div>
+          <div class="text-sm text-slate-700 mt-1 truncate">{{ bo.natureza|default:"Sem natureza" }}</div>
+          <div class="text-xs text-slate-500 mt-1">Viatura: {{ bo.viatura.prefixo|default:"-" }} · Emitido: {{ bo.emissao|date:"d/m H:i" }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Avisos do Sistema / Notificações do Usuário (ex.: BO devolvido) -->
+  {% if user_notifs %}
+  <div class="bg-white border rounded-lg p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">📣 Avisos ({{ user_notifs|length }})</h2>
+    </div>
+    <div class="space-y-3">
+      {% for n in user_notifs %}
+      <div id="usernotif-{{ n.id }}" class="p-3 border rounded bg-amber-50 flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <div class="font-medium text-amber-900">{{ n.title }}</div>
+          {% if n.message %}
+          <div class="text-sm text-amber-800 whitespace-pre-wrap">{{ n.message }}</div>
+          {% endif %}
+          <div class="text-xs text-amber-700 mt-1">{{ n.created_at|date:'d/m/Y H:i' }}</div>
+        </div>
+        <div class="flex flex-col gap-2 items-end">
+          {% if n.link_url %}
+          <a href="{{ n.link_url }}" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Abrir</a>
+          {% endif %}
+          <button onclick="confirmarLeituraNotif({{ n.id }})" class="px-3 py-1.5 border rounded hover:bg-white text-sm">Confirmar leitura</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Notificações Pendentes -->
+  {% if notificacoes %}
+  <div class="space-y-4">
+    <h2 class="text-lg font-semibold">⚠️ Despachos Pendentes ({{ notificacoes|length }})</h2>
+    
+    {% for notificacao in notificacoes %}
+      <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 animate-pulse" 
+           id="notificacao-{{ notificacao.id }}">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <h3 class="text-lg font-bold text-red-800">
+              🚨 {{ notificacao.titulo }}
+            </h3>
+            <div class="mt-2 space-y-2">
+              {% if notificacao.cod_natureza %}
+              <div class="text-sm">
+                <strong>🧾 Ocorrência:</strong>
+                <span class="font-mono">{{ notificacao.cod_natureza }}</span>
+                {% if notificacao.natureza %} — <span class="text-slate-700">{{ notificacao.natureza }}</span>{% endif %}
+              </div>
+              {% endif %}
+              <div class="text-sm">
+                <strong>📍 Local:</strong> {{ notificacao.endereco }}
+              </div>
+              <div class="text-sm">
+                <strong>📝 Descrição:</strong> {{ notificacao.descricao }}
+              </div>
+              <div class="text-sm">
+                <strong>👤 Solicitante:</strong> {{ notificacao.solicitante }}
+                {% if notificacao.telefone %}
+                  - 📞 {{ notificacao.telefone }}
+                {% endif %}
+              </div>
+              <div class="text-xs text-slate-600">
+                <strong>⏰ Despachado:</strong> {{ notificacao.despachado_em|date:"d/m/Y H:i" }}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botões de Ação -->
+          <div class="ml-4 flex flex-col gap-2">
+            <button onclick="responderDespacho({{ notificacao.id }}, 'aceitar')"
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
+              ✅ ACEITAR
+            </button>
+            <button onclick="abrirModalRecusa({{ notificacao.id }})"
+                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium">
+              ❌ RECUSAR
+            </button>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white border rounded-lg p-8 text-center">
+    <div class="text-6xl mb-4">✅</div>
+    <h2 class="text-xl font-semibold text-slate-600">Nenhuma notificação pendente</h2>
+    <p class="text-slate-500">Você está em dia com suas notificações!</p>
+    {% if not taloes_ativos %}
+      <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+        <p class="text-yellow-800">
+          <strong>ℹ️ Informação:</strong> Você não possui talões ativos no momento.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Ofícios Internos Pendentes para decisão -->
+  {% if oficios_pendentes %}
+  <div class="bg-white border rounded-lg p-4">
+    <h2 class="text-lg font-semibold mb-3">📨 Ofícios Internos Pendentes ({{ oficios_pendentes|length }})</h2>
+    <div class="space-y-2">
+      {% for o in oficios_pendentes %}
+      <div class="p-3 border rounded flex items-center justify-between">
+        <div class="text-sm">
+          <div class="font-medium">Ofício #{{ o.id }} · {{ o.get_tipo_display }}</div>
+          <div class="text-slate-600">Criado por {{ o.criador.get_full_name|default:o.criador.username }} em {{ o.created_at|date:'d/m/Y H:i' }}</div>
+          <div class="text-slate-500 text-xs">Status: {{ o.get_status_display }}</div>
+        </div>
+        <a class="btn btn-primary" href="{% url 'core:oficio_interno_ver' o.id %}">Analisar</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Documentos pendentes de assinatura (CMT/SUBCMT ou Administrativo) -->
+  {% if docs_pendentes %}
+  <div class="bg-white border rounded-lg p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">🖊️ Documentos Pendentes de Assinatura ({{ docs_pendentes|length }})</h2>
+  {% if request.user.username|lower == 'comandante' or request.user.username|lower == 'subcomandante' %}
+        <a href="{% url 'common:documentos_pendentes' %}" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Abrir Pendentes</a>
+  {% elif request.user.username|lower == 'administrativo' or request.user.username|lower == 'admnistrativo' %}
+        <a href="{% url 'common:documentos_pendentes_livro' %}" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Abrir Pendentes</a>
+      {% endif %}
+    </div>
+    <div class="space-y-2">
+      {% for d in docs_pendentes %}
+      <div class="p-3 border rounded bg-slate-50 flex items-center justify-between">
+        <div class="text-sm">
+          <div class="font-medium">{{ d.get_tipo_display }} · Doc #{{ d.id }}</div>
+          <div class="text-slate-600 truncate">Arquivo: {{ d.nome_arquivo }}</div>
+          <div class="text-xs text-slate-500">Criado: {{ d.created_at|date:'d/m/Y H:i' }} · Origem: {{ d.usuario_origem.get_full_name|default:d.usuario_origem.username }}</div>
+        </div>
+        <a href="{% url 'common:documentos_pendentes' %}" class="px-3 py-1.5 border rounded hover:bg-slate-50 text-sm">Ver lista</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+
+<!-- Modal de Recusa -->
+<div id="modal-recusa" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+      <h3 class="text-lg font-bold mb-4">Recusar Despacho</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Motivo da recusa (opcional):</label>
+          <textarea id="observacoes-recusa" 
+                    class="w-full border rounded px-3 py-2" 
+                    rows="3"
+                    placeholder="Explique o motivo da recusa..."></textarea>
+        </div>
+        <div class="flex gap-3 justify-end">
+          <button onclick="fecharModalRecusa()" 
+                  class="px-4 py-2 border rounded hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button onclick="confirmarRecusa()" 
+                  class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+            Confirmar Recusa
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Sistema de som
+let somHabilitado = localStorage.getItem('notificacoes_som') !== 'false';
+let audioContext;
+let despachoParaRecusar = null;
+
+function inicializarAudio() {
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) {
+    console.log('Web Audio API não suportada');
+  }
+}
+
+function toggleSom() {
+  somHabilitado = !somHabilitado;
+  localStorage.setItem('notificacoes_som', somHabilitado);
+  document.getElementById('som-status').textContent = somHabilitado ? '🔊' : '🔇';
+  document.getElementById('som-text').textContent = somHabilitado ? 'Som Ligado' : 'Som Desligado';
+  
+  if (somHabilitado && !audioContext) {
+    inicializarAudio();
+  }
+}
+
+function tocarAlertaUrgente() {
+  if (!somHabilitado || !audioContext) return;
+  
+  try {
+    // Som de urgência (3 bips rápidos)
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+      }, i * 400);
+    }
+  } catch (e) {
+    console.log('Erro ao tocar som:', e);
+  }
+}
+
+function responderDespacho(despachoId, acao) {
+  const observacoes = acao === 'aceitar' ? '' : document.getElementById('observacoes-recusa').value;
+  
+  fetch(`/despacho/${despachoId}/responder/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: JSON.stringify({
+      acao: acao,
+      observacoes: observacoes
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.sucesso) {
+      // Remover notificação da tela
+      const notificacao = document.getElementById(`notificacao-${despachoId}`);
+      if (notificacao) {
+        notificacao.style.animation = 'fadeOut 0.5s';
+        setTimeout(() => {
+          notificacao.remove();
+          
+          // Verificar se ainda há notificações
+          const restantes = document.querySelectorAll('[id^="notificacao-"]');
+          if (restantes.length === 0) {
+            location.reload();
+          }
+        }, 500);
+      }
+      
+      // Fechar modal se estava aberto
+      fecharModalRecusa();
+      
+      // Mostrar feedback
+      mostrarMensagem(data.mensagem, 'sucesso');
+    } else {
+      mostrarMensagem(data.erro, 'erro');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    mostrarMensagem('Erro ao processar resposta', 'erro');
+  });
+}
+
+function abrirModalRecusa(despachoId) {
+  despachoParaRecusar = despachoId;
+  document.getElementById('observacoes-recusa').value = '';
+  document.getElementById('modal-recusa').classList.remove('hidden');
+}
+
+function fecharModalRecusa() {
+  despachoParaRecusar = null;
+  document.getElementById('modal-recusa').classList.add('hidden');
+}
+
+function confirmarRecusa() {
+  if (despachoParaRecusar) {
+    responderDespacho(despachoParaRecusar, 'recusar');
+  }
+}
+
+function mostrarMensagem(texto, tipo) {
+  const cor = tipo === 'sucesso' ? 'bg-green-500' : 'bg-red-500';
+  
+  const div = document.createElement('div');
+  div.className = `fixed top-4 right-4 ${cor} text-white p-4 rounded shadow-lg z-50`;
+  div.textContent = texto;
+  document.body.appendChild(div);
+  
+  setTimeout(() => {
+    div.remove();
+  }, 5000);
+}
+
+function enviarPushTeste() {
+  fetch('/notificacoes/push-teste/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: JSON.stringify({ title: 'GCM - Teste', body: 'Ping do app recebido com sucesso.' })
+  })
+  .then(r => r.json())
+  .then(j => {
+    if (j.ok) {
+      let msg = 'Notificação de teste enviada ('+ (j.sent ?? 0) +')';
+      if (typeof j.failures === 'number' || typeof j.disabled === 'number') {
+        msg += ` | falhas: ${j.failures ?? 0}`;
+        msg += ` | desativados: ${j.disabled ?? 0}`;
+      }
+      mostrarMensagem(msg, 'sucesso');
+      if (Array.isArray(j.errors) && j.errors.length) {
+        try { console.table(j.errors); } catch(e) { console.log('Erros push', j.errors); }
+      }
+    } else {
+      mostrarMensagem(j.error || 'Falha ao enviar teste', 'erro');
+    }
+  })
+  .catch(e => {
+    console.error(e);
+    mostrarMensagem('Erro ao chamar push-teste', 'erro');
+  });
+}
+// Funções registrarPushAgora e diagnosticoPush foram removidas
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', function() {
+  // Configurar controles de som
+  document.getElementById('som-status').textContent = somHabilitado ? '🔊' : '🔇';
+  document.getElementById('som-text').textContent = somHabilitado ? 'Som Ligado' : 'Som Desligado';
+  
+  if (somHabilitado) {
+    inicializarAudio();
+  }
+  
+  // Tocar som se há notificações urgentes
+  const notificacoes = document.querySelectorAll('[id^="notificacao-"]');
+  const temOficios = {{ oficios_pendentes|length|default:"0" }} > 0;
+  const temDocs = {{ docs_pendentes|length|default:"0" }} > 0;
+  const temAvisos = {{ user_notifs|length|default:"0" }} > 0;
+  if (notificacoes.length > 0 || temOficios || temDocs || temAvisos) {
+    tocarAlertaUrgente();
+  }
+  
+  // Auto-atualizar a cada 30 segundos
+  setInterval(() => {
+    location.reload();
+  }, 30000);
+
+  // diagnóstico de push removido
+});
+
+// CSS para animação
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+  }
+`;
+document.head.appendChild(style);
+
+function abrirConfigNotif(){
+  try{
+    const C = window.Capacitor || {};
+    const NS = C.Plugins?.NativeSettings;
+    if (NS && NS.openNotificationSettings) {
+      NS.openNotificationSettings();
+    } else {
+      // Fallback: link padrão do Android
+      if (window?.AndroidOpenSettings) { window.AndroidOpenSettings.appNotificationSettings(); return; }
+      alert('Abra as Configurações do Android > Apps > Sistema GCM > Notificações e habilite.');
+    }
+  }catch(e){ alert('Não foi possível abrir as configurações. Abra manualmente: Configurações > Apps > Sistema GCM > Notificações.'); }
+}
+
+async function notificacaoLocalTeste(){
+  try{
+    const C = window.Capacitor || {};
+    const LN = C.Plugins?.LocalNotifications || window.LocalNotifications;
+    if (!LN || !LN.schedule) { mostrarMensagem('Recurso indisponível no navegador; teste dentro do app', 'erro'); return; }
+    await LN.requestPermissions();
+    await LN.schedule({ notifications: [{ id: Date.now()%2147483647, title: 'GCM - Teste Local', body: 'Se você viu isso, as notificações do app estão ativas.', channelId: 'default', sound:'default', smallIcon:'ic_launcher' }] });
+    mostrarMensagem('Notificação local disparada', 'sucesso');
+  }catch(e){ console.warn(e); mostrarMensagem('Falha ao disparar notificação local', 'erro'); }
+}
+
+function confirmarLeituraNotif(id){
+  fetch(`/notificacoes/confirmar/${id}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+  })
+  .then(r => r.json())
+  .then(j => {
+    if (j.ok){
+      const el = document.getElementById(`usernotif-${id}`);
+      if (el){
+        el.style.animation = 'fadeOut 0.4s';
+        setTimeout(() => {
+          el.remove();
+          const restantes = document.querySelectorAll('[id^="usernotif-"]');
+          const outras = document.querySelectorAll('[id^="notificacao-"]');
+          if (restantes.length === 0 && outras.length === 0){
+            location.reload();
+          }
+        }, 380);
+      }
+    } else {
+      mostrarMensagem(j.error || 'Falha ao confirmar leitura', 'erro');
+    }
+  })
+  .catch(e => { console.error(e); mostrarMensagem('Erro ao confirmar leitura', 'erro'); });
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

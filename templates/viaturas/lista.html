@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header + filtros -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13h2l1 2h13l1-2h2M5 13l1-5h12l1 5M7 8V6a2 2 0 012-2h6a2 2 0 012 2v2" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">Viaturas</h1>
+      </div>
+      <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+        <form method="get" class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+          <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar prefixo/placa" class="input w-full md:w-56" />
+          <select name="status" class="input w-full md:w-48">
+            <option value="">Todos status</option>
+            <option value="FUNC" {% if status == "FUNC" %}selected{% endif %}>Em funcionamento</option>
+            <option value="MANU" {% if status == "MANU" %}selected{% endif %}>Em manutenção</option>
+            <option value="BAIX" {% if status == "BAIX" %}selected{% endif %}>Baixada</option>
+          </select>
+          <label class="flex items-center gap-2 text-xs md:text-sm py-1 md:py-0">
+            <input type="checkbox" class="scale-105" name="inativas" value="1" {% if mostrar_inativas %}checked{% endif %} />
+            Mostrar inativas
+          </label>
+          <button class="btn btn-primary text-xs md:text-sm px-3 py-2 md:w-auto w-full" type="submit">Filtrar</button>
+        </form>
+        <a href="{% url 'viaturas:criar' %}" class="btn btn-outline text-xs md:text-sm px-3 py-2 md:w-auto w-full flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" /></svg>
+          Adicionar
+        </a>
+      </div>
+    </div>
+    <div class="p-4">
+      {# Mobile: cards #}
+      <div class="md:hidden space-y-3">
+        {% for v in viaturas %}
+          <div class="bg-white border rounded-xl p-3 shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs text-slate-500">Viatura</div>
+                <div class="mt-1 font-semibold">{{ v.prefixo }}
+                  {% with count=v.avarias_rel|default:0 %}
+                    {% if count %}
+                      <span class="ml-1 inline-flex items-center justify-center bg-rose-600 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 align-middle" title="Avarias em aberto">{{ count }}</span>
+                    {% endif %}
+                  {% endwith %}
+                  <span class="text-slate-500">•</span> <span class="truncate">{{ v.placa|default:"—" }}</span>
+                </div>
+              </div>
+              <div class="shrink-0">
+                <span class="badge {{ v.badge_css }} text-[11px]">
+                  {% if v.status == "FUNC" %}Em funcionamento{% elif v.status == "MANU" %}Em manutenção{% else %}Baixada{% endif %}
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-2 space-y-1 text-sm break-words">
+              <div class="flex justify-between gap-3"><span class="text-slate-500">KM atual</span><span>{{ v.km_atual|intcomma }}</span></div>
+              <div class="flex justify-between gap-3"><span class="text-slate-500">Próx. óleo</span><span>{% if v.km_prox_troca_oleo %}{{ v.km_prox_troca_oleo|intcomma }}{% else %}—{% endif %}</span></div>
+              <div class="flex justify-between gap-3"><span class="text-slate-500">Próx. revisão</span><span>{% if v.km_prox_revisao %}{{ v.km_prox_revisao|intcomma }}{% else %}—{% endif %}</span></div>
+              {% if v.pendente_troca_oleo or v.pendente_revisao %}
+                <div class="flex justify-between gap-3"><span class="text-slate-500">Manutenção</span><span class="badge badge-warning">Pendente</span></div>
+              {% endif %}
+              <div class="flex justify-between gap-3"><span class="text-slate-500">Avarias</span>
+                <span>
+                  {% with count=v.avarias_rel|default:0 %}
+                    <a href="{% url 'viaturas:avarias' v.pk %}"
+                       class="px-2 py-0.5 rounded text-[11px] {% if count %}bg-rose-50 text-rose-700 hover:bg-rose-100{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+                       Ver ({{ count }})
+                    </a>
+                  {% endwith %}
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <a href="{% url 'viaturas:editar' v.pk %}" class="inline-flex items-center justify-center h-8 px-3 border rounded bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs">Editar</a>
+              <a href="{% url 'viaturas:observacoes' v.pk %}" class="inline-flex items-center justify-center h-8 px-3 border rounded bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs">Observações</a>
+              {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                <form method="post" action="{% url 'viaturas:excluir' v.pk %}" onsubmit="return confirm('Excluir a viatura {{ v.prefixo }}? Esta ação não pode ser desfeita.');" class="col-span-2">
+                  {% csrf_token %}
+                  <button type="submit" class="w-full inline-flex items-center justify-center h-8 px-3 rounded border bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs">Excluir</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center text-slate-500">Nenhuma viatura.</div>
+        {% endfor %}
+      </div>
+
+      {# Desktop: tabela #}
+      <div class="hidden md:block overflow-x-auto rounded-xl border">
+        <table class="min-w-full text-[13px] align-top">
+          <thead class="bg-slate-50 border-b text-slate-700 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="p-2 text-left border">Prefixo</th>
+              <th class="p-2 text-left border">Placa</th>
+              <th class="p-2 text-left border">Status</th>
+              <th class="p-2 text-left border whitespace-nowrap">KM atual</th>
+              <th class="p-2 text-left border whitespace-nowrap">Próx. óleo</th>
+              <th class="p-2 text-left border whitespace-nowrap">Próx. revisão</th>
+              <th class="p-2 text-left border whitespace-nowrap">Avarias</th>
+              <th class="p-2 text-left border">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in viaturas %}
+              <tr class="hover:bg-slate-50">
+                <td class="p-2 border font-medium">
+                  {{ v.prefixo }}
+                  {% with count=v.avarias_rel|default:0 %}
+                    {% if count %}
+                      <span class="ml-1 inline-flex items-center justify-center bg-rose-600 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 align-middle" title="Avarias em aberto">{{ count }}</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+                <td class="p-2 border">{{ v.placa|default:"—" }}</td>
+                <td class="p-2 border"><span class="badge {{ v.badge_css }} text-[11px]">
+                  {% if v.status == "FUNC" %}Em funcionamento{% elif v.status == "MANU" %}Em manutenção{% else %}Baixada{% endif %}
+                </span></td>
+                <td class="p-2 border">
+                  {{ v.km_atual|intcomma }}
+                  {% if v.pendente_troca_oleo or v.pendente_revisao %}
+                    <span class="badge badge-warning ml-1">Manutenção pendente</span>
+                  {% endif %}
+                </td>
+                <td class="p-2 border">{% if v.km_prox_troca_oleo %}{{ v.km_prox_troca_oleo|intcomma }}{% else %}—{% endif %}</td>
+                <td class="p-2 border">{% if v.km_prox_revisao %}{{ v.km_prox_revisao|intcomma }}{% else %}—{% endif %}</td>
+                <td class="p-2 border">
+                  {% with count=v.avarias_rel|default:0 %}
+                    <a href="{% url 'viaturas:avarias' v.pk %}"
+                       class="px-2 py-1 rounded text-xs {% if count %}bg-rose-50 text-rose-700 hover:bg-rose-100{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                       Ver ({{ count }})
+                    </a>
+                  {% endwith %}
+                </td>
+                <td class="p-2 border">
+                  <div class="flex flex-wrap gap-1">
+                    <a href="{% url 'viaturas:editar' v.pk %}" class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">Editar</a>
+                    <a href="{% url 'viaturas:observacoes' v.pk %}" class="px-2 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 text-xs">Observações</a>
+                    {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                      <form method="post" action="{% url 'viaturas:excluir' v.pk %}" onsubmit="return confirm('Excluir a viatura {{ v.prefixo }}? Esta ação não pode ser desfeita.');" class="inline-block">
+                        {% csrf_token %}
+                        <button type="submit" class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs">Excluir</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8" class="p-4 text-sm opacity-70">Nenhuma viatura.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if page_obj %}
+        <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs md:text-sm">
+          <div>
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            ({{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }})
+          </div>
+          <div class="flex flex-wrap gap-1">
+            {% if page_obj.has_previous %}
+              <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if mostrar_inativas %}&inativas=1{% endif %}">«</a>
+              <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if mostrar_inativas %}&inativas=1{% endif %}">‹</a>
+            {% else %}
+              <span class="px-2 py-1 border rounded opacity-40 select-none">«</span>
+              <span class="px-2 py-1 border rounded opacity-40 select-none">‹</span>
+            {% endif %}
+            <span class="px-2 py-1 border rounded bg-slate-50 select-none">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+              <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if mostrar_inativas %}&inativas=1{% endif %}">›</a>
+              <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if mostrar_inativas %}&inativas=1{% endif %}">»</a>
+            {% else %}
+              <span class="px-2 py-1 border rounded opacity-40 select-none">›</span>
+              <span class="px-2 py-1 border rounded opacity-40 select-none">»</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

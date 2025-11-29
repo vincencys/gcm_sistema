@@ -1,0 +1,46 @@
+
+{% extends "_layout/base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}CECOM • Viaturas em operação{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-3">CECOM • Viaturas / Talões</h1>
+<form method="get" class="grid md:grid-cols-4 gap-3 mb-4">
+  {{ filter.form|crispy }}
+  <div class="col-span-4">
+    <button class="btn btn-primary">Filtrar</button>
+    <a href="." class="btn">Limpar</a>
+  </div>
+</form>
+<div class="bg-white rounded-lg border overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead><tr class="bg-gray-50">
+      <th class="px-3 py-2 text-left">Viatura</th>
+      <th class="px-3 py-2">Equipe</th>
+      <th class="px-3 py-2">Turno</th>
+      <th class="px-3 py-2">Encarregado</th>
+      <th class="px-3 py-2">Início</th>
+      <th class="px-3 py-2">KM Início</th>
+      <th class="px-3 py-2">Status</th>
+      <th class="px-3 py-2"></th>
+    </tr></thead>
+    <tbody>
+      {% for t in page %}
+      <tr class="border-t">
+        <td class="px-3 py-2">{{ t.viatura.prefixo }}</td>
+        <td class="px-3 py-2 text-center">{{ t.equipe }}</td>
+        <td class="px-3 py-2 text-center">{{ t.turno }}</td>
+        <td class="px-3 py-2">{{ t.encarregado.get_full_name|default:t.encarregado.username }}</td>
+        <td class="px-3 py-2">{{ t.inicio|date:"d/m/Y H:i" }}</td>
+        <td class="px-3 py-2 text-right">{{ t.km_inicio }}</td>
+        <td class="px-3 py-2">{{ t.status }}</td>
+        <td class="px-3 py-2 text-right"><a class="link" href="{% url 'taloes:detalhe' t.id %}">Editar</a></td>
+      </tr>
+      {% empty %}
+      <tr><td class="px-3 py-4" colspan="8">Nenhum talão encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="mt-3 text-sm opacity-70">Total: {{ page.paginator.count }}</div>
+{% endblock %}
+

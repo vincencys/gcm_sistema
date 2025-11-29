@@ -1,0 +1,125 @@
+/* -------- Barra de ações -------- */
+.action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1rem;
+  background: #0f172a; /* slate-900 */
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+.action-bar .left { justify-self: start; }
+.action-bar .center { justify-self: center; text-align: center; display:flex; flex-direction: column; }
+.action-bar .center small { color: #a8b3cf; }
+.action-bar .right { justify-self: end; display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* -------- Botões -------- */
+.btn { border: none; border-radius: .6rem; padding: .55rem .9rem; font-weight: 600; cursor: pointer; }
+.btn.primary { background: #2563eb; color: #fff; }
+.btn.success { background: #16a34a; color: #fff; }
+.btn.danger { background: #dc2626; color: #fff; }
+.btn.outline { background: transparent; border: 2px solid rgba(255,255,255,.6); color: #fff; }
+.btn.ghost { background: transparent; color: #fff; }
+.btn:hover { filter: brightness(1.05); }
+
+/* -------- Botões (novo padrão claro com contorno preto) -------- */
+/* Mantém compatibilidade: templates usam "btn btn-outline|btn-primary|btn-secondary" */
+.btn { display: inline-flex; align-items: center; gap: .4rem; line-height: 1; }
+.btn:focus-visible { outline: 2px solid #0f172a; outline-offset: 2px; }
+.btn-sm { padding: .35rem .55rem; border-radius: .5rem; font-size: .82rem; font-weight: 600; }
+.btn-outline { background: #fff; color: #0f172a; border: 1.5px solid #0f172a; border-radius: .6rem; padding: .5rem .8rem; font-weight: 600; }
+.btn-outline:hover { background: #f8fafc; }
+.btn-primary { background: #0f172a; color: #fff; border: 1.5px solid #0f172a; border-radius: .6rem; padding: .5rem .8rem; font-weight: 600; }
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-secondary { background: #fff; color: #0f172a; border: 1.5px solid #0f172a; border-radius: .6rem; padding: .5rem .8rem; font-weight: 600; }
+.btn-secondary:hover { background: #f8fafc; }
+.btn-danger { background: #dc2626; color: #fff; border: 1.5px solid #b91c1c; }
+.btn-ghost { background: transparent; color: #0f172a; padding: .5rem .8rem; }
+
+/* -------- Layout -------- */
+.container { max-width: 1100px; margin: 1rem auto; padding: 0 1rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .8rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .8rem; }
+.col-span-2 { grid-column: span 2 / span 2; }
+.col-span-3 { grid-column: span 3 / span 3; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: .8rem; padding: .8rem; }
+.mb-2 { margin-bottom: .8rem; }
+
+.ro { background: #f8fafc; border: 1px dashed #e5e7eb; border-radius: .6rem; padding: .6rem .7rem; }
+label { display:block; font-size: .9rem; color: #334155; margin-bottom: .25rem; }
+input[type="text"], input[type="number"], input[type="file"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], input[type="datetime-local"], select, textarea { 
+  width: 100%; 
+  border: 1px solid #cbd5e1; 
+  border-radius: .5rem; 
+  padding: .65rem .75rem; 
+  background: #fff;
+  font-size: .95rem;
+  line-height: 1.5;
+  transition: border-color 0.2s ease;
+}
+select {
+  min-height: 42px;
+  padding-right: 2.5rem;
+}
+input[type="text"]:focus, input[type="number"]:focus, input[type="file"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="date"]:focus, input[type="time"]:focus, input[type="datetime-local"]:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* -------- Campos padrão (.input) para inputs/selects -------- */
+.input { border: 1px solid #cbd5e1; border-radius: .5rem; padding: .5rem .6rem; background: #fff; color: #0f172a; min-height: 2.4rem; }
+select.input { padding-right: 2rem; }
+
+/* -------- Tabs -------- */
+.tabs { display: flex; gap: .4rem; overflow:auto; padding-bottom:.4rem; border-bottom: 1px solid #e5e7eb; margin-bottom: .8rem; }
+.tab { padding: .45rem .7rem; border-radius: .6rem; text-decoration: none; color: #0f172a; background: #e2e8f0; white-space: nowrap; }
+.tab.active { background: #2563eb; color: #fff; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* -------- Checklist -------- */
+.checklist-item .ck { display:flex; gap:.6rem; align-items:center; font-weight:600; }
+.checklist-item input[type="text"] { margin-top:.5rem; }
+
+/* -------- Tabela -------- */
+.table-responsive { overflow:auto; }
+.table { width:100%; border-collapse: collapse; background:#fff; border-radius:.8rem; overflow:hidden; }
+.table th, .table td { border-bottom:1px solid #e5e7eb; padding:.6rem .7rem; text-align:left; }
+.table thead th { background:#f1f5f9; }
+
+/* -------- Helpers -------- */
+.hidden { display:none; }
+.muted { color:#64748b; }
+
+/* -------- Ajustes Choices.js (selects melhor formatados) -------- */
+.choices { width: 100%; }
+.choices__inner { min-height: 2.4rem; padding: .4rem .55rem; line-height: 1.1; font-size: .9rem; }
+/* Exibe valor selecionado em uma linha com ellipsis */
+.choices__list--single .choices__item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Opções do dropdown também em uma linha, com fonte menor */
+.choices__list--dropdown .choices__item { white-space: nowrap; line-height: 1.2; font-size: .9rem; }
+.choices__placeholder { opacity: .7; }
+
+/* -------- Print -------- */
+@media print {
+  .action-bar, .tabs, .btn { display:none !important; }
+  .container { max-width: 100%; }
+}
+
+/* -------- Mobile -------- */
+@media (max-width: 730px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .action-bar { grid-template-columns: 1fr 1fr; }
+  .action-bar .center { grid-column: 1 / -1; order: -1; }
+  .action-bar .right { justify-self: end; }
+}

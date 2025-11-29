@@ -1,0 +1,19 @@
+{% extends "_layout/base.html" %}
+{% block title %}Abrir Viatura{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Abrir Viatura</h1>
+<form method="post" class="space-y-3">
+  {% csrf_token %}
+  <label class="block text-sm">Viatura (opcional)</label>
+  <select name="viatura_id" class="border rounded p-2 w-full">
+    <option value="">— Sem viatura —</option>
+    {% for v in viaturas %}
+      <option value="{{ v.id }}">{{ v.prefixo }}</option>
+    {% endfor %}
+  </select>
+  <div>
+    <button class="btn btn-primary">Abrir talão</button>
+    <a href="{% url 'taloes:lista' %}" class="btn">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

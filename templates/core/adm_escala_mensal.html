@@ -1,0 +1,89 @@
+{% extends "_layout/base.html" %}
+{% load core_extras %}
+{% block title %}Escala Mensal{% endblock %}
+{% block content %}
+<!-- Header -->
+<div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+	<div class="px-4 py-3 flex items-center justify-between" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+		<div class="flex items-center gap-2">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V8H3v11a2 2 0 002 2z"/></svg>
+			<h1 class="text-xl font-bold text-slate-800">Escala Mensal</h1>
+		</div>
+	</div>
+</div>
+
+<form method="get" class="mb-4 flex items-center gap-2">
+	<label class="text-sm text-slate-700">Ano</label>
+	<select name="ano" class="border rounded px-2 py-1" onchange="this.form.submit()">
+		{% for a in anos %}
+			<option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+		{% endfor %}
+	</select>
+	<noscript>
+		<button class="px-3 py-1 rounded bg-slate-200">Ir</button>
+	</noscript>
+</form>
+
+<div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+		{% for m in meses %}
+	<div class="bg-white border rounded p-3">
+		<div class="flex items-center justify-between mb-2">
+				<div class="font-medium">{{ m.nome }}</div>
+				<div class="text-xs text-slate-500">{{ m.num }}/{{ ano }}</div>
+		</div>
+
+				{% if m.registro %}
+			<div class="space-y-2">
+						<div class="aspect-video bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+							{% if m.registro.arquivo.url|is_image %}
+								<img src="{{ m.registro.arquivo.url }}" alt="Escala {{ m.num }}/{{ ano }}" class="max-h-40 object-contain cursor-zoom-in" data-lightbox-src="{{ m.registro.arquivo.url }}"/>
+							{% elif m.registro.arquivo.url|is_pdf %}
+								<a href="{{ m.registro.arquivo.url }}" target="_blank" class="flex items-center gap-2 text-slate-700">
+									<span>📄</span> <span>PDF - {{ m.registro.arquivo.url|filename }}</span>
+								</a>
+							{% else %}
+								<a href="{{ m.registro.arquivo.url }}" target="_blank" class="text-slate-700 underline">{{ m.registro.arquivo.url|filename }}</a>
+							{% endif %}
+						</div>
+						<div class="text-xs text-slate-500">Atualizado em {{ m.registro.updated_at|date:"d/m/Y H:i" }} · {{ m.registro.arquivo.url|filename }}</div>
+				<div class="flex gap-2">
+					<a href="{{ m.registro.arquivo.url }}" target="_blank" class="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Abrir</a>
+					{% if can_manage %}
+					<a href="{% url 'core:escala_mensal_remover' ano=ano mes=m.num %}" class="px-3 py-1 rounded bg-rose-600 text-white text-sm" onclick="return confirm('Remover anexo de {{ m.nome }} / {{ ano }}?');">Remover</a>
+					{% endif %}
+				</div>
+			</div>
+		{% else %}
+				{% if can_manage %}
+				<form action="{% url 'core:escala_mensal_upload' %}" method="post" enctype="multipart/form-data" class="space-y-2">
+				{% csrf_token %}
+				<input type="hidden" name="ano" value="{{ ano }}"/>
+						<input type="hidden" name="mes" value="{{ m.num }}"/>
+								<input type="file" name="arquivo" accept="image/*,.pdf" class="block w-full text-sm" required />
+					<button type="submit" class="px-3 py-1 rounded bg-emerald-600 text-white text-sm">Inserir anexo</button>
+				</form>
+				{% else %}
+				<p class="text-xs text-slate-500">Sem anexo.</p>
+				{% endif %}
+		{% endif %}
+	</div>
+	{% endfor %}
+</div>
+
+			{# Lightbox simples para imagens #}
+			<div id="lb" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50" onclick="this.classList.add('hidden')">
+				<img id="lb-img" src="" alt="Escala" class="max-w-[95vw] max-h-[90vh] object-contain"/>
+				<button class="absolute top-4 right-4 text-white text-2xl" aria-label="Fechar">×</button>
+				<script>
+					document.addEventListener('click', function(e){
+						const img = e.target.closest('img[data-lightbox-src]');
+						if(img){
+							const lb = document.getElementById('lb');
+							const lbimg = document.getElementById('lb-img');
+							lbimg.src = img.dataset.lightboxSrc;
+							lb.classList.remove('hidden');
+						}
+					});
+				</script>
+			</div>
+{% endblock %}

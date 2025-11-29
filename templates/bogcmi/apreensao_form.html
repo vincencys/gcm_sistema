@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Apreensão{% endblock %}
+{% block content %}
+<div class="flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-col gap-2 sm:flex-row sm:gap-0">
+        <h2 class="text-xl font-semibold text-indigo-800">{% if form.instance.pk %}Editar Apreensão{% else %}Nova Apreensão{% endif %}</h2>
+        <a href="{% url 'bogcmi:apreensao_lista' %}{% if request.GET.bo %}?bo={{ request.GET.bo }}{% endif %}" class="text-sm text-indigo-600 hover:underline w-full sm:w-auto text-center">Voltar à Lista</a>
+    </div>
+
+    <form method="post" class="bg-white border rounded-xl shadow p-4 md:p-6 space-y-6" novalidate>
+        {% csrf_token %}
+
+        <!-- Seção Dados do Item -->
+        <div>
+            <h3 class="text-[12px] font-semibold tracking-wide uppercase text-indigo-700/80 mb-3">Dados do Item</h3>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Descrição</label>
+                    <input type="text" name="descricao" maxlength="255" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{{ form.descricao.value|default:'' }}" required>
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Unidade Medida</label>
+                    <input type="text" name="unidade_medida" maxlength="50" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{{ form.unidade_medida.value|default:'' }}" placeholder="Ex: UN, KG" required>
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Quantidade</label>
+                    <input type="number" name="quantidade" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{{ form.quantidade.value|default:'' }}" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção Destino & Recebimento -->
+        <div class="pt-2 border-t border-slate-200">
+            <h3 class="text-[12px] font-semibold tracking-wide uppercase text-indigo-700/80 mb-3">Destino & Recebimento</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Destino</label>
+                    <input type="text" name="destino" maxlength="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{{ form.destino.value|default:'' }}" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Recebedor</label>
+                    <input type="text" name="recebedor" maxlength="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{{ form.recebedor.value|default:'' }}" required>
+                </div>
+            </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">
+            <p class="font-semibold mb-1">Corrija os erros abaixo:</p>
+            <ul class="list-disc list-inside space-y-1">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}<li><strong>{{ field }}:</strong> {{ error }}</li>{% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Ações -->
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button type="submit" class="px-6 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow-sm transition-colors w-full sm:w-auto">Salvar</button>
+            <a href="{% url 'bogcmi:apreensao_lista' %}{% if request.GET.bo %}?bo={{ request.GET.bo }}{% endif %}" class="px-6 py-2.5 rounded-lg bg-gray-400 hover:bg-gray-500 text-white font-semibold shadow-sm transition-colors w-full sm:w-auto text-center">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% load tz %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verificação do Relatório de Plantão</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 20px; color: #222; }
+    .card { max-width: 780px; margin: 0 auto; padding: 18px 20px; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    .ok { color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 8px 10px; border-radius: 8px; display: inline-block; }
+    .muted { color: #6b7280; font-size: 13px; }
+    .row { margin: 10px 0; }
+    .label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .val { font-weight: 600; }
+    .token { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 14px; letter-spacing: .04em; word-break: break-all; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Verificação do Relatório de Plantão</h1>
+    {% if ok %}
+    <div class="ok">Documento autêntico — verificado com sucesso</div>
+    {% else %}
+    <div class="erro">Token inválido</div>
+    {% endif %}
+
+    <div class="row muted" style="margin-top:12px;">Carimbo desta verificação: {% now "d/m/Y H:i" %}</div>
+
+    <div class="row" style="margin-top: 14px;">
+      <div class="label">Token</div>
+      <div class="token">{{ token }}</div>
+    </div>
+
+    <div class="grid" style="margin-top: 10px;">
+      <div>
+        <div class="label">Plantão</div>
+        <div class="val">#{{ plantao.id }}</div>
+      </div>
+      <div>
+        <div class="label">Status</div>
+        <div class="val">{% if ativo %}ATIVO{% else %}ENCERRADO{% endif %}</div>
+      </div>
+      <div>
+        <div class="label">Início</div>
+        <div class="val">{{ inicio|localtime|date:"d/m/Y H:i" }}</div>
+      </div>
+      <div>
+        <div class="label">Encerrado em</div>
+        <div class="val">{% if encerrado_em %}{{ encerrado_em|localtime|date:"d/m/Y H:i" }}{% else %}—{% endif %}</div>
+      </div>
+      <div>
+        <div class="label">Iniciado por</div>
+        <div class="val">{{ iniciado_por.get_full_name|default:iniciado_por.username }}</div>
+      </div>
+      <div>
+        <div class="label">Viatura</div>
+        <div class="val">{% if viatura %}{{ viatura }}{% else %}—{% endif %}</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 14px;">
+      <div class="label">Participantes</div>
+      {% if participantes %}
+        <ul style="margin:6px 0 0 18px; padding:0;">
+          {% for lbl, nome in participantes %}
+            <li>{{ lbl }}: {{ nome }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="muted">(sem participantes cadastrados)</div>
+      {% endif %}
+    </div>
+
+    <div class="row muted" style="margin-top: 18px; font-size: 12px;">
+      Para conferir, compare este token com o impresso abaixo do QR code no PDF.
+    </div>
+  </div>
+</body>
+</html>

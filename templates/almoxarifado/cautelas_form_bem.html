@@ -1,0 +1,78 @@
+{% extends "_layout/base.html" %}
+{% block title %}{{ is_edit|yesno:"Editar Bem,Novo Bem" }} - Cautelas{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">{{ is_edit|yesno:"Editar Bem,Novo Bem" }}</h1>
+    <p class="text-sm text-slate-600 mt-1">Cadastre ou edite informações do bem patrimonial</p>
+  </div>
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+    
+    <!-- Card: Dados do Bem -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          Dados do Bem
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Tipo</label>
+            {{ form.tipo }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Nome</label>
+            {{ form.nome }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Tombamento</label>
+            {{ form.tombamento }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Nº Série</label>
+            {{ form.numero_serie }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Calibre</label>
+            {{ form.calibre }}
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Observações</label>
+          {{ form.observacoes }}
+        </div>
+
+        <div class="flex items-center gap-2">
+          {{ form.ativo }}
+          <label class="text-sm font-medium text-slate-700">Ativo</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Ações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Salvar
+        </button>
+        <a href="{% url 'core:almoxarifado:cautelas' %}" class="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "_layout/base.html" %}
+{% block title %}Despachos de Ocorrências{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'cecom:painel' %}" class="text-blue-600 hover:underline">← Voltar ao Painel</a>
+      <h1 class="text-xl font-semibold">Despachos de Ocorrências</h1>
+    </div>
+    
+  </div>
+
+  {# Mobile: cards empilhados #}
+  <div class="md:hidden space-y-3">
+    {% for despacho in page_obj.object_list %}
+      <div class="border rounded-xl bg-white p-3 shadow-sm">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-xs text-slate-500">#</div>
+            <div class="mt-1 font-semibold">#{{ despacho.pk }} · VTR {{ despacho.viatura.prefixo }}</div>
+          </div>
+          <div class="shrink-0">
+            {% if despacho.status == 'PENDENTE' %}
+              <span class="px-2 py-1 rounded bg-yellow-100 text-yellow-800 text-xs font-medium">Pendente</span>
+            {% elif despacho.status == 'ACEITO' %}
+              <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">Aceito</span>
+            {% elif despacho.status == 'EM_ANDAMENTO' %}
+              <span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+            {% elif despacho.status == 'FINALIZADO' %}
+              <span class="px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+            {% elif despacho.status == 'CANCELADO' %}
+              <span class="px-2 py-1 rounded bg-red-100 text-red-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+            {% elif despacho.status == 'RECUSADO' %}
+              <span class="px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-2 space-y-1 text-sm">
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Ocorrência</span><span class="text-right max-w-[60%] break-words">{% if despacho.cod_natureza %}{{ despacho.cod_natureza }}{% if despacho.natureza %} — {{ despacho.natureza|truncatechars:60 }}{% endif %}{% else %}-{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Endereço</span><span class="text-right max-w-[60%] break-words">{{ despacho.endereco|default:'-' }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Solicitante</span>
+            <span class="text-right max-w-[60%] break-words">
+              {% if despacho.nome_solicitante %}{{ despacho.nome_solicitante }}{% else %}-{% endif %}
+              {% if despacho.telefone_solicitante %}<span class="block text-[11px] text-slate-500">{{ despacho.telefone_solicitante }}</span>{% endif %}
+            </span>
+          </div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Despachado</span><span class="text-right max-w-[60%] break-words">{{ despacho.despachado_em|date:"d/m H:i" }}<span class="block text-[11px] text-slate-500">por {{ despacho.despachado_por.get_full_name|default:despacho.despachado_por.username }}</span></span></div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          {% if despacho.status == 'PENDENTE' or despacho.status == 'EM_ANDAMENTO' or despacho.status == 'ACEITO' %}
+            <select class="text-xs border rounded px-2 py-1 select-status" data-despacho-id="{{ despacho.pk }}">
+              <option value="">Alterar status...</option>
+              {% if despacho.status == 'PENDENTE' %}
+                <option value="ACEITO">Aceitar (Iniciar)</option>
+                <option value="RECUSADO">Recusar</option>
+                <option value="CANCELADO">Cancelar</option>
+              {% elif despacho.status == 'ACEITO' %}
+                <option value="EM_ANDAMENTO">Iniciar (Em Andamento)</option>
+                <option value="CANCELADO">Cancelar</option>
+              {% elif despacho.status == 'EM_ANDAMENTO' %}
+                <option value="FINALIZADO">Finalizar</option>
+                <option value="CANCELADO">Cancelar</option>
+              {% endif %}
+            </select>
+          {% elif despacho.status == 'FINALIZADO' and not despacho.arquivado %}
+            <button data-arquivar-id="{{ despacho.pk }}" class="btn-arquivar px-3 py-1 bg-slate-600 text-white rounded text-xs hover:bg-slate-700">📁 Arquivar</button>
+          {% elif despacho.status == 'CANCELADO' and not despacho.arquivado %}
+            <button data-arquivar-id="{{ despacho.pk }}" class="btn-arquivar px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">📁 Arquivar</button>
+          {% elif despacho.status == 'RECUSADO' and not despacho.arquivado %}
+            <button data-arquivar-id="{{ despacho.pk }}" class="btn-arquivar px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700">📁 Arquivar</button>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500">Nenhum despacho encontrado.</div>
+    {% endfor %}
+  </div>
+
+  <div class="hidden md:block bg-white border rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b text-xs uppercase tracking-wide">
+          <tr>
+            <th class="p-2 text-left border-r last:border-r-0">#</th>
+            <th class="p-2 text-left border-r last:border-r-0">Viatura</th>
+            <th class="p-2 text-left border-r last:border-r-0">Ocorrência</th>
+            <th class="p-2 text-left border-r last:border-r-0">Status</th>
+            <th class="p-2 text-left border-r last:border-r-0">Endereço</th>
+            <th class="p-2 text-left border-r last:border-r-0">Solicitante</th>
+            <th class="p-2 text-left border-r last:border-r-0">Despachado</th>
+            <th class="p-2 text-left border-r last:border-r-0">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="align-top">
+          {% for despacho in page_obj.object_list %}
+            <tr class="border-b hover:bg-slate-50">
+              <td class="p-2 border-r last:border-r-0">#{{ despacho.pk }}</td>
+              <td class="p-2 border-r last:border-r-0 font-medium">{{ despacho.viatura.prefixo }}</td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.cod_natureza %}
+                  <span class="font-mono text-xs">{{ despacho.cod_natureza }}</span>
+                  {% if despacho.natureza %}<br><span class="text-xs text-slate-600">{{ despacho.natureza|truncatechars:40 }}</span>{% endif %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.status == 'PENDENTE' %}
+                  <span class="px-2 py-1 rounded bg-yellow-100 text-yellow-800 text-xs font-medium">Pendente</span>
+                {% elif despacho.status == 'ACEITO' %}
+                  <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">Aceito</span>
+                {% elif despacho.status == 'EM_ANDAMENTO' %}
+                  <span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+                {% elif despacho.status == 'FINALIZADO' %}
+                  <span class="px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+                {% elif despacho.status == 'CANCELADO' %}
+                  <span class="px-2 py-1 rounded bg-red-100 text-red-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+                {% elif despacho.status == 'RECUSADO' %}
+                  <span class="px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">{{ despacho.endereco|truncatechars:40 }}</td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.nome_solicitante %}
+                  {{ despacho.nome_solicitante }}
+                  {% if despacho.telefone_solicitante %}
+                    <br><span class="text-xs text-slate-600">{{ despacho.telefone_solicitante }}</span>
+                  {% endif %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {{ despacho.despachado_em|date:"d/m H:i" }}
+                <br><span class="text-xs text-slate-600">por {{ despacho.despachado_por.get_full_name|default:despacho.despachado_por.username }}</span>
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.status == 'PENDENTE' or despacho.status == 'EM_ANDAMENTO' or despacho.status == 'ACEITO' %}
+                  <select class="text-xs border rounded px-2 py-1 select-status" data-despacho-id="{{ despacho.pk }}">
+                    <option value="">Alterar status...</option>
+                    {% if despacho.status == 'PENDENTE' %}
+                      <option value="ACEITO">Aceitar (Iniciar)</option>
+                      <option value="RECUSADO">Recusar</option>
+                      <option value="CANCELADO">Cancelar</option>
+                    {% elif despacho.status == 'ACEITO' %}
+                      <option value="EM_ANDAMENTO">Iniciar (Em Andamento)</option>
+                      <option value="CANCELADO">Cancelar</option>
+                    {% elif despacho.status == 'EM_ANDAMENTO' %}
+                      <option value="FINALIZADO">Finalizar</option>
+                      <option value="CANCELADO">Cancelar</option>
+                    {% endif %}
+                  </select>
+                {% elif despacho.status == 'FINALIZADO' and not despacho.arquivado %}
+                  <button data-arquivar-id="{{ despacho.pk }}" class="btn-arquivar px-3 py-1 bg-slate-600 text-white rounded text-xs hover:bg-slate-700">📁 Arquivar</button>
+                {% elif despacho.status == 'CANCELADO' and not despacho.arquivado %}
+                  <button data-arquivar-id="{{ despacho.pk }}" class="btn-arquivar px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">📁 Arquivar</button>
+                {% elif despacho.status == 'RECUSADO' and not despacho.arquivado %}
+                  <button data-arquivar-id="{{ despacho.pk }}" class="btn-arquivar px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700">📁 Arquivar</button>
+                {% else %}
+                  <span class="text-xs text-slate-500">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="p-6 text-center text-slate-500">
+                Nenhum despacho encontrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginação -->
+  {% include '_partials/pagination.html' with page_obj=page_obj %}
+</div>
+
+<script>
+function atualizarStatus(despachoId, novoStatus) {
+  if (!novoStatus) return;
+  
+  fetch(`{% url 'cecom:despacho_status' pk=0 %}`.replace('0', despachoId), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: `status=${novoStatus}`
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.sucesso) {
+      location.reload();
+    } else {
+      alert('Erro ao atualizar status: ' + (data.erro || 'Erro desconhecido'));
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro ao atualizar status');
+  });
+}
+
+function arquivarDespacho(despachoId) {
+  if (confirm('Confirma o arquivamento deste despacho? Ele será movido para a aba "Arquivados".')) {
+    fetch(`/cecom/despacho/${despachoId}/arquivar/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.sucesso) {
+        alert(data.mensagem);
+        location.reload();
+      } else {
+        alert('Erro: ' + (data.erro || 'Erro desconhecido'));
+      }
+    })
+    .catch(error => {
+      console.error('Erro:', error);
+      alert('Erro ao arquivar despacho');
+    });
+  }
+}
+
+// Bind events sem inline handlers
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.select-status').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const id = sel.getAttribute('data-despacho-id');
+      atualizarStatus(id, sel.value);
+    });
+  });
+  document.querySelectorAll('[data-arquivar-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      arquivarDespacho(btn.getAttribute('data-arquivar-id'));
+    });
+  });
+});
+</script>
+{% endblock %}

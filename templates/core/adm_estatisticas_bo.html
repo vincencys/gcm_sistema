@@ -1,0 +1,274 @@
+{% extends "_layout/base.html" %}
+{% block title %}Estatísticas - BO (BOGCMI){% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-3 md:px-0">
+  <div class="mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold">Estatísticas · BO (BOGCMI)</h1>
+        <p class="text-sm md:text-base text-slate-600">Totais por período, rankings e gráficos. Abas: Dia, Mês, Semestre, Ano.</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <a class="btn btn-outline text-xs md:text-sm" href="{% url 'core:estatisticas' %}">← Estatísticas</a>
+          <a class="btn btn-outline text-xs md:text-sm" href="{% url 'core:estatisticas_bo_codigo' %}">BO por Código</a>
+          <a class="btn btn-outline text-xs md:text-sm" href="{% url 'core:estatisticas_bo_usuario' %}">BO por Usuário</a>
+          <a class="btn btn-outline text-xs md:text-sm" href="{% url 'core:estatisticas_bo_mapa' %}?de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}">Mapa de Ocorrências</a>
+        </div>
+      </div>
+      <form method="get" class="bg-white border rounded-xl shadow-sm px-3 py-3 flex flex-col md:flex-row items-stretch md:items-end gap-3 w-full md:w-auto">
+        <input type="hidden" name="tab" value="{{ tab }}" />
+        <div class="flex-1 md:flex-none">
+          <label class="block text-xs text-slate-500">De</label>
+          <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input w-full" />
+        </div>
+        <div class="flex-1 md:flex-none">
+          <label class="block text-xs text-slate-500">Até</label>
+          <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input w-full" />
+        </div>
+        <button class="btn btn-primary w-full md:w-auto" type="submit">Aplicar</button>
+      </form>
+    </div>
+
+    <!-- Abas -->
+    <div class="mt-4 flex gap-1 md:gap-2 overflow-x-auto pb-2">
+      {% for key,label in abas %}
+        <a href="?tab={{ key }}" class="px-3 py-1.5 rounded-md border text-xs md:text-sm whitespace-nowrap {% if tab == key %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Total de BOs</div><div class="text-xl md:text-2xl font-semibold">{{ total }}</div></div>
+    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Abertos (edição)</div><div class="text-xl md:text-2xl font-semibold">{{ abertos }}</div></div>
+    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Finalizados</div><div class="text-xl md:text-2xl font-semibold">{{ finalizados }}</div></div>
+    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Criados Offline</div><div class="text-xl md:text-2xl font-semibold">{{ offline }}</div></div>
+    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">DV Contra Mulher</div><div class="text-xl md:text-2xl font-semibold">{{ dv_total }}</div></div>
+    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Flagrantes</div><div class="text-xl md:text-2xl font-semibold">{{ flagrantes }}</div></div>
+  </div>
+
+  <!-- Exportações -->
+  <div class="mt-4 flex flex-wrap gap-2">
+    <a class="btn btn-secondary text-xs md:text-sm" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=detalhes">CSV (Detalhes)</a>
+    <a class="btn btn-secondary text-xs md:text-sm" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=ranking_codigos">CSV (Códigos)</a>
+    <a class="btn btn-secondary text-xs md:text-sm" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=ranking_usuarios">CSV (Usuários)</a>
+    <a class="btn btn-secondary text-xs md:text-sm" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=dvcm">CSV (DV)</a>
+    <a class="btn btn-secondary text-xs md:text-sm" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=flagrantes">CSV (Flagrantes)</a>
+    <a class="btn btn-primary text-xs md:text-sm" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=pdf">PDF</a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 lg:col-span-2">
+      <h2 class="font-semibold mb-3 text-sm md:text-base">Série por Dia ({{ de|date:'d/m/Y' }} a {{ ate|date:'d/m/Y' }})</h2>
+      <div class="w-full overflow-x-auto">
+        <canvas id="chartSerie" class="max-w-full"></canvas>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
+      <h2 class="font-semibold mb-3 text-sm md:text-base">Por Status</h2>
+      <div class="mb-4">
+        <canvas id="chartStatusPie"></canvas>
+      </div>
+      <div class="divide-y">
+        {% for row in por_status %}
+          <div class="flex items-center justify-between py-2 text-sm">
+            <div class="text-slate-700">{{ row.status }}</div>
+            <div class="font-semibold">{{ row.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
+    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
+      <h2 class="font-semibold mb-3 text-sm md:text-base">Ranking · Códigos de Ocorrência</h2>
+      <div class="mb-4">
+        <canvas id="chartCodigos"></canvas>
+      </div>
+      <div class="divide-y max-h-96 overflow-y-auto">
+        {% for row in ranking_codigos %}
+          <div class="flex items-center justify-between py-2 gap-2">
+            <div class="text-slate-700 text-xs md:text-sm truncate flex-1">{{ row.cod_natureza|default:'—' }} — {{ row.natureza|default:'(sem descrição)' }}</div>
+            <div class="font-semibold text-sm md:text-base shrink-0">{{ row.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
+      <h2 class="font-semibold mb-3 text-sm md:text-base">Top 5 Viaturas</h2>
+      <div class="divide-y">
+        {% for row in top_viaturas %}
+          <div class="flex items-center justify-between py-2">
+            <div class="text-slate-700 text-sm">{{ row.viatura__prefixo|default:row.viatura_id }}</div>
+            <div class="font-semibold">{{ row.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Ranking por Bairros -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
+    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
+      <h2 class="font-semibold mb-3 text-sm md:text-base">Ranking · Bairros</h2>
+      <div class="divide-y max-h-96 overflow-y-auto">
+        {% for row in ranking_bairros %}
+          <div class="flex items-center justify-between py-2 gap-2">
+            <div class="text-slate-700 text-xs md:text-sm truncate flex-1">{{ row.bairro }}</div>
+            <div class="font-semibold text-sm md:text-base shrink-0">{{ row.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
+      <h2 class="font-semibold mb-3 text-sm md:text-base">Códigos por Bairro</h2>
+      <div class="divide-y max-h-96 overflow-y-auto">
+        {% for r in bairros_codigos %}
+          <div class="py-2">
+            <div class="text-slate-700 text-xs md:text-sm">{{ r.bairro }}</div>
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-slate-600 text-xs md:text-sm truncate flex-1">{{ r.cod|default:'—' }} — {{ r.natureza|default:'(sem descrição)' }}</div>
+              <div class="font-semibold text-sm md:text-base shrink-0">{{ r.qtd }}</div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 mt-4 md:mt-6">
+    <h2 class="font-semibold mb-3 text-sm md:text-base">Ranking · Usuários (Encarregados)</h2>
+    <div class="mb-4">
+      <canvas id="chartUsuarios"></canvas>
+    </div>
+    <div class="overflow-x-auto -mx-3 md:mx-0">
+      <table class="min-w-full text-xs md:text-sm">
+        <thead>
+          <tr class="text-left text-slate-500">
+            <th class="py-2 pr-3 pl-3 md:pl-0">Usuário</th>
+            <th class="py-2 pr-3">Total</th>
+            <th class="py-2 pr-3">Top códigos</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          {% for u in users_ranking %}
+            <tr>
+              <td class="py-2 pr-3 pl-3 md:pl-0">{{ u.nome }}</td>
+              <td class="py-2 pr-3 font-semibold">{{ u.total }}</td>
+              <td class="py-2 pr-3">
+                <div class="flex flex-wrap gap-1">
+                  {% for c in u.top_codigos %}
+                    <span class="inline-flex items-center gap-1 text-[10px] md:text-xs bg-slate-100 border rounded px-1.5 md:px-2 py-0.5 md:py-1 whitespace-nowrap">
+                      {{ c.cod|default:'—' }} {% if c.natureza %}— {{ c.natureza|truncatewords:2 }}{% endif %}
+                      <span class="opacity-70">({{ c.qtd }})</span>
+                    </span>
+                  {% empty %}
+                    —
+                  {% endfor %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="py-3 text-slate-500" colspan="3">Sem registros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DV contra Mulher -->
+  <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 mt-4 md:mt-6">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-sm md:text-base">DV Contra Mulher</h2>
+      <a class="btn btn-secondary text-xs" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=dvcm">CSV</a>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
+      <div class="bg-rose-50 border border-rose-200 rounded p-3 md:p-4"><div class="text-rose-700 text-xs md:text-sm">Total DV</div><div class="text-xl md:text-2xl font-semibold text-rose-700">{{ dv_total }}</div></div>
+      <div class="bg-rose-50 border border-rose-200 rounded p-3 md:p-4"><div class="text-rose-700 text-xs md:text-sm">% no Período</div><div class="text-xl md:text-2xl font-semibold text-rose-700">{{ dv_percent }}%</div></div>
+      <div class="bg-white border rounded p-3 md:p-4"><div class="text-slate-500 text-xs md:text-sm">Flagrantes (geral)</div><div class="text-xl md:text-2xl font-semibold">{{ flagrantes }}</div></div>
+      <div class="bg-white border rounded p-3 md:p-4"><div class="text-slate-500 text-xs md:text-sm">BOs Totais</div><div class="text-xl md:text-2xl font-semibold">{{ total }}</div></div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+      <div>
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Top Códigos (DV)</h3>
+        <div class="divide-y text-xs md:text-sm">
+          {% for r in dv_por_codigo %}
+            <div class="flex items-center justify-between py-2 gap-2">
+              <span class="truncate flex-1">{{ r.cod_natureza|default:'—' }} — {{ r.natureza|default:'(sem descrição)' }}</span>
+              <span class="font-semibold shrink-0">{{ r.qtd }}</span>
+            </div>
+          {% empty %}
+            <div class="text-slate-500">Sem registros.</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Top Usuários (DV)</h3>
+        <div class="divide-y text-xs md:text-sm">
+          {% for r in dv_por_usuario %}
+            <div class="flex items-center justify-between py-2 gap-2">
+              <span class="truncate flex-1">{{ r.encarregado__first_name }} {{ r.encarregado__last_name }}{% if not r.encarregado__first_name and not r.encarregado__last_name %}{{ r.encarregado__username }}{% endif %}</span>
+              <span class="font-semibold shrink-0">{{ r.qtd }}</span>
+            </div>
+          {% empty %}
+            <div class="text-slate-500">Sem registros.</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Top Viaturas (DV)</h3>
+        <div class="divide-y text-xs md:text-sm">
+          {% for r in dv_por_viatura %}
+            <div class="flex items-center justify-between py-2">
+              <span>{{ r.viatura__prefixo|default:r.viatura_id }}</span>
+              <span class="font-semibold">{{ r.qtd }}</span>
+            </div>
+          {% empty %}
+            <div class="text-slate-500">Sem registros.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js (CDN simples) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function(){
+    const serie = JSON.parse('\n' + '{{ serie_por_dia|default:"[]"|escapejs }}');
+    const labels = serie.map(x => new Date(x.dia).toLocaleDateString('pt-BR'));
+    const data = serie.map(x => x.qtd);
+    const ctx = document.getElementById('chartSerie');
+    if(ctx){ new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'BOs/dia', data, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.2)', tension:0.25 }] }, options:{ plugins:{ legend:{ display:true } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }); }
+
+    // Pizza Status
+  const stLabels = JSON.parse('\n' + '{{ chart_status_labels|default:"[]"|escapejs }}');
+  const stValues = JSON.parse('\n' + '{{ chart_status_values|default:"[]"|escapejs }}');
+    const ctxStatus = document.getElementById('chartStatusPie');
+    if(ctxStatus){ new Chart(ctxStatus, { type:'pie', data:{ labels: stLabels, datasets:[{ data: stValues, backgroundColor:['#0ea5e9','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4'] }] }, options:{ plugins:{ legend:{ position:'bottom' } } } }); }
+
+    // Barras Códigos
+  const codLabels = JSON.parse('\n' + '{{ chart_cod_labels|default:"[]"|escapejs }}');
+  const codValues = JSON.parse('\n' + '{{ chart_cod_values|default:"[]"|escapejs }}');
+    const ctxCod = document.getElementById('chartCodigos');
+    if(ctxCod){ new Chart(ctxCod, { type:'bar', data:{ labels: codLabels, datasets:[{ label:'Qtd', data: codValues, backgroundColor:'#10b981' }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }); }
+
+    // Barras Usuários
+  const uLabels = JSON.parse('\n' + '{{ chart_user_labels|default:"[]"|escapejs }}');
+  const uValues = JSON.parse('\n' + '{{ chart_user_values|default:"[]"|escapejs }}');
+    const ctxUsers = document.getElementById('chartUsuarios');
+    if(ctxUsers){ new Chart(ctxUsers, { type:'bar', data:{ labels: uLabels, datasets:[{ label:'Total', data: uValues, backgroundColor:'#6366f1' }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }); }
+  })();
+</script>
+{% endblock %}

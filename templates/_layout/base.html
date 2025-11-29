@@ -1,0 +1,1312 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Sistema GCM{% endblock %}</title>
+  <meta name="backend-base" content="{{ request.scheme }}://{{ request.get_host }}">
+  <!-- CSS: app.css primeiro, Tailwind depois para evitar que .hidden de app.css anule md:flex -->
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% now 'U' as ts_css %}
+  <link rel="stylesheet" href="{% static 'build/tailwind.css' %}?v={{ ts_css }}">
+  <!-- Tenta carregar o bridge do Capacitor quando dentro do app nativo -->
+  <script>
+  (function(){
+    try{
+      var isAndroid = /Android/i.test(navigator.userAgent||'');
+      if (isAndroid && !window.Capacitor) {
+        var s = document.createElement('script');
+        s.src = 'capacitor://localhost/_capacitor.js';
+        s.defer = true;
+        s.onload = function(){ console.log('[Base] Capacitor bridge carregado'); };
+        s.onerror = function(){ console.log('[Base] Falha ao carregar bridge Capacitor'); };
+        document.head.appendChild(s);
+      }
+    }catch(e){ console.warn('Bridge inject err', e); }
+  })();
+  </script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <!-- Choices.js para selects com busca -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  <style>
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    /* Safe areas: usa env() quando disponível e acrescenta um "respiro" extra para o app nativo */
+    :root{
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+    /* Utilitários para aplicar espaçamento seguro */
+    .safe-top { padding-top: calc(var(--safe-top) + 12px); }
+    .safe-bottom { padding-bottom: calc(var(--safe-bottom) + 48px); }
+    .pb-safe { padding-bottom: calc(var(--safe-bottom) + 48px); }
+    .pl-safe { padding-left: calc(var(--safe-left) + 8px); }
+    .pr-safe { padding-right: calc(var(--safe-right) + 8px); }
+    .fixed-bottom-safe { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 16px); }
+    .fab-safe { position: fixed; right: 16px; bottom: calc(var(--safe-bottom) + 20px); }
+    /* Quando estiver dentro do app (Capacitor), adiciona folga maior para não colidir com status/nav bars */
+    .in-app .safe-top { padding-top: calc(var(--safe-top) + 20px); }
+    .in-app .safe-bottom { padding-bottom: calc(var(--safe-bottom) + 80px); }
+    .in-app .pb-safe { padding-bottom: calc(var(--safe-bottom) + 80px); }
+    /* Em telas pequenas (web mobile/PWA), dá um respiro extra também */
+    @media (max-width: 480px){
+      .safe-bottom { padding-bottom: calc(var(--safe-bottom) + 56px); }
+      .pb-safe { padding-bottom: calc(var(--safe-bottom) + 56px); }
+    }
+    /* Opcional: linhas sutis para demarcar as áreas seguras no app */
+    .in-app .safe-top-border { box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.06); }
+    .in-app .safe-bottom-border { box-shadow: inset 0 -1px 0 0 rgba(15,23,42,0.08); }
+  </style>
+  <script>
+    // Marca quando estiver rodando dentro do app (Capacitor) para permitir ajustes finos de UI
+    (function(){
+      try{
+        var Cap = window.Capacitor || null;
+        var isNative = !!(Cap && (typeof Cap.isNativePlatform==='function' ? Cap.isNativePlatform() : Cap.isNativePlatform));
+        if(isNative){ document.documentElement.classList.add('in-app'); document.body && document.body.classList && document.body.classList.add('in-app'); }
+      }catch(_){ }
+    })();
+  </script>
+</head>
+<body class="min-h-full bg-slate-50">
+  <!-- Overlay Viewer para visualizar arquivos (PDF/Imagem) dentro do app móvel (Capacitor) -->
+  <div id="app-file-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#0f172acc;backdrop-filter:blur(4px);">
+    <div style="position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#1e293b;color:#fff;gap:8px;flex-wrap:wrap;">
+      <div class="flex items-center gap-2">
+        <button id="app-file-overlay-close" style="background:#dc2626;color:#fff;border:none;padding:6px 12px;border-radius:4px;font-size:14px;display:flex;align-items:center;gap:6px;">✖ Fechar</button>
+      </div>
+      <div id="app-file-overlay-pager" class="flex items-center gap-2" style="display:none;">
+        <span class="text-xs text-slate-300">Página</span>
+        <button id="ov-prev" class="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600">◀</button>
+        <input id="ov-page" type="number" min="1" value="1" class="w-14 px-2 py-1 rounded bg-slate-800 border border-slate-600 text-white text-xs"/>
+        <span class="text-xs">/ <span id="ov-total">1</span></span>
+        <button id="ov-next" class="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600">▶</button>
+        <span class="ml-2 text-xs text-slate-300">Zoom</span>
+        <button id="ov-zoom-out" class="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600">−</button>
+        <button id="ov-zoom-in" class="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600">＋</button>
+        <button id="ov-all" class="ml-2 px-2 py-1 text-xs rounded bg-indigo-600 hover:bg-indigo-500" title="Renderizar todas as páginas">Todas</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="app-file-overlay-print" style="background:#059669;color:#fff;border:none;padding:6px 12px;border-radius:4px;font-size:14px;display:flex;align-items:center;gap:6px;">🖨️ Imprimir</button>
+        <button id="app-file-overlay-download" style="background:#2563eb;color:#fff;border:none;padding:6px 12px;border-radius:4px;font-size:14px;display:flex;align-items:center;gap:6px;">⬇️ Download</button>
+      </div>
+    </div>
+    <div id="app-file-overlay-content" style="position:absolute;top:70px;left:0;right:0;bottom:0;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:flex-start;"></div>
+  </div>
+  {% if messages %}
+    <div id="toast-area" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-full max-w-md px-4">
+      {% for m in messages %}
+        <div class="toast p-3 rounded shadow border flex items-center gap-2 text-sm animate-fade-in-up
+          {% if m.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-800{% else %}bg-emerald-50 border-emerald-200 text-emerald-800{% endif %}">
+          {{ m }}
+          <button onclick="this.parentElement.remove()" class="ml-auto px-2 py-0.5 text-xs rounded hover:bg-slate-200">×</button>
+        </div>
+      {% endfor %}
+    </div>
+    <style>
+      @keyframes fade-in-up { from { opacity:0; transform:translateY(20px);} to { opacity:1; transform:translateY(0);} }
+      .animate-fade-in-up { animation: fade-in-up 0.5s; }
+    </style>
+    <script>
+      setTimeout(() => {
+        document.querySelectorAll('.toast').forEach(t => t.remove());
+      }, 3500);
+    </script>
+  {% endif %}
+
+  <nav class="bg-slate-900 text-white safe-top safe-top-border relative">
+    <div class="max-w-6xl mx-auto px-4 py-2 space-y-1">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2 min-w-0">
+          <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2"><span class="font-semibold text-lg whitespace-nowrap">Sistema GCM</span></a>
+          {% if user.is_authenticated %}<span class="ml-2 inline-block text-[11px] bg-slate-800 text-sky-200 px-2 py-0.5 rounded md:hidden max-w-[110px] overflow-hidden text-ellipsis" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</span>{% endif %}
+        </div>
+        <div class="flex items-center gap-3">
+          {% if user.username == 'moises' %}
+          <div id="tracking-control" class="hidden md:inline-flex items-center"><button id="btn-tracking-toggle" type="button" class="nav-pill !text-xs !px-2 !py-1 bg-slate-800 hover:bg-slate-700" title="Iniciar/Parar envio de localização" aria-pressed="true"><span class="inline-flex items-center gap-1"><span id="tracking-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-inner"></span><span id="tracking-status-text">Rastreamento ON</span></span></button></div>
+          {% endif %}
+          {% if user.is_authenticated %}<div class="hidden md:flex items-center gap-2"><span class="inline-block text-sm font-medium text-sky-100 bg-slate-800 px-3 py-1 rounded-lg max-w-[240px] truncate" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</span><a href="{% url 'users:perfil' %}" class="nav-pill !text-xs">Meu Perfil</a><form method="post" action="{% url 'users:logout' %}" class="inline">{% csrf_token %}<button type="submit" class="nav-pill !text-xs">Sair</button></form></div>{% else %}<a href="{% url 'users:login' %}" class="nav-pill">Login</a>{% endif %}
+          <div class="md:hidden"><button id="nav-toggle" class="inline-flex items-center justify-center p-2 rounded text-slate-200 hover:bg-slate-800" aria-label="Abrir menu"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg></button></div>
+        </div>
+      </div>
+      <div id="nav-menu" class="hidden md:flex flex-wrap items-center gap-2 border-t border-slate-800 pt-2">
+        {% if user.is_authenticated %}
+          <a href="{% url 'core:notificacoes' %}" class="nav-pill relative"><span>🔔</span><span class="ml-1 hidden lg:inline">Notificações</span><span id="notif-badge" class="{% if navbar_notif_count %}inline-flex{% else %}hidden{% endif %} absolute -top-2 -right-3 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] justify-center">{{ navbar_notif_count|default:'' }}</span></a>
+          <a href="{% url 'cecom:painel' %}" class="nav-pill">CECOM</a>
+          <a href="{% url 'bogcmi:lista' %}" class="nav-pill">BOGCMI</a>
+          <a href="{% url 'taloes:lista' %}" class="nav-pill">Talões</a>
+          {% if is_comando %}
+            <a href="{% url 'common:documentos_pendentes' %}" class="nav-pill relative">
+              Despachos Pend.
+              <span class="absolute -top-2 -right-3 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] justify-center {% if assinaturas_pendentes_count %}inline-flex{% else %}hidden{% endif %}">{{ assinaturas_pendentes_count|default:'' }}</span>
+            </a>
+            <a href="{% url 'common:documentos_assinados' %}" class="nav-pill">Despachos Ass.</a>
+          {% endif %}
+          <a href="{% url 'viaturas:lista' %}" class="nav-pill relative">Viaturas
+            <span class="absolute -top-2 -right-3 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] justify-center {% if viaturas_avarias_count %}inline-flex{% else %}hidden{% endif %}">{{ viaturas_avarias_count|default:'' }}</span>
+          </a>
+          <div class="relative inline-block" id="fisc-dropdown"><button type="button" class="nav-pill inline-flex items-center" id="fisc-toggle" aria-expanded="false" aria-haspopup="true">Fiscalização<svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg></button><div class="absolute left-0 mt-1 hidden bg-white text-slate-900 rounded-md shadow-lg border min-w-[240px] z-40" id="fisc-menu" role="menu"><a href="{% url 'core:fisc_notificacao' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Notificação</a><a href="{% url 'core:fisc_auto_comercio' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Auto de Infração Municipal</a><a href="{% url 'core:fisc_auto_som' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Auto de Infração Som</a></div></div>
+          <div class="relative inline-block" id="panico-dropdown"><button type="button" class="nav-pill inline-flex items-center relative" id="panico-toggle" aria-expanded="false" aria-haspopup="true">Botão do Pânico<span id="panico-badge" class="hidden absolute -top-2 -right-2 bg-red-600 text-white text-[10px] rounded-full px-1.5 min-w-[18px] justify-center animate-pulse">!</span><svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg></button><div class="absolute left-0 mt-1 hidden bg-white text-slate-900 rounded-md shadow-lg border min-w-[240px] z-40" id="panico-menu" role="menu">{% if perms.panic.view_assistida %}<a href="{% url 'panic:assistidas_pendentes_list' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">🕐 Assistidas Pendentes</a><a href="{% url 'panic:assistidas_aprovadas_list' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">✅ Assistidas Aprovadas</a><a href="{% url 'panic:assistidas_list' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">📋 Todas as Assistidas</a><div class="border-t my-1"></div>{% endif %}<a href="{% url 'cecom:panico_list' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">🚨 Alertas de Pânico</a></div></div>
+          <div class="relative inline-block" id="adm-dropdown"><button type="button" class="nav-pill inline-flex items-center" id="adm-toggle" aria-expanded="false" aria-haspopup="true">Administração<svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg></button><div class="absolute left-0 mt-1 hidden bg-white text-slate-900 rounded-md shadow-lg border min-w-[200px] z-40" id="adm-menu" role="menu"><a href="{% url 'core:banco_de_horas' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Banco de Horas</a><a href="{% url 'core:escala_mensal' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Escala Mensal</a><a href="{% url 'core:ordem_servico' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Ordem de Serviço</a><a href="{% url 'core:oficio_interno' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Ofício Interno</a><a href="{% url 'core:audiencias' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Audiências</a>{% if user.is_superuser or user.username|lower in 'moises,administrativo,comandante,subcomandante' %}<a href="{% url 'core:log_sistema' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Log do Sistema</a><a href="{% url 'core:log_simplificado' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Log Simplificado</a>{% endif %}<a href="{% url 'core:almoxarifado' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Almoxarifado</a><a href="{% url 'core:dispensas' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Dispensas</a>{% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}<a href="{% url 'core:config_dashboard' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Configurações</a>{% endif %}{% if user.username|lower == 'moises' or user.username|lower == 'administrativo' or user.username|lower == 'comandante' or user.username|lower == 'subcomandante' %}<a href="{% url 'core:estatisticas' %}" class="block px-3 py-2 hover:bg-slate-100" role="menuitem">Estatísticas</a>{% endif %}</div></div>
+        {% else %}
+          <!-- Mostra entradas principais mesmo sem login; rotas protegidas redirecionam para a página de login -->
+          <a href="{% url 'core:notificacoes' %}" class="nav-pill">Notificações</a>
+          <a href="{% url 'cecom:painel' %}" class="nav-pill">CECOM</a>
+          <a href="{% url 'bogcmi:lista' %}" class="nav-pill">BOGCMI</a>
+          <a href="{% url 'taloes:lista' %}" class="nav-pill">Talões</a>
+          <a href="{% url 'viaturas:lista' %}" class="nav-pill">Viaturas</a>
+          <a href="{% url 'core:fisc_notificacao' %}" class="nav-pill">Fiscalização</a>
+          <a href="{% url 'users:login' %}" class="nav-pill">Login</a>
+        {% endif %}
+      </div>
+  <div id="nav-menu-mobile" class="md:hidden hidden flex-col gap-1 pt-2 border-t border-slate-800">
+        {% if user.is_authenticated %}
+          <div class="flex flex-wrap gap-1">
+            <a href="{% url 'core:notificacoes' %}" class="nav-pill text-xs">Notificações{% if navbar_notif_count %}<span class="ml-1 inline-flex items-center justify-center bg-rose-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 align-middle">{{ navbar_notif_count }}</span>{% endif %}</a>
+            <a href="{% url 'cecom:painel' %}" class="nav-pill text-xs">CECOM</a>
+            <a href="{% url 'bogcmi:lista' %}" class="nav-pill text-xs">BOGCMI</a>
+            <a href="{% url 'taloes:lista' %}" class="nav-pill text-xs">Talões</a>
+            {% if is_comando %}
+              <a href="{% url 'common:documentos_pendentes' %}" class="nav-pill text-xs relative">Pendentes{% if assinaturas_pendentes_count %}<span class="absolute -top-1 -right-2 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] inline-flex justify-center">{{ assinaturas_pendentes_count }}</span>{% endif %}</a>
+              <a href="{% url 'common:documentos_assinados' %}" class="nav-pill text-xs">Despachos Ass.</a>
+            {% endif %}
+            <a href="{% url 'viaturas:lista' %}" class="nav-pill text-xs relative">Viaturas{% if viaturas_avarias_count %}<span class="absolute -top-1 -right-2 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] inline-flex justify-center">{{ viaturas_avarias_count }}</span>{% endif %}</a>
+          </div>
+
+          <div class="mt-1">
+            <button type="button" id="fisc-mobile-toggle" class="nav-pill text-xs w-full justify-between bg-slate-800/30">
+              <span>Fiscalização</span>
+              <svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+            </button>
+            <div id="fisc-mobile-menu" class="hidden pl-2 flex flex-col gap-1 mt-1">
+              <a href="{% url 'core:fisc_notificacao' %}" class="nav-pill text-xs">Notificação</a>
+              <a href="{% url 'core:fisc_auto_comercio' %}" class="nav-pill text-xs">Auto de Infração Municipal</a>
+              <a href="{% url 'core:fisc_auto_som' %}" class="nav-pill text-xs">Auto de Infração Som</a>
+            </div>
+          </div>
+
+          <div class="mt-1">
+            <button type="button" id="panico-mobile-toggle" class="nav-pill text-xs w-full justify-between bg-slate-800/30">
+              <span>Botão do Pânico</span>
+              <svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+            </button>
+            <div id="panico-mobile-menu" class="hidden pl-2 flex flex-col gap-1 mt-1">
+              {% if perms.panic.view_assistida %}
+                <a href="{% url 'panic:assistidas_pendentes_list' %}" class="nav-pill text-xs">🕐 Assistidas Pendentes</a>
+                <a href="{% url 'panic:assistidas_aprovadas_list' %}" class="nav-pill text-xs">✅ Assistidas Aprovadas</a>
+                <a href="{% url 'panic:assistidas_list' %}" class="nav-pill text-xs">📋 Todas as Assistidas</a>
+              {% endif %}
+              <a href="{% url 'cecom:panico_list' %}" class="nav-pill text-xs">🚨 Alertas de Pânico</a>
+            </div>
+          </div>
+
+          <div class="mt-1">
+            <button type="button" id="adm-mobile-toggle" class="nav-pill text-xs w-full justify-between bg-slate-800/30">
+              <span>Administração</span>
+              <svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+            </button>
+            <div id="adm-mobile-menu" class="hidden pl-2 flex flex-col gap-1 mt-1">
+              <a href="{% url 'core:banco_de_horas' %}" class="nav-pill text-xs">Banco de Horas</a>
+              <a href="{% url 'core:escala_mensal' %}" class="nav-pill text-xs">Escala Mensal</a>
+              <a href="{% url 'core:ordem_servico' %}" class="nav-pill text-xs">Ordem de Serviço</a>
+              <a href="{% url 'core:oficio_interno' %}" class="nav-pill text-xs">Ofício Interno</a>
+              <a href="{% url 'core:audiencias' %}" class="nav-pill text-xs">Audiências</a>
+              {% if user.is_superuser or user.username|lower in 'moises,administrativo,comandante,subcomandante' %}
+              <a href="{% url 'core:log_sistema' %}" class="nav-pill text-xs">Log do Sistema</a>
+              <a href="{% url 'core:log_simplificado' %}" class="nav-pill text-xs">Log Simplificado</a>
+              {% endif %}
+              <a href="{% url 'core:almoxarifado' %}" class="nav-pill text-xs">Almoxarifado</a>
+              <a href="{% url 'core:dispensas' %}" class="nav-pill text-xs">Dispensas</a>
+              {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+              <a href="{% url 'core:config_dashboard' %}" class="nav-pill text-xs">Configurações</a>
+              {% endif %}
+              {% if user.username|lower == 'moises' or user.username|lower == 'administrativo' or user.username|lower == 'comandante' or user.username|lower == 'subcomandante' %}
+              <a href="{% url 'core:estatisticas' %}" class="nav-pill text-xs">Estatísticas</a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-1 mt-1">
+            <a href="{% url 'users:perfil' %}" class="nav-pill text-xs">Perfil</a>
+            <form method="post" action="{% url 'users:logout' %}">{% csrf_token %}<button type="submit" class="nav-pill text-xs">Sair</button></form>
+          </div>
+        {% else %}
+          <div class="flex flex-wrap gap-1">
+            <a href="{% url 'core:notificacoes' %}" class="nav-pill text-xs">Notificações</a>
+            <a href="{% url 'cecom:painel' %}" class="nav-pill text-xs">CECOM</a>
+            <a href="{% url 'bogcmi:lista' %}" class="nav-pill text-xs">BOGCMI</a>
+            <a href="{% url 'taloes:lista' %}" class="nav-pill text-xs">Talões</a>
+            <a href="{% url 'viaturas:lista' %}" class="nav-pill text-xs">Viaturas</a>
+            <a href="{% url 'core:fisc_notificacao' %}" class="nav-pill text-xs">Fiscalização</a>
+            <a href="{% url 'users:login' %}" class="nav-pill text-xs">Login</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+  <style>
+    /* Ajustes específicos da navbar (usa utilitários acima) */
+    .safe-top > div > div { margin-top: 2px; }
+    @media (min-width: 640px) { .safe-top { padding-top: 8px; } }
+    /* Nav pills */
+    .nav-pill { display:inline-flex; align-items:center; gap:.45rem; padding:.35rem .6rem; border-radius:.5rem; background:transparent; color:inherit; text-decoration:none; font-size:.82rem; line-height:1; }
+    .nav-pill:hover { background: rgba(255,255,255,0.06); }
+    @media (max-width: 640px){ .nav-pill { font-size:.75rem; } }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const btn = document.getElementById('nav-toggle');
+      const mobile = document.getElementById('nav-menu-mobile');
+      if(btn && mobile){ btn.addEventListener('click', ()=> mobile.classList.toggle('hidden')); }
+      const admToggle = document.getElementById('adm-toggle');
+      const admMenu = document.getElementById('adm-menu');
+      const admWrap = document.getElementById('adm-dropdown');
+      if(admToggle && admMenu && admWrap){
+        admToggle.addEventListener('click', ev=>{ ev.stopPropagation(); const open = !admMenu.classList.contains('hidden'); admMenu.classList.toggle('hidden'); admToggle.setAttribute('aria-expanded', String(!open)); });
+        document.addEventListener('click', ev=>{ if(!admWrap.contains(ev.target) && !admMenu.classList.contains('hidden')){ admMenu.classList.add('hidden'); admToggle.setAttribute('aria-expanded','false'); } });
+        document.addEventListener('keydown', ev=>{ if(ev.key==='Escape' && !admMenu.classList.contains('hidden')){ admMenu.classList.add('hidden'); admToggle.setAttribute('aria-expanded','false'); } });
+      }
+
+      // Dropdown Fiscalização
+      const fiscToggle = document.getElementById('fisc-toggle');
+      const fiscMenu = document.getElementById('fisc-menu');
+      const fiscWrap = document.getElementById('fisc-dropdown');
+      if(fiscToggle && fiscMenu && fiscWrap){
+        fiscToggle.addEventListener('click', ev=>{ ev.stopPropagation(); const open = !fiscMenu.classList.contains('hidden'); fiscMenu.classList.toggle('hidden'); fiscToggle.setAttribute('aria-expanded', String(!open)); });
+        document.addEventListener('click', ev=>{ if(!fiscWrap.contains(ev.target) && !fiscMenu.classList.contains('hidden')){ fiscMenu.classList.add('hidden'); fiscToggle.setAttribute('aria-expanded','false'); } });
+        document.addEventListener('keydown', ev=>{ if(ev.key==='Escape' && !fiscMenu.classList.contains('hidden')){ fiscMenu.classList.add('hidden'); fiscToggle.setAttribute('aria-expanded','false'); } });
+      }
+
+      // Dropdown Botão do Pânico
+      const panicoToggle = document.getElementById('panico-toggle');
+      const panicoMenu = document.getElementById('panico-menu');
+      const panicoWrap = document.getElementById('panico-dropdown');
+      if(panicoToggle && panicoMenu && panicoWrap){
+        panicoToggle.addEventListener('click', ev=>{ ev.stopPropagation(); const open = !panicoMenu.classList.contains('hidden'); panicoMenu.classList.toggle('hidden'); panicoToggle.setAttribute('aria-expanded', String(!open)); });
+        document.addEventListener('click', ev=>{ if(!panicoWrap.contains(ev.target) && !panicoMenu.classList.contains('hidden')){ panicoMenu.classList.add('hidden'); panicoToggle.setAttribute('aria-expanded','false'); } });
+        document.addEventListener('keydown', ev=>{ if(ev.key==='Escape' && !panicoMenu.classList.contains('hidden')){ panicoMenu.classList.add('hidden'); panicoToggle.setAttribute('aria-expanded','false'); } });
+      }
+
+      // Submenus móveis
+      const fiscMobileToggle = document.getElementById('fisc-mobile-toggle');
+      const fiscMobileMenu = document.getElementById('fisc-mobile-menu');
+      if(fiscMobileToggle && fiscMobileMenu){ fiscMobileToggle.addEventListener('click', ()=> fiscMobileMenu.classList.toggle('hidden')); }
+      const admMobileToggle = document.getElementById('adm-mobile-toggle');
+      const admMobileMenu = document.getElementById('adm-mobile-menu');
+      if(admMobileToggle && admMobileMenu){ admMobileToggle.addEventListener('click', ()=> admMobileMenu.classList.toggle('hidden')); }
+      const panicoMobileToggle = document.getElementById('panico-mobile-toggle');
+      const panicoMobileMenu = document.getElementById('panico-mobile-menu');
+      if(panicoMobileToggle && panicoMobileMenu){ panicoMobileToggle.addEventListener('click', ()=> panicoMobileMenu.classList.toggle('hidden')); }
+    });
+  </script>
+
+  <main class="max-w-6xl mx-auto px-4 py-4 safe-bottom safe-bottom-border">
+    {% block content %}{% endblock %}
+  </main>
+    <!-- Alerta global do Botão do Pânico (WebSocket + sirene + banner) -->
+    {% if user.is_authenticated %}
+    <!-- Modal Global Pânico -->
+    <div id="panic-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999999] hidden items-center justify-center p-4" style="z-index: 999999 !important;">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl relative flex flex-col z-[999999]" style="z-index: 999999 !important;">
+        <button type="button" id="panic-modal-close" class="absolute top-2 right-2 px-2 py-1 text-sm bg-slate-200 hover:bg-slate-300 rounded z-[999999]">×</button>
+        <div class="p-4 border-b flex items-center gap-2 bg-red-600 text-white">
+          <span class="font-bold text-lg">🚨 Alerta de Pânico</span>
+        </div>
+        <div id="panic-modal-info" class="p-4"></div>
+        <!-- Botões de Ação -->
+        <div id="panic-modal-actions" class="px-4 pb-2 flex flex-col gap-3 hidden">
+          <div class="flex gap-2">
+            <button id="btn-confirmar-modal" class="btn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold">
+              ✅ Confirmar
+            </button>
+            <button id="btn-recusar-toggle" class="btn bg-rose-600 text-white px-4 py-2 rounded hover:bg-rose-700 font-semibold" type="button">
+              ❌ Recusar
+            </button>
+            <button id="btn-teste-modal" class="btn bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold" type="button">
+              🧪 Teste
+            </button>
+          </div>
+          <div id="recusa-form-wrapper" class="hidden border rounded p-3 bg-slate-50">
+            <label for="recusa-motivo" class="block text-sm font-medium mb-1">Motivo da Recusa:</label>
+            <textarea id="recusa-motivo" class="w-full rounded border px-2 py-1 text-sm h-20" placeholder="Descreva o motivo..." minlength="3"></textarea>
+            <div class="mt-2 flex gap-2 justify-end">
+              <button type="button" id="btn-recusar-enviar" class="btn bg-rose-600 text-white px-3 py-1.5 rounded hover:bg-rose-700 text-sm">Enviar Recusa</button>
+              <button type="button" id="btn-recusar-cancelar" class="btn bg-slate-300 text-slate-800 px-3 py-1.5 rounded hover:bg-slate-400 text-sm">Cancelar</button>
+            </div>
+            <p id="recusa-erro" class="text-xs text-rose-600 mt-1 hidden">Informe ao menos 3 caracteres.</p>
+          </div>
+        </div>
+        <div id="panic-modal-map-wrapper" class="p-4 hidden">
+          <div id="panic-modal-map" style="height:220px;"></div>
+        </div>
+        <div class="p-4 border-t flex justify-end gap-2">
+          <a id="panic-modal-link" href="{% url 'cecom:panico_list' %}" class="btn btn-primary">Ver Detalhes</a>
+        </div>
+      </div>
+    </div>
+    <script>
+    // --- Sistema de Sirene Profissional (Web Audio API - Sempre Funciona) ---
+    var audioContext = null;
+    var audioPlaying = false;
+    var oscillator1 = null;
+    var oscillator2 = null;
+    var gainNode = null;
+    var sireneInterval = null;
+
+    // CRÍTICO: Inicializar AudioContext IMEDIATAMENTE ao carregar a página
+    document.addEventListener('DOMContentLoaded', function(){
+      try{
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('[Pânico] ✅ AudioContext inicializado:', audioContext.state);
+        
+        // Tenta retomar imediatamente (pode funcionar em alguns navegadores)
+        if(audioContext.state === 'suspended'){
+          audioContext.resume().then(function(){
+            console.log('[Pânico] ✅ AudioContext retomado automaticamente');
+          }).catch(function(err){
+            console.warn('[Pânico] ⚠️ AudioContext bloqueado - precisa de interação:', err);
+          });
+        }
+      }catch(e){
+        console.warn('[Pânico] Erro ao inicializar AudioContext:', e);
+      }
+    });
+
+    // Garantir que AudioContext está ativo em qualquer interação do usuário
+    var ensureAudioContext = function(){
+      if(!audioContext){
+        try{
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          console.log('[Pânico] ✅ AudioContext criado por interação');
+        }catch(e){
+          console.error('[Pânico] ❌ Falha ao criar AudioContext:', e);
+        }
+      }
+      if(audioContext && audioContext.state === 'suspended'){
+        audioContext.resume().then(function(){
+          console.log('[Pânico] ✅ AudioContext retomado por interação');
+        });
+      }
+    };
+    document.addEventListener('click', ensureAudioContext);
+    document.addEventListener('touchstart', ensureAudioContext);
+    document.addEventListener('keydown', ensureAudioContext);
+
+    function playAlertSound(){
+      if(audioPlaying){
+        console.log('[Pânico] ℹ️ Sirene já está tocando');
+        return;
+      }
+      
+      console.log('[Pânico] 🔊 Iniciando SIRENE PROFISSIONAL em loop');
+      
+      try{
+        // Garante que AudioContext existe
+        if(!audioContext){
+          console.log('[Pânico] Criando AudioContext...');
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        console.log('[Pânico] AudioContext state:', audioContext.state);
+        
+        // Resume se estiver suspenso - FORÇAR RETOMADA
+        if(audioContext.state === 'suspended'){
+          console.log('[Pânico] ⚠️ AudioContext suspenso - tentando retomar...');
+          audioContext.resume().then(function(){
+            console.log('[Pânico] ✅ AudioContext retomado - iniciando sirene');
+            startSirene();
+          }).catch(function(err){
+            console.error('[Pânico] ❌ Falha ao retomar AudioContext:', err);
+            console.warn('[Pânico] 🖱️ CLIQUE NA PÁGINA para ativar o som!');
+            
+            // Mostra banner visual pedindo interação
+            var banner = document.createElement('div');
+            banner.id = 'audio-blocked-banner';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:white;padding:12px;text-align:center;z-index:999999;font-weight:bold;cursor:pointer;';
+            banner.innerHTML = '🔊 CLIQUE AQUI PARA ATIVAR O SOM DO ALERTA!';
+            banner.onclick = function(){
+              audioContext.resume().then(function(){
+                banner.remove();
+                startSirene();
+              });
+            };
+            document.body.appendChild(banner);
+          });
+        } else {
+          // Já está running
+          startSirene();
+        }
+        
+      }catch(e){
+        console.error('[Pânico] Erro ao iniciar sirene:', e);
+      }
+    }
+    
+    function startSirene(){
+      try{
+        // Criar dois osciladores para som de sirene realista
+        oscillator1 = audioContext.createOscillator();
+        oscillator2 = audioContext.createOscillator();
+        gainNode = audioContext.createGain();
+        
+        // Conectar osciladores ao ganho
+        oscillator1.connect(gainNode);
+        oscillator2.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configurar tipo de onda (sawtooth = som mais agressivo/realista)
+        oscillator1.type = 'sawtooth';
+        oscillator2.type = 'square';
+        
+        // Volume inicial
+        gainNode.gain.value = 0.6;
+        
+        // Frequências iniciais (graves)
+        var freqLow = 300;
+        var freqHigh = 900;
+        oscillator1.frequency.value = freqLow;
+        oscillator2.frequency.value = freqLow + 50;
+        
+        // Iniciar osciladores
+        oscillator1.start();
+        oscillator2.start();
+        
+        // Alternar frequência para criar efeito de sirene europeia
+        var isHigh = false;
+        sireneInterval = setInterval(function(){
+          if(!audioContext) return;
+          var now = audioContext.currentTime;
+          var target1 = isHigh ? freqLow : freqHigh;
+          var target2 = isHigh ? freqLow + 50 : freqHigh + 50;
+          
+          // Rampa exponencial suave
+          oscillator1.frequency.exponentialRampToValueAtTime(target1, now + 0.4);
+          oscillator2.frequency.exponentialRampToValueAtTime(target2, now + 0.4);
+          
+          isHigh = !isHigh;
+        }, 450); // Alternar a cada 450ms
+        
+        audioPlaying = true;
+        console.log('[Pânico] ✅ SIRENE ATIVA - Web Audio API');
+      }catch(e){ 
+        console.error('[Pânico] Erro crítico ao criar sirene:', e);
+        console.log('[Pânico] 💡 Clique em qualquer lugar da página para ativar o som');
+      }
+    }
+
+    function stopAlertSound(){
+      if(!audioPlaying) return;
+      console.log('[Pânico] 🔇 Parando sirene');
+      try{
+        if(sireneInterval){
+          clearInterval(sireneInterval);
+          sireneInterval = null;
+        }
+        
+        if(oscillator1){
+          oscillator1.stop();
+          oscillator1.disconnect();
+          oscillator1 = null;
+        }
+        
+        if(oscillator2){
+          oscillator2.stop();
+          oscillator2.disconnect();
+          oscillator2 = null;
+        }
+        
+        if(gainNode){
+          gainNode.disconnect();
+          gainNode = null;
+        }
+      }catch(e){ console.warn('[Pânico] Erro ao parar sirene:', e); }
+      audioPlaying = false;
+    }
+      
+    (function(){
+      console.log('[Pânico] 🚀 Iniciando sistema de alertas');
+      var panicoBadge = document.getElementById('panico-badge');
+      var primeiroDisparoMostrado = false; // Flag para mostrar apenas o primeiro disparo ao carregar
+      var paginaCarregada = false; // Flag para saber quando a carga inicial terminou
+      
+      try{
+        var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var wsUrl = proto + location.host + '/ws/panico/alertas/';
+        console.log('[Pânico] 🔌 Tentando conectar WebSocket:', wsUrl);
+        var ws = new WebSocket(wsUrl);
+        ws.onopen = function(){ 
+          console.log('[Pânico] ✅ WebSocket conectado - aguardando disparos...');
+          // Após 500ms, marca que a carga inicial terminou (mais rápido)
+          // Qualquer disparo que chegar DEPOIS disso é considerado NOVO
+          setTimeout(function(){
+            paginaCarregada = true;
+            console.log('[Pânico] ✅ Carga inicial completa - novos disparos farão alerta');
+          }, 500); // Reduzido de 2000ms para 500ms
+        };
+        ws.onerror = function(err){ console.error('[Pânico] ❌ WebSocket erro:', err); };
+        ws.onclose = function(){ console.warn('[Pânico] WebSocket desconectado'); };
+        var disparosAbertos = {}; // Armazena disparos em aberto {id: data}
+        
+        // Atualiza badge baseado em disparos abertos
+        function updateBadge(){
+          var count = Object.keys(disparosAbertos).length;
+          if(panicoBadge){
+            if(count > 0){
+              panicoBadge.classList.remove('hidden');
+              panicoBadge.classList.add('inline-flex');
+              panicoBadge.textContent = count;
+            } else {
+              panicoBadge.classList.add('hidden');
+              panicoBadge.classList.remove('inline-flex');
+            }
+          }
+        }
+        
+        // Fallback: permitir que outras páginas disparem o alerta manualmente
+        // quando detectarem um "novo disparo" via polling/AJAX (ex.: lista de pânico)
+        window.addEventListener('panico:novo', function(ev){
+          try{
+            var data = ev.detail || {};
+            if(!data || !data.disparo_id){ return; }
+            console.log('[Pânico] 🆘 Fallback recebido via evento panico:novo -> abrindo alerta', data);
+            disparosAbertos[data.disparo_id] = data;
+            updateBadge();
+            playAlertSound();
+            openPanicModal(data);
+          }catch(e){ console.warn('Fallback panico:novo err', e); }
+        });
+
+        ws.onmessage = function(evt){
+          try{
+            var data = JSON.parse(evt.data || '{}');
+            console.log('[Pânico] 📨 Mensagem recebida:', data);
+            
+            if(data.tipo === 'PANICO_DISPARADO'){
+              console.log('[Pânico] 🚨 Disparo de pânico detectado! ID:', data.disparo_id);
+              var disparoId = data.disparo_id || 'unknown';
+              
+              // Verifica se é um disparo completamente novo (não existia antes)
+              var isNovoDisparo = !disparosAbertos[disparoId];
+              
+              // Armazena disparo em aberto
+              disparosAbertos[disparoId] = data;
+              updateBadge();
+              
+              // LÓGICA CORRIGIDA:
+              // - Durante carga inicial (primeiros 2s): mostra apenas o primeiro disparo
+              // - Após carga inicial: QUALQUER disparo novo (isNovoDisparo) mostra modal + sirene
+              var deveMostrar = false;
+              
+              if(!paginaCarregada && !primeiroDisparoMostrado){
+                // Ainda na carga inicial E é o primeiro disparo
+                deveMostrar = true;
+                primeiroDisparoMostrado = true;
+                console.log('[Pânico] 🎯 Primeiro disparo na carga inicial - MOSTRANDO MODAL');
+              } else if(paginaCarregada && isNovoDisparo){
+                // Carga inicial terminou E é um disparo NOVO (não existia antes)
+                deveMostrar = true;
+                console.log('[Pânico] 🆕 NOVO DISPARO EM TEMPO REAL - MOSTRANDO MODAL + SIRENE');
+              } else {
+                console.log('[Pânico] ℹ️ Disparo da carga inicial ou já existente - apenas atualizando badge');
+              }
+              
+              if(deveMostrar){
+                // Inicia áudio
+                playAlertSound();
+                console.log('[Pânico] 🔊 Sirene iniciada para disparo ID:', disparoId);
+                
+                // Abre modal
+                openPanicModal(data);
+              }
+            }
+            
+            if(data.tipo === 'PANICO_LOCALIZACAO'){
+              console.log('[Pânico] 📍 Atualização de localização');
+              updatePanicModalLocation(data);
+            }
+            
+            if(data.tipo === 'PANICO_STATUS_MUDOU'){
+              console.log('[Pânico] 📊 Status mudou:', data);
+              var disparoId = data.disparo_id;
+              
+              // Se foi encerrado/cancelado, remove dos abertos
+              if(['ENCERRADA','CANCELADA','FALSO_POSITIVO'].indexOf(data.status) >= 0){
+                console.log('[Pânico] 🔚 Disparo encerrado - removendo da lista');
+                delete disparosAbertos[disparoId];
+                updateBadge();
+                
+                // Se não houver mais disparos abertos, para o áudio
+                if(Object.keys(disparosAbertos).length === 0){
+                  stopAlertSound();
+                }
+                
+                // Fecha modal se estiver exibindo esse disparo
+                if(currentPanicId === disparoId){
+                  closePanicModal();
+                  // Se houver outros disparos abertos, mostra o próximo
+                  var outrosIds = Object.keys(disparosAbertos);
+                  if(outrosIds.length > 0){
+                    openPanicModal(disparosAbertos[outrosIds[0]]);
+                  }
+                }
+              }
+            }
+          }catch(e){ console.warn('WS panic parse', e); }
+        };
+        // Modal helpers
+        var panicModal = document.getElementById('panic-modal');
+        var panicInfo = document.getElementById('panic-modal-info');
+        var panicLink = document.getElementById('panic-modal-link');
+        var panicMapWrap = document.getElementById('panic-modal-map-wrapper');
+        var panicMapDiv = document.getElementById('panic-modal-map');
+        function openPanicModal(data){
+          if(!panicModal) return;
+          panicInfo.innerHTML='';
+          var nome = (data.assistida && data.assistida.nome) || 'Assistida';
+          var cpf = (data.assistida && data.assistida.cpf) || '—';
+          var tel = (data.assistida && (data.assistida.telefone||'')) || '';
+          var telHtml = tel ? ('<div><strong>Telefone:</strong> '+tel+'</div>') : '';
+          var aberto = data.aberto_em || '—';
+          // definir disparoId ANTES de usar nos botões
+          var disparoId = data.disparo_id || null;
+          panicInfo.innerHTML = '<div><strong>Assistida:</strong> '+nome+' <span class="text-xs text-slate-500">CPF '+cpf+'</span></div>'+
+                                telHtml +
+                                '<div><strong>Disparo ID:</strong> '+(data.disparo_id||'—')+'</div>'+
+                                '<div><strong>Aberto em:</strong> '+aberto+'</div>';
+          if(data.coords && data.coords.lat && data.coords.lng){
+            panicMapWrap.classList.remove('hidden');
+            function ensureLeaflet(cb){
+              if(window.L){ cb(); return; }
+              var css=document.createElement('link'); css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
+              var js=document.createElement('script'); js.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; js.onload=cb; document.head.appendChild(js);
+            }
+            ensureLeaflet(function(){ try{
+              panicMapDiv.innerHTML='';
+              var map = L.map('panic-modal-map').setView([data.coords.lat, data.coords.lng], 15);
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
+              var accTxt = data.coords.accuracy ? ('Precisão ~'+data.coords.accuracy+'m') : '';
+              L.marker([data.coords.lat, data.coords.lng]).addTo(map).bindPopup(nome+'<br>'+accTxt);
+            }catch(e){ console.warn('Leaflet init err', e); }
+            });
+          } else { panicMapWrap.classList.add('hidden'); }
+          
+          // Mostrar botões de ação
+          var panicActions = document.getElementById('panic-modal-actions');
+          var btnConfirmar = document.getElementById('btn-confirmar-modal');
+          var btnTeste = document.getElementById('btn-teste-modal');
+          var btnRecusarToggle = document.getElementById('btn-recusar-toggle');
+          var recusaWrapper = document.getElementById('recusa-form-wrapper');
+          var recusaMotivo = document.getElementById('recusa-motivo');
+          var recusaEnviar = document.getElementById('btn-recusar-enviar');
+          var recusaCancelar = document.getElementById('btn-recusar-cancelar');
+          var recusaErro = document.getElementById('recusa-erro');
+          
+          if (disparoId && panicActions) {
+            panicActions.classList.remove('hidden');
+            
+            // Botão Confirmar
+            btnConfirmar.onclick = function(){
+              if(confirm('Confirmar este disparo como procedente?')){
+                encerrarDisparo(disparoId,'ENCERRADA');
+              }
+            };
+
+            // Toggle Recusar
+            btnRecusarToggle.onclick = function(){
+              if(recusaWrapper.classList.contains('hidden')){
+                recusaWrapper.classList.remove('hidden');
+                recusaMotivo.focus();
+              } else {
+                recusaWrapper.classList.add('hidden');
+              }
+            };
+
+            recusaCancelar.onclick = function(){
+              recusaWrapper.classList.add('hidden');
+              recusaMotivo.value='';
+              recusaErro.classList.add('hidden');
+            };
+
+            recusaEnviar.onclick = function(){
+              var txt = (recusaMotivo.value||'').trim();
+              if(txt.length < 3){ recusaErro.classList.remove('hidden'); return; }
+              recusaErro.classList.add('hidden');
+              if(confirm('Confirmar recusa deste disparo?')){
+                encerrarDisparo(disparoId,'CANCELADA', txt);
+              }
+            };
+            
+            // Botão Teste
+            btnTeste.onclick = function() {
+              if (confirm('Confirma marcar este alerta como TESTE?')) {
+                encerrarDisparo(disparoId, 'TESTE');
+              }
+            };
+          } else if (panicActions) {
+            panicActions.classList.add('hidden');
+          }
+          
+          // Atualizar link para ir direto aos detalhes do disparo
+          if (disparoId) {
+            panicLink.href = '/cecom/panico/' + disparoId + '/';
+            panicLink.textContent = 'Ver Detalhes';
+          } else {
+            panicLink.href = '{% url 'cecom:panico_list' %}';
+            panicLink.textContent = 'Ver todos';
+          }
+          panicModal.classList.remove('hidden'); panicModal.classList.add('flex');
+          currentPanicId = data.disparo_id || null;
+        }
+        function closePanicModal(){ if(panicModal){ panicModal.classList.add('hidden'); panicModal.classList.remove('flex'); } }
+        var currentPanicId = null; var panicMapRef = null; var panicMarkerRef = null;
+        function updatePanicModalLocation(data){
+          if(!currentPanicId || !panicModal || panicModal.classList.contains('hidden')) return;
+          if(data.disparo_id != currentPanicId) return;
+          if(!(data.coords && data.coords.lat && data.coords.lng)) return;
+          panicMapWrap.classList.remove('hidden');
+          function ensureLeaflet(cb){ if(window.L){ cb(); return; } var css=document.createElement('link'); css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css); var js=document.createElement('script'); js.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; js.onload=cb; document.head.appendChild(js); }
+          ensureLeaflet(function(){ try{
+            if(!panicMapRef){
+              panicMapDiv.innerHTML='';
+              panicMapRef = L.map('panic-modal-map').setView([data.coords.lat, data.coords.lng], 16);
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(panicMapRef);
+              panicMarkerRef = L.marker([data.coords.lat, data.coords.lng]).addTo(panicMapRef);
+            } else {
+              panicMarkerRef.setLatLng([data.coords.lat, data.coords.lng]);
+              panicMapRef.panTo([data.coords.lat, data.coords.lng]);
+            }
+          }catch(e){ console.warn('Leaflet upd err', e); }
+          });
+        }
+
+        // Ações encerrar via AJAX
+        function getCsrf(){ try{ const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m?decodeURIComponent(m[1]):''; }catch(_){ return ''; } }
+        function encerrarDisparo(disparoId, statusFinal, motivo){
+          if(!disparoId) return;
+          const url = `/panic/api/disparos/${disparoId}/encerrar/`;
+          const formData = new FormData();
+          formData.append('status_final', statusFinal);
+          if(motivo){ formData.append('relato_final', motivo); }
+          
+          fetch(url,{method:'POST', headers:{'X-CSRFToken': getCsrf()}, body: formData}).then(r=>r.json()).then(j=>{
+            if(j.status){
+              // Atualiza status no modal
+              const statusLine = document.createElement('div');
+              statusLine.className = 'mt-2 p-2 bg-green-100 text-green-800 rounded';
+              statusLine.innerHTML = '<strong>Status atualizado:</strong> '+ j.status + (motivo? ' • '+motivo:'');
+              panicInfo.appendChild(statusLine);
+              // Auto-fechar modal após 1.5s
+              setTimeout(function(){
+                closePanicModal();
+                // Remove banner se existir
+                var b=document.getElementById('panic-banner'); if(b) b.remove();
+                // Recarrega a página para atualizar a lista
+                window.location.reload();
+              }, 1500);
+            }
+          }).catch(e=>console.warn('Encerrar disparo err', e));
+        }
+        function actionPanic(acao){
+          if(!currentPanicId) return;
+          encerrarDisparo(currentPanicId, 'ENCERRADA');
+        }
+
+        // Botões da UI são declarados no HTML (#panic-modal-actions)
+        document.getElementById('panic-modal-close')?.addEventListener('click', closePanicModal);
+        document.getElementById('panic-modal-dismiss')?.addEventListener('click', closePanicModal);
+        panicModal?.addEventListener('click', function(ev){ if(ev.target === panicModal) closePanicModal(); });
+      }catch(e){ console.warn('WS panic init err', e); }
+    })();
+    </script>
+    {% endif %}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('select.js-choices').forEach(sel => {
+        const already = sel.dataset.choicesApplied === '1';
+        if (sel.dataset.choicesApplied === '1') return;
+        new Choices(sel, {
+          searchEnabled: true,
+          searchResultLimit: -1,
+          removeItemButton: false,
+          shouldSort: false,
+          // Remove o texto de ajuda "Press to select" do dropdown
+          itemSelectText: '',
+          // Permite renderizar <br> nos rótulos (para mostrar matrícula em cima e nome embaixo)
+          allowHTML: true,
+          // Busca customizada: procura palavras que começam com o termo digitado
+          searchFields: ['label', 'value'],
+          searchFloor: 0,
+          fuseOptions: {
+            threshold: 0.3,
+            distance: 100,
+            tokenize: true,
+            matchAllTokens: false,
+            findAllMatches: true
+          },
+          sorter: function(a, b) {
+            // Prioriza resultados que começam com o termo buscado
+            const searchTerm = (this.input?.value || '').toLowerCase().trim();
+            if (!searchTerm) return 0;
+            
+            const aLabel = (a.label || '').toLowerCase();
+            const bLabel = (b.label || '').toLowerCase();
+            
+            // Extrai a primeira palavra após o código (ex: "P-05 — Policiamento..." -> "policiamento")
+            const getFirstWord = (text) => {
+              const parts = text.split('—');
+              if (parts.length > 1) {
+                const afterCode = parts[1].trim();
+                return afterCode.split(/\s+/)[0].toLowerCase();
+              }
+              return text.split(/\s+/)[0].toLowerCase();
+            };
+            
+            const aFirstWord = getFirstWord(aLabel);
+            const bFirstWord = getFirstWord(bLabel);
+            
+            const aStartsWith = aFirstWord.startsWith(searchTerm);
+            const bStartsWith = bFirstWord.startsWith(searchTerm);
+            
+            // Prioriza quem começa com o termo
+            if (aStartsWith && !bStartsWith) return -1;
+            if (!aStartsWith && bStartsWith) return 1;
+            
+            // Se ambos começam ou ambos não começam, mantém ordem alfabética
+            return aLabel.localeCompare(bLabel);
+          }
+        });
+      });
+    });
+  </script>
+  {% if user.is_authenticated %}
+  <!-- Script de rastreamento (mantido após correção de nav) -->
+  <script>
+  (function(){
+    const POST_URL = '{% url "cecom:localizacao_post" %}';
+    const MIN_SECONDS = 5; // intervalo mínimo entre envios (s)
+    const MIN_DISTANCE_M = 5; // distância mínima para novo envio (m)
+    const WATCH_HIGH_ACCURACY = true;
+    const LS_KEY = 'tracking-enabled-v1';
+    let trackingEnabled = true;
+    let watchId = null; let lastSent = 0; let lastLat=null, lastLng=null;
+  let usingCapacitor = false; let capGeo = null; let capWatchActive=false; let capWatchId = null;
+    let ui = { btn:null, dot:null, text:null };
+    function cacheUI(){
+      ui.btn = document.getElementById('btn-tracking-toggle');
+      ui.dot = document.getElementById('tracking-status-dot');
+      ui.text = document.getElementById('tracking-status-text');
+    }
+    function updateUI(){
+      if(!ui.btn) return;
+      ui.text.textContent = trackingEnabled ? 'Rastreamento ON' : 'Rastreamento OFF';
+      ui.dot.className = 'w-2.5 h-2.5 rounded-full shadow-inner ' + (trackingEnabled ? 'bg-emerald-500' : 'bg-slate-500');
+      ui.btn.setAttribute('aria-pressed', trackingEnabled ? 'true':'false');
+    }
+    function toggleTracking(){
+      trackingEnabled = !trackingEnabled;
+      try { localStorage.setItem(LS_KEY, trackingEnabled ? '1':'0'); } catch(_){}
+      if(trackingEnabled) startTracking(); else stopTracking();
+      updateUI();
+    }
+    function haversine(lat1, lon1, lat2, lon2){ const R=6371000; const toRad=x=>x*Math.PI/180; const dLat=toRad(lat2-lat1); const dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; const c=2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); return R*c; }
+    function getCsrf(){ try{ const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/); return m?decodeURIComponent(m[1]):''; }catch(_){ return ''; } }
+    async function sendPosition(pos){ if(!trackingEnabled) return; const now=Date.now(); const coords=pos.coords||pos; const { latitude:lat, longitude:lng, accuracy, speed, heading } = coords; if(lat==null||lng==null) return; const dt=(now-lastSent)/1000; let dist=0; if(lastLat!=null) dist=haversine(lastLat,lastLng,lat,lng); if(dt<MIN_SECONDS && dist<MIN_DISTANCE_M) return; lastSent=now; lastLat=lat; lastLng=lng; try { await fetch(POST_URL,{ method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': getCsrf()}, body: JSON.stringify({ latitude:lat, longitude:lng, precisao:accuracy, velocidade: speed!=null && speed>0 ? (speed*3.6):null, direcao:heading }) }); } catch(e){ console.warn('Falha ao enviar localização', e); } }
+    function startBrowserWatch(){ if(!navigator.geolocation){ console.warn('Geolocalização não suportada'); return; } if(watchId!=null) return; watchId = navigator.geolocation.watchPosition(p=>sendPosition(p), err=>console.warn('Erro geoloc', err), {enableHighAccuracy:WATCH_HIGH_ACCURACY, maximumAge:5000, timeout:15000}); }
+    async function tryCapacitor(){
+      const Cap = window.Capacitor || null;
+      const isNative = !!(Cap && (typeof Cap.isNativePlatform==='function' ? Cap.isNativePlatform() : Cap.isNativePlatform));
+      if(!isNative){ usingCapacitor=false; startBrowserWatch(); return; }
+      usingCapacitor = true;
+      try {
+        capGeo = (Cap.Plugins && Cap.Plugins.Geolocation) ? Cap.Plugins.Geolocation : null;
+        if(!capGeo){ usingCapacitor=false; startBrowserWatch(); return; }
+        if(capGeo.requestPermissions) await capGeo.requestPermissions();
+        if(!trackingEnabled) return;
+        const cb = (pos, err)=>{ if(!trackingEnabled) return; if(err){ console.warn('Erro geoloc Capacitor', err); return; } if(pos) sendPosition(pos); };
+        // Inicia watch e guarda id para clear
+        capWatchId = await capGeo.watchPosition({ enableHighAccuracy: WATCH_HIGH_ACCURACY }, cb);
+        capWatchActive = true;
+      } catch(e){ console.warn('Capacitor geolocation indisponível, usando browser', e); usingCapacitor=false; startBrowserWatch(); }
+    }
+    function stopTracking(){
+      if(watchId!=null){ try { navigator.geolocation.clearWatch(watchId); } catch(_){ } watchId=null; }
+      if(capWatchActive && capGeo && capGeo.clearWatch && capWatchId!=null){ try { capGeo.clearWatch({ id: capWatchId }); } catch(_){ } capWatchId = null; }
+      capWatchActive=false;
+    }
+    function startTracking(){ lastSent=0; tryCapacitor(); }
+    async function requestPermissionOnLogin(){
+      try{
+        const Cap = window.Capacitor || null;
+        const isNative = !!(Cap && (typeof Cap.isNativePlatform==='function' ? Cap.isNativePlatform() : Cap.isNativePlatform));
+        if(isNative && Cap.Plugins && Cap.Plugins.Geolocation){
+          await Cap.Plugins.Geolocation.requestPermissions();
+        } else if (navigator.geolocation && navigator.permissions){
+          // Tenta solicitar via API de permissões quando disponível
+          try { const st = await navigator.permissions.query({name:'geolocation'}); if(st.state==='denied'){ console.warn('Permissão de localização negada no navegador'); } } catch(_){ }
+          // Dispara um getCurrentPosition para abrir prompt
+          navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}, {enableHighAccuracy:true, timeout:10000});
+        }
+      }catch(e){ /* ignore */ }
+    }
+    window.__TrackingControl = { startTracking, stopTracking, toggleTracking:()=>toggleTracking(), status:()=>({trackingEnabled, usingCapacitor}) };
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      try { const stored=localStorage.getItem(LS_KEY); if(stored==='0') trackingEnabled=false; else if(stored==='1') trackingEnabled=true; } catch(_){ }
+      cacheUI(); updateUI();
+      if(ui.btn) ui.btn.addEventListener('click', ()=>toggleTracking());
+      // Solicita permissão assim que loga
+      await requestPermissionOnLogin();
+      if(trackingEnabled) startTracking();
+    });
+  })();
+  </script>
+  {% endif %}
+
+    
+  <!-- Integração com app móvel (Capacitor) para Push Notifications -->
+  {% now 'U' as ts_version %}
+  <script src="{% static 'js/mobile.js' %}?v={{ ts_version }}" defer></script>
+  <!-- Loader e visualização de arquivos (com fallback PDF.js CDN -> local) -->
+  <script>
+  // Visualização avançada de arquivos dentro do APK (usa PDF.js para PDFs)
+  (function(){
+    const isCap = !!(window.Capacitor && (window.Capacitor.isNativePlatform || /Capacitor/i.test(navigator.userAgent)));
+    const overlay = document.getElementById('app-file-overlay');
+    const overlayContent = document.getElementById('app-file-overlay-content');
+  const btnClose = document.getElementById('app-file-overlay-close');
+  const btnDownload = document.getElementById('app-file-overlay-download');
+  const btnPrint = document.getElementById('app-file-overlay-print');
+  const pagerWrap = document.getElementById('app-file-overlay-pager');
+  const btnPrev = document.getElementById('ov-prev');
+  const btnNext = document.getElementById('ov-next');
+  const inputPage = document.getElementById('ov-page');
+  const spanTotal = document.getElementById('ov-total');
+  const btnZoomIn = document.getElementById('ov-zoom-in');
+  const btnZoomOut = document.getElementById('ov-zoom-out');
+  const btnAll = document.getElementById('ov-all');
+    let currentBlob = null, currentBlobUrl = null, originalFileName = null, currentSourceUrl = null;
+  let pdfDoc = null, currentPage = 1, pdfScale = 1.2, renderingAll = false;
+    btnClose.addEventListener('click', fecharOverlay);
+    btnDownload.addEventListener('click', baixarAtual);
+  btnPrint.addEventListener('click', imprimirAtual);
+
+    function fecharOverlay(){
+      overlay.style.display='none';
+      overlayContent.innerHTML='';
+      if(currentBlobUrl){ URL.revokeObjectURL(currentBlobUrl); currentBlobUrl=null; }
+      currentBlob=null; originalFileName=null; currentSourceUrl=null;
+      pdfDoc = null; currentPage = 1; pdfScale = 1.2; renderingAll = false;
+      if(pagerWrap) pagerWrap.style.display='none';
+    }
+    function toast(msg, ok=true){
+      try{
+        const div=document.createElement('div');
+        div.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:'+(ok?'#065f46':'#7f1d1d')+';color:#fff;padding:8px 12px;border-radius:8px;z-index:10000;box-shadow:0 2px 6px rgba(0,0,0,.3)';
+        div.textContent=msg; document.body.appendChild(div); setTimeout(()=>div.remove(), 3000);
+      }catch(_){}
+    }
+    function baixarAtual(){
+      // Fluxo nativo no app: salvar no cache e abrir ShareSheet para o usuário decidir onde salvar/abrir
+      if(isCap){
+        (async()=>{
+          try{
+            const { Plugins } = window.Capacitor || {};
+            const Filesystem = Plugins?.Filesystem; const Share = Plugins?.Share; const Browser = Plugins?.Browser;
+            if(currentBlob && Filesystem){
+              const toBase64 = (blob)=> new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res((r.result||'').toString().split(',')[1]||''); r.onerror=rej; r.readAsDataURL(blob); });
+              const b64 = await toBase64(currentBlob);
+              const safeName = (originalFileName||'arquivo_'+Date.now()).replace(/[^a-zA-Z0-9._-]+/g,'_');
+              const path = `${Date.now()}_${safeName}`; // sem subpastas
+              await Filesystem.writeFile({ path, data: b64, directory: 'CACHE' });
+              // Obter URI "content://" para compartilhar como arquivo
+              let uri = null; try { uri = await Filesystem.getUri({ path, directory: 'CACHE' }); } catch(_) {}
+              if(Share?.share && (uri?.uri)){
+                try { await Share.share({ title: 'Salvar/Compartilhar arquivo', text: safeName, files: [uri.uri] }); toast('Arquivo pronto para compartilhar'); return; }
+                catch(_){ /* tenta via url como fallback */ try { await Share.share({ title: 'Salvar/Compartilhar arquivo', text: safeName, url: uri.uri }); toast('Abrindo compartilhamento'); return; } catch(__){} }
+              }
+              // Sem Share, tenta abrir no navegador externo
+              if(Browser?.open){ Browser.open({ url: currentSourceUrl || (currentBlobUrl||'') }); return; }
+            }
+            // Sem blob escrito, tenta navegador externo direto
+            if(Browser?.open && (currentSourceUrl || currentBlobUrl)){
+              Browser.open({ url: currentSourceUrl || currentBlobUrl });
+              return;
+            }
+          }catch(e){ console.warn('Download (Capacitor) falhou, fallback web', e); }
+          // fallback web
+          try { if(!currentBlob && currentSourceUrl){ window.open(currentSourceUrl, '_blank'); return; } } catch(_){ }
+          try {
+            if(!currentBlob){ toast('Nenhum arquivo para baixar', false); return; }
+            const a=document.createElement('a');
+            const url = currentBlobUrl || URL.createObjectURL(currentBlob);
+            if(!currentBlobUrl) currentBlobUrl=url;
+            a.href=url; a.download= originalFileName || ('arquivo_'+Date.now());
+            document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),100);
+          } catch(e){ console.warn('Falha download', e); }
+        })();
+        return;
+      }
+      // Fallback web/desktop por âncora
+      try {
+        if(!currentBlob && currentSourceUrl){ window.open(currentSourceUrl, '_blank'); return; }
+        if(!currentBlob) return;
+        const a=document.createElement('a');
+        const url = currentBlobUrl || URL.createObjectURL(currentBlob);
+        if(!currentBlobUrl) currentBlobUrl=url;
+        a.href=url; a.download= originalFileName || ('arquivo_'+Date.now());
+        document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),100);
+      } catch(e){ console.warn('Falha download', e); }
+    }
+    async function ensurePdfJs(callback){
+      // Se já carregado (UMD) ou módulo ESM salvo, segue
+      if(window.__pdfjsModule || window['pdfjsLib'] || window['pdfjs-dist/build/pdf']) return callback();
+      // 1) Tenta ESM local (offline-first)
+      try {
+        const mod = await import('/static/js/vendor/pdfjs/pdf.esm.js');
+        // Alguns builds expõem default, outros nomeados
+        window.__pdfjsModule = mod && (mod.default || mod);
+        return callback();
+      } catch(e){ console.warn('Falha import ESM local do PDF.js:', e); }
+      // 2) Fallback para UMD local/CDN injetando <script>
+      const sources = [
+        '/static/js/vendor/pdfjs/pdf.min.js',
+        '/static/js/vendor/pdfjs/pdf.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.js',
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.min.js',
+        'https://unpkg.com/pdfjs-dist@4.3.136/build/pdf.min.js'
+      ];
+      let idx = 0;
+      const tryNext = ()=>{
+        if(window.pdfjsLib){ return callback(); }
+        if(idx >= sources.length){
+          overlayContent.innerHTML = '<div class="text-red-300 text-sm">Falha ao carregar PDF.js.<br><span class="text-xs">Copie os arquivos pdf.min.mjs e pdf.worker.min.mjs para /static/js/vendor/pdfjs/ ou habilite internet para CDN.</span></div>';
+          return;
+        }
+        const src = sources[idx++];
+        const s = document.createElement('script'); s.src = src;
+        s.onload = ()=>{ if(window.pdfjsLib){ callback(); } else { console.warn('PDF.js sem pdfjsLib:', src); tryNext(); } };
+        s.onerror = ()=>{ console.warn('Erro ao carregar', src); tryNext(); };
+        document.head.appendChild(s);
+      };
+      tryNext();
+    }
+    function renderPdf(blob){
+      overlay.style.display='block';
+      overlayContent.innerHTML='<div class="text-white text-sm">Carregando PDF...</div>';
+      const url = URL.createObjectURL(blob);
+      currentBlobUrl = url;
+      ensurePdfJs(()=>{
+        // Seleciona API do PDF.js vinda do ESM ou UMD
+        const pdfjs = (window.__pdfjsModule) || window['pdfjsLib'] || window['pdfjs-dist/build/pdf'];
+        try {
+          if(pdfjs && pdfjs.GlobalWorkerOptions){
+            if(!pdfjs.GlobalWorkerOptions.workerSrc){
+              // Se carregado por ESM, usar worker .mjs local; senão, detectar local UMD e por fim CDN
+              if(window.__pdfjsModule){
+                pdfjs.GlobalWorkerOptions.workerSrc = '/static/js/vendor/pdfjs/pdf.worker.esm.js';
+              } else {
+                const usingLocal = !!document.querySelector('script[src="/static/js/vendor/pdfjs/pdf.min.js"]');
+                if(usingLocal){
+                  pdfjs.GlobalWorkerOptions.workerSrc = '/static/js/vendor/pdfjs/pdf.worker.min.js';
+                } else {
+                  pdfjs.GlobalWorkerOptions.workerSrc = (window.__PDFJS_CDN_WORKER || 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.worker.min.js');
+                }
+              }
+            }
+          }
+        } catch(_){ }
+        (pdfjs.getDocument || (pdfjs.default && pdfjs.default.getDocument)).call(pdfjs, {url}).promise.then(pdf=>{
+          pdfDoc = pdf; renderingAll = false; currentPage = 1; pdfScale = 1.2;
+          if(pagerWrap){
+            pagerWrap.style.display = pdf.numPages > 0 ? 'flex' : 'none';
+            spanTotal.textContent = String(pdf.numPages);
+            inputPage.value = '1'; inputPage.min = '1'; inputPage.max = String(pdf.numPages);
+          }
+          overlayContent.innerHTML='';
+          renderCurrentPdfPage();
+        }).catch(err=>{
+          console.error('PDF.js erro', err);
+          overlayContent.innerHTML='<div class="text-red-300 text-sm">Não foi possível renderizar este PDF.</div>';
+        });
+      });
+    }
+    function renderCurrentPdfPage(){
+      if(!pdfDoc) return;
+      overlayContent.innerHTML='';
+      pdfDoc.getPage(currentPage).then(page=>{
+        const viewport=page.getViewport({scale:pdfScale});
+        const canvas=document.createElement('canvas'); canvas.width=viewport.width; canvas.height=viewport.height; canvas.style.cssText='max-width:100%;height:auto;display:block;margin:0 auto 12px;background:#fff;border-radius:4px;';
+        const ctx=canvas.getContext('2d');
+        page.render({canvasContext:ctx,viewport}).promise.then(()=>{});
+        overlayContent.appendChild(canvas);
+      });
+    }
+    // Controles de página/zoom
+    btnPrev && btnPrev.addEventListener('click', ()=>{ if(!pdfDoc||renderingAll) return; if(currentPage>1){ currentPage--; inputPage.value=String(currentPage); renderCurrentPdfPage(); } });
+    btnNext && btnNext.addEventListener('click', ()=>{ if(!pdfDoc||renderingAll) return; if(currentPage < pdfDoc.numPages){ currentPage++; inputPage.value=String(currentPage); renderCurrentPdfPage(); } });
+    inputPage && inputPage.addEventListener('change', ()=>{ if(!pdfDoc||renderingAll) return; let p=parseInt(inputPage.value||'1',10); if(isNaN(p)) p=1; if(p<1) p=1; if(p>pdfDoc.numPages) p=pdfDoc.numPages; currentPage=p; inputPage.value=String(currentPage); renderCurrentPdfPage(); });
+    btnZoomIn && btnZoomIn.addEventListener('click', ()=>{ if(!pdfDoc||renderingAll) return; pdfScale=Math.min(pdfScale+0.2, 4); renderCurrentPdfPage(); });
+    btnZoomOut && btnZoomOut.addEventListener('click', ()=>{ if(!pdfDoc||renderingAll) return; pdfScale=Math.max(pdfScale-0.2, 0.4); renderCurrentPdfPage(); });
+    btnAll && btnAll.addEventListener('click', ()=>{ if(!pdfDoc) return; renderingAll=true; pagerWrap.style.display='none'; overlayContent.innerHTML=''; (async()=>{ for(let i=1;i<=pdfDoc.numPages;i++){ const page=await pdfDoc.getPage(i); const viewport=page.getViewport({scale:pdfScale}); const canvas=document.createElement('canvas'); canvas.width=viewport.width; canvas.height=viewport.height; canvas.style.cssText='max-width:100%;height:auto;display:block;margin:0 auto 12px;background:#fff;border-radius:4px;'; const ctx=canvas.getContext('2d'); await page.render({canvasContext:ctx,viewport}).promise; overlayContent.appendChild(canvas);} })(); });
+
+    function imprimirAtual(){
+      if(!currentBlob){
+        if(isCap && (currentSourceUrl||currentBlobUrl)){
+          try{ const Browser = window.Capacitor?.Plugins?.Browser; if(Browser?.open){ Browser.open({ url: currentSourceUrl || currentBlobUrl }); return; } }catch(_){ }
+        }
+        return;
+      }
+      const mime = currentBlob.type || '';
+      // PDF: tentar imprimir via iframe oculto
+      if(mime==='application/pdf'){
+        try{
+          const src = currentBlobUrl || URL.createObjectURL(currentBlob);
+          const iframe = document.createElement('iframe');
+          iframe.style.position='fixed'; iframe.style.right='0'; iframe.style.bottom='0'; iframe.style.width='0'; iframe.style.height='0'; iframe.style.border='0';
+          iframe.onload = ()=>{ try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch(_){} setTimeout(()=>iframe.remove(), 2000); };
+          iframe.src = src; document.body.appendChild(iframe);
+        }catch(e){
+          if(isCap){ try{ const Browser = window.Capacitor?.Plugins?.Browser; if(Browser?.open){ Browser.open({ url: currentSourceUrl || (currentBlobUrl||'') }); return; } }catch(_){ } }
+        }
+        return;
+      }
+      // Imagem ou outros: abre janela simples com conteúdo e chama print
+      try{
+        const src = currentBlobUrl || URL.createObjectURL(currentBlob);
+        const w = window.open('', '_blank');
+        if(!w){ if(isCap){ const Browser = window.Capacitor?.Plugins?.Browser; Browser?.open && Browser.open({ url: currentSourceUrl || src }); } return; }
+        w.document.write('<html><head><title>Imprimir</title></head><body style="margin:0">');
+        if(mime.startsWith('image/')){
+          w.document.write('<img src="'+src+'" style="max-width:100%;height:auto;" />');
+        } else {
+          w.document.write('<pre>'+ (originalFileName||'arquivo') +'</pre>');
+        }
+        w.document.write('</body></html>');
+        w.document.close();
+        w.focus();
+        setTimeout(()=>{ try{ w.print(); }catch(_){ } }, 300);
+      }catch(_){ if(isCap){ const Browser = window.Capacitor?.Plugins?.Browser; Browser?.open && Browser.open({ url: currentSourceUrl || (currentBlobUrl||'') }); } }
+    }
+    function renderImage(blob){
+      overlay.style.display='block';
+      currentBlobUrl = URL.createObjectURL(blob);
+      const img=document.createElement('img');
+      img.src=currentBlobUrl; img.alt=originalFileName||''; img.style.cssText='max-width:100%;height:auto;object-fit:contain;background:#fff;padding:8px;border-radius:6px;box-shadow:0 0 0 1px #334155';
+      overlayContent.innerHTML=''; overlayContent.appendChild(img);
+    }
+    function renderUnsupported(mime){
+      overlay.style.display='block';
+      overlayContent.innerHTML='<div class="text-white text-sm">Tipo não suportado: '+mime+'</div>';
+    }
+    function showFile(blob, mime, name){
+      currentBlob = blob; originalFileName = name;
+      if(mime==='application/pdf') return renderPdf(blob);
+      if(mime.startsWith('image/')) return renderImage(blob);
+      return renderUnsupported(mime);
+    }
+    async function openUrlInViewer(href){
+      try {
+        overlay.style.display='block'; overlayContent.innerHTML='<div class="text-white text-sm">Carregando...</div>';
+        currentSourceUrl = href;
+        const resp = await fetch(href, {credentials:'include'});
+        if(!resp.ok) throw new Error('HTTP '+resp.status);
+        const ct = (resp.headers.get('Content-Type')||'').split(';')[0];
+        let dispo = resp.headers.get('Content-Disposition')||''; let nomeMatch = dispo.match(/filename="?([^";]+)"?/i);
+        let nome = nomeMatch ? nomeMatch[1] : href.split('/').pop().split('?')[0] || 'arquivo';
+        const blob = await resp.blob();
+        showFile(blob, ct || 'application/octet-stream', nome);
+      } catch(err){
+        console.error('[OverlayFile] falha openUrl', err);
+        overlayContent.innerHTML='<div class="text-red-300 text-sm">Erro ao abrir arquivo.</div>';
+      }
+    }
+    async function intercept(ev){
+      const a = ev.target.closest && ev.target.closest('a'); if(!a) return;
+      const href = a.getAttribute('href'); if(!href) return;
+      const low = href.toLowerCase();
+      const looks = /(\.pdf($|\?)|\.png($|\?)|\.jpe?g($|\?)|\.gif($|\?)|\.webp($|\?))/.test(low) || low.includes('/media/');
+      if(!looks) return;
+      ev.preventDefault(); ev.stopPropagation();
+      try {
+        overlay.style.display='block'; overlayContent.innerHTML='<div class="text-white text-sm">Carregando...</div>';
+        const resp = await fetch(href, {credentials:'include'});
+        if(!resp.ok) throw new Error('HTTP '+resp.status);
+        const ct = (resp.headers.get('Content-Type')||'').split(';')[0];
+        let dispo = resp.headers.get('Content-Disposition')||''; let nomeMatch = dispo.match(/filename="?([^";]+)"?/i);
+        let nome = nomeMatch ? nomeMatch[1] : href.split('/').pop().split('?')[0] || 'arquivo';
+        const blob = await resp.blob();
+        showFile(blob, ct || 'application/octet-stream', nome);
+      } catch(err){
+        console.error('[OverlayFile] falha', err);
+        overlayContent.innerHTML='<div class="text-red-300 text-sm">Erro ao abrir arquivo.</div>';
+      }
+    }
+  // Interceptação automática desativada para não interferir em botões de Download no app.
+  // Use apenas botões/links com classe .js-view-file para abrir no overlay.
+    // Gatilho explícito (funciona tanto no app quanto no desktop)
+    document.addEventListener('click', function(e){
+      const el = e.target.closest && e.target.closest('.js-view-file');
+      if(!el) return;
+      const href = el.getAttribute('data-href') || el.getAttribute('href');
+      if(!href) return;
+      e.preventDefault(); e.stopPropagation();
+      openUrlInViewer(href);
+    }, true);
+
+    // Intercepta links com atributo download no app e baixa via Filesystem + Share (com credenciais). Browser é fallback.
+    document.addEventListener('click', function(e){
+      if(!isCap) return;
+      const a = e.target.closest && e.target.closest('a[download]');
+      if(!a) return;
+      const href = a.getAttribute('href');
+      if(!href) return;
+      e.preventDefault(); e.stopPropagation();
+      (async()=>{
+        try{
+          const { Plugins } = window.Capacitor || {};
+          const Filesystem = Plugins?.Filesystem; const Share = Plugins?.Share; const Browser = Plugins?.Browser;
+          // Tentar baixar com as credenciais atuais (sessão do usuário)
+          const resp = await fetch(href, { credentials:'include' });
+          if(!resp.ok) throw new Error('HTTP '+resp.status);
+          const dispo = resp.headers.get('Content-Disposition')||'';
+          const nameMatch = dispo.match(/filename="?([^";]+)"?/i);
+          const fallbackName = href.split('/').pop().split('?')[0] || ('arquivo_'+Date.now());
+          const fileName = (nameMatch ? nameMatch[1] : fallbackName).replace(/[^a-zA-Z0-9._-]+/g,'_');
+          const blob = await resp.blob();
+          if(Filesystem){
+            const toBase64 = (b)=> new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res((r.result||'').toString().split(',')[1]||''); r.onerror=rej; r.readAsDataURL(b); });
+            const b64 = await toBase64(blob);
+            const path = `${Date.now()}_${fileName}`;
+            await Filesystem.writeFile({ path, data: b64, directory: 'CACHE' });
+            let uri = null; try { uri = await Filesystem.getUri({ path, directory: 'CACHE' }); } catch(_) {}
+            if(Share?.share && (uri?.uri)){
+              try { await Share.share({ title:'Salvar/Compartilhar arquivo', text:fileName, files:[uri.uri] }); toast('Arquivo pronto para compartilhar'); return; }
+              catch(_){ try { await Share.share({ title:'Salvar/Compartilhar arquivo', text:fileName, url: uri.uri }); toast('Abrindo compartilhamento'); return; } catch(__){} }
+            }
+            toast('Arquivo salvo no cache do app');
+          }
+          // Fallback: abrir no Browser (pode não carregar cookie de sessão)
+          if(Browser?.open){ await Browser.open({ url: href }); return; }
+          // Último fallback: abrir nova aba
+          window.open(href, '_blank');
+        }catch(err){
+          console.warn('Falha download in-app, fallback Browser', err);
+          try{ const Browser = window.Capacitor?.Plugins?.Browser; if(Browser?.open){ await Browser.open({ url: href }); return; } }catch(_){ }
+          try{ window.open(href, '_blank'); }catch(_){ }
+        }
+      })();
+    }, true);
+  })();
+  </script>
+  
+  {# Espaço para scripts específicos das páginas (ex.: mapas Leaflet no detalhe do pânico) #}
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+
+<footer style="margin-top:24px;padding:16px 0;border-top:1px solid #eee;text-align:center;font-size:12px;color:#666;">
+  © 2025 – Sistema GCM Integrado — Desenvolvido por Moisés Santos de Oliveira
+  · Licenciado por contrato anual para múltiplos municípios.
+</footer>

@@ -1,0 +1,389 @@
+{% extends "_layout/base.html" %}
+{% block title %}Meu Perfil{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Meu Perfil</h1>
+    <p class="text-sm text-slate-600 mt-1">Gerencie suas informações pessoais e configurações</p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6">
+  {% csrf_token %}
+    
+    <!-- Informações Básicas -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Informações Básicas
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Matrícula</label>
+          {{ form.matricula }}
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Equipe</label>
+            {{ form.equipe }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Classe</label>
+            {{ form.classe }}
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Cargo</label>
+          {{ form.cargo }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Segurança -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Segurança
+        </h2>
+      </div>
+      <div class="p-6">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Email de recuperação</label>
+          {{ form.recovery_email }}
+          <p class="text-xs text-slate-500 mt-2 flex items-start gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Usado para enviar link de redefinição de senha ao clicar em "Esqueci a senha".</span>
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sistema de Assinatura -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+          Assinatura Digital
+        </h2>
+      </div>
+      <div class="p-6 space-y-5">
+        <!-- Escolha do tipo -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-3">Tipo de assinatura</label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            {{ form.assinatura_tipo }}
+          </div>
+        </div>
+        
+        <!-- Upload de arquivo -->
+        <div id="upload-section">
+          <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 bg-slate-50">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+              <div class="flex-1">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Anexar arquivo</label>
+                {{ form.assinatura_img }}
+                <p class="text-xs text-slate-500 mt-2 flex items-start gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>PNG com fundo transparente para melhor resultado.</span>
+                </p>
+              </div>
+              {% if perfil.assinatura_img %}
+                <div class="flex flex-col items-center gap-2">
+                  <span class="text-sm font-medium text-slate-700">Prévia Atual</span>
+                  <div class="border-2 border-slate-200 rounded-lg p-3 bg-white">
+                    <img src="{{ perfil.assinatura_img.url }}" class="h-20 max-w-xs">
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Canvas para desenhar -->
+        <div id="digital-section" style="display: none;">
+          <div class="border-2 border-purple-200 rounded-lg p-6 bg-purple-50">
+            <label class="block text-sm font-medium text-slate-700 mb-3">Desenhar assinatura</label>
+            <div class="mb-4 flex items-center gap-3 flex-wrap">
+              <button type="button" id="clear-canvas" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Limpar
+              </button>
+              <button type="button" id="save-signature" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Salvar Assinatura
+              </button>
+              <span class="text-sm text-slate-600 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                </svg>
+                Use mouse/dedo para desenhar
+              </span>
+            </div>
+            <div class="bg-white rounded-lg border-2 border-slate-300 p-2">
+              <canvas 
+                id="signature-canvas" 
+                width="600" 
+                height="200" 
+                class="rounded cursor-crosshair w-full"
+                style="height: 180px; touch-action: none; user-select: none; -webkit-user-select: none; overscroll-behavior: contain;">
+              </canvas>
+            </div>
+            <p class="text-xs text-slate-500 mt-3 flex items-start gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>A assinatura é salva quando você clica em "Salvar Assinatura" e será incluída nos documentos que você assinar.</span>
+            </p>
+          </div>
+          
+          <!-- Preview da assinatura digital -->
+          <div id="signature-preview" class="mt-4" style="display: none;">
+            <div class="flex flex-col items-center gap-2">
+              <span class="text-sm font-medium text-slate-700">Prévia da Assinatura</span>
+              <div class="border-2 border-green-200 rounded-lg p-3 bg-green-50">
+                <img id="signature-preview-img" class="h-20 max-w-xs">
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {{ form.assinatura_digital }}
+      </div>
+    </div>
+
+    <!-- Status e Ações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+          {{ form.ativo }}
+          <label class="text-sm font-medium text-slate-700 cursor-pointer">
+            <span class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Conta Ativa
+            </span>
+          </label>
+        </div>
+        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Salvar Alterações
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+    
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('signature-canvas');
+    const ctx = canvas.getContext('2d');
+    const clearBtn = document.getElementById('clear-canvas');
+    const saveBtn = document.getElementById('save-signature');
+    const uploadSection = document.getElementById('upload-section');
+    const digitalSection = document.getElementById('digital-section');
+    const assinaturaTipo = document.querySelectorAll('input[name="assinatura_tipo"]');
+    const assinaturaDigitalField = document.getElementById('id_assinatura_digital');
+    const previewDiv = document.getElementById('signature-preview');
+    const previewImg = document.getElementById('signature-preview-img');
+    
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+  // Ajuste de definição para telas de alta densidade (DPR)
+  function resizeCanvasForDPR() {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    try { ctx.setTransform(1,0,0,1,0,0); } catch(_){ }
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    try { ctx.setTransform(ratio, 0, 0, ratio, 0, 0); } catch(_){ }
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+  // Inicializa resolução conforme DPR
+  resizeCanvasForDPR();
+
+    // Carregar assinatura salva se existir
+  if (assinaturaDigitalField.value) {
+    const img = new Image();
+    img.onload = function() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const rect = canvas.getBoundingClientRect();
+      ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      showPreview(assinaturaDigitalField.value);
+    };
+    img.src = assinaturaDigitalField.value;
+  }
+
+    // Alternar entre tipos
+    assinaturaTipo.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'upload') {
+                uploadSection.style.display = 'block';
+                digitalSection.style.display = 'none';
+            } else {
+                uploadSection.style.display = 'none';
+        digitalSection.style.display = 'block';
+        // Recalcula o canvas agora que ficou visível
+        // usa timeout curto para garantir layout aplicado
+        setTimeout(() => {
+          resizeCanvasForDPR();
+          // Opcional: limpar para evitar artefatos antigos
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }, 0);
+            }
+        });
+    });
+
+    // Verificar tipo inicial
+    const checkedRadio = document.querySelector('input[name="assinatura_tipo"]:checked');
+    if (checkedRadio && checkedRadio.value === 'digital') {
+        uploadSection.style.display = 'none';
+    digitalSection.style.display = 'block';
+    // Garante tamanho correto ao abrir já em modo digital
+    setTimeout(() => { resizeCanvasForDPR(); }, 0);
+    }
+
+    // Funções de desenho - Mouse
+    function startDrawing(e) {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        lastX = e.clientX - rect.left;
+        lastY = e.clientY - rect.top;
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+        
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        lastX = currentX;
+        lastY = currentY;
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    // Funções de desenho - Touch
+  function startDrawingTouch(e) {
+    if (e && e.cancelable) e.preventDefault();
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        isDrawing = true;
+        lastX = touch.clientX - rect.left;
+        lastY = touch.clientY - rect.top;
+    }
+
+    function drawTouch(e) {
+        if (!isDrawing) return;
+    if (e && e.cancelable) e.preventDefault();
+        
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const currentX = touch.clientX - rect.left;
+        const currentY = touch.clientY - rect.top;
+        
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        lastX = currentX;
+        lastY = currentY;
+    }
+
+  function stopDrawingTouch(e) {
+    if (e && e.cancelable) e.preventDefault();
+        isDrawing = false;
+    }
+
+    // Event listeners - Mouse
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Event listeners - Touch
+  // Listeners de toque não-passivos para permitir preventDefault e evitar rolagem da página durante o desenho
+  canvas.addEventListener('touchstart', startDrawingTouch, { passive: false });
+  canvas.addEventListener('touchmove', drawTouch, { passive: false });
+  canvas.addEventListener('touchend', stopDrawingTouch, { passive: false });
+
+  // Reajusta resolução em mudança de orientação/tamanho (não limpa o desenho por padrão)
+  window.addEventListener('resize', () => {
+    // Opcional: se quiser preservar o desenho, precisaríamos copiar para um buffer; aqui priorizamos performance.
+    resizeCanvasForDPR();
+    if (assinaturaDigitalField.value) {
+      const img = new Image();
+      img.onload = function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Desenha proporcionalmente ao novo tamanho
+        const rect = canvas.getBoundingClientRect();
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = assinaturaDigitalField.value;
+    }
+  });
+
+    // Limpar canvas
+    clearBtn.addEventListener('click', function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        assinaturaDigitalField.value = '';
+        previewDiv.style.display = 'none';
+    });
+
+    // Salvar assinatura
+    saveBtn.addEventListener('click', function() {
+        const dataURL = canvas.toDataURL('image/png');
+        assinaturaDigitalField.value = dataURL;
+        showPreview(dataURL);
+        
+        // Feedback visual
+        saveBtn.textContent = 'Salvo!';
+        saveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        saveBtn.classList.add('bg-green-800');
+        setTimeout(() => {
+            saveBtn.textContent = 'Salvar Assinatura';
+            saveBtn.classList.remove('bg-green-800');
+            saveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        }, 1500);
+    });
+
+    function showPreview(dataURL) {
+        previewImg.src = dataURL;
+        previewDiv.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

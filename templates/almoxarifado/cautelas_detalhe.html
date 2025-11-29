@@ -1,0 +1,104 @@
+{% extends "_layout/base.html" %}
+{% load almox_tags %}
+{% block title %}Cautela #{{ c.id }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="flex items-center justify-between mb-3">
+  <h1 class="text-2xl font-bold">Cautela #{{ c.id }} · <span class="{{ c.status|status_badge_class }}">{{ c.get_status_display }}</span>
+      {% if audit_chain_ok is not none %}
+        {% if audit_chain_ok %}
+          <span class="ml-2 inline-flex items-center text-green-700 bg-green-100 border border-green-300 rounded px-2 py-0.5 text-xs">auditoria íntegra ✓</span>
+        {% else %}
+          <span class="ml-2 inline-flex items-center text-red-700 bg-red-100 border border-red-300 rounded px-2 py-0.5 text-xs">falha na auditoria ✗</span>
+        {% endif %}
+      {% endif %}
+      {% if c.observacoes %}
+        {% if 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+          {% if c.supervisor %}
+            {% with sup=c.supervisor %}
+              {% with mat=sup.perfil.matricula|default:sup.username nome=sup.get_full_name|default:sup.get_username %}
+                <span class="ml-2 inline-flex items-center text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 text-xs">devolução solicitada para: {{ mat }} - {{ nome|upper }}</span>
+              {% endwith %}
+            {% endwith %}
+          {% else %}
+            <span class="ml-2 inline-flex items-center text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 text-xs">devolução solicitada</span>
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    </h1>
+    <div class="flex gap-2">
+      <a class="btn" href="{% url 'core:almoxarifado:cautelas_lista' %}">Lista</a>
+      <a class="btn" href="{% url 'core:almoxarifado:painel' %}">Painel</a>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mb-6">
+    <div class="bg-white border rounded-xl p-3">
+      <div><span class="text-slate-500">Tipo:</span> {{ c.get_tipo_display }}</div>
+      <div><span class="text-slate-500">Usuário:</span> {{ c.usuario }}</div>
+      <div><span class="text-slate-500">Supervisor:</span> {{ c.supervisor|default:"-" }}</div>
+  {# Almoxarife não exibido nesta fase: fluxo simples com supervisor apenas #}
+      <div><span class="text-slate-500">Criada:</span> {{ c.created_at|date:"d/m/Y H:i" }}</div>
+      <div><span class="text-slate-500">Prev. devolução:</span> {{ c.data_hora_prevista_devolucao|date:"d/m/Y H:i"|default:"-" }}</div>
+    </div>
+    <div class="bg-white border rounded-xl p-3">
+      <div><span class="text-slate-500">Aprovada:</span> {{ c.aprovada_em|date:"d/m/Y H:i"|default:"-" }}</div>
+      <div><span class="text-slate-500">Devolução:</span> {{ c.data_hora_devolucao|date:"d/m/Y H:i"|default:"-" }}</div>
+    </div>
+  </div>
+
+  <div class="bg-white border rounded-xl overflow-x-auto mb-6">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left">
+          <th class="p-2 border">Tipo</th>
+          <th class="p-2 border">Item</th>
+          <th class="p-2 border">Calibre</th>
+          <th class="p-2 border">Lote</th>
+          <th class="p-2 border">Qtd</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for i in c.itens.all %}
+        <tr>
+          <td class="p-2 border">{{ i.get_item_tipo_display }}</td>
+          <td class="p-2 border">{{ i.item }}</td>
+          <td class="p-2 border">{% if i.item.calibre %}{{ i.item.calibre }}{% else %}-{% endif %}</td>
+          <td class="p-2 border">{% if i.item.lote %}{{ i.item.lote }}{% else %}-{% endif %}</td>
+          <td class="p-2 border">{{ i.quantidade }}</td>
+        </tr>
+      {% empty %}
+        <tr><td class="p-3 text-center text-slate-500" colspan="5">Sem itens.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex gap-2">
+    {# Aprovar: apenas o supervisor designado vê #}
+    {% if c.status == 'PENDENTE' and request.user.id == c.supervisor_id %}
+      <a class="btn btn-primary" href="{% url 'core:almoxarifado:cautelas_aprovar' c.id %}">Aprovar</a>
+    {% endif %}
+    {# Usuário pode solicitar devolução enquanto APROVADA (se ainda não solicitada) #}
+    {% if c.status == 'APROVADA' and request.user.id == c.usuario_id %}
+      {% if c.observacoes %}
+        {% if not 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+          <a class="btn" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+        {% endif %}
+      {% else %}
+        <a class="btn" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+      {% endif %}
+    {% endif %}
+    {# Supervisor aprova devolução apenas quando solicitado #}
+    {% if request.user.id == c.supervisor_id and c.observacoes and 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+      {% if c.status == 'ABERTA' or c.status == 'APROVADA' %}
+        <form method="post" action="{% url 'core:almoxarifado:cautelas_devolver' c.id %}" onsubmit="return confirm('Confirmar devolução e encerramento da cautela?');" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">Devolver</button>
+        </form>
+      {% endif %}
+    {% endif %}
+    <a class="btn" href="{% url 'core:almoxarifado:cautelas_auditoria' c.id %}">Auditoria</a>
+  </div>
+</div>
+{% endblock %}

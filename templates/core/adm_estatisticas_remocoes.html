@@ -1,0 +1,98 @@
+{% extends "_layout/base.html" %}
+{% block title %}Estatísticas - Veículos Removidos{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-6">
+    <div class="flex items-center justify-between gap-4 mb-3">
+      <div>
+        <h1 class="text-2xl font-bold">Estatísticas · Veículos Removidos</h1>
+        <p class="text-slate-600">BOs com remoção de veículo (período por emissão do BO).</p>
+      </div>
+      <div>
+        <a class="btn btn-outline" href="{% url 'core:estatisticas' %}">← Voltar Estatísticas</a>
+      </div>
+    </div>
+    <div class="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-3">
+      <form method="get" class="flex flex-wrap items-end gap-3">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">GCM (Encarregado, opcional)</label>
+          <select name="user" class="input min-w-[260px] js-choices">
+            <option value="">— Todos —</option>
+            {% for u in user_options %}
+              <option value="{{ u.id }}" {% if u.id == uid %}selected{% endif %}>{{ u.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">De</label>
+          <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Até</label>
+          <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input" />
+        </div>
+        <button class="btn btn-primary" type="submit">Filtrar</button>
+        <div class="grow"></div>
+        <div class="flex flex-wrap gap-2">
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_remocoes_graficos' %}?tab=dia&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}">Gráfico (Geral · Dia)</a>
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_remocoes_graficos' %}?tab=mes&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}">Gráfico (Geral · Mês)</a>
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_remocoes_graficos' %}?tab=semestre&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}">Gráfico (Geral · Semestre)</a>
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_remocoes_graficos' %}?tab=ano&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}">Gráfico (Geral · Ano)</a>
+          <a class="btn btn-success" href="?de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}&export=csv">Baixar CSV (Período/Filtro)</a>
+          <a class="btn btn-primary" href="?de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&user={{ uid }}&export=pdf">Baixar PDF (Apresentação)</a>
+        </div>
+      </form>
+      <form method="get" action="{% url 'core:estatisticas_remocoes_graficos' %}" class="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="tab" value="mes" />
+        <input type="hidden" name="de" value="{{ de|date:'Y-m-d' }}" />
+        <input type="hidden" name="ate" value="{{ ate|date:'Y-m-d' }}" />
+        <label class="text-xs text-slate-500">Selecione GCM para gráfico por usuário…</label>
+        <select name="user" class="input min-w-[260px] js-choices">
+          {% for u in user_options %}
+            <option value="{{ u.id }}">{{ u.label }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-outline" type="submit">Abrir Gráfico do Usuário</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Total de Veículos Removidos</div><div class="text-2xl font-semibold">{{ total }}</div></div>
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Remoções com AIT</div><div class="text-2xl font-semibold">{{ com_ait }}</div></div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+    <div class="bg-white rounded-xl border shadow-sm p-4">
+      <h2 class="font-semibold mb-3">Top 5 · Usuários (Encarregados)</h2>
+      <div class="divide-y">
+        {% for r in top_usuarios|slice:":5" %}
+          <div class="flex items-center justify-between py-2">
+            <div class="text-slate-700">
+              {% with fn=r.bo__encarregado__first_name ln=r.bo__encarregado__last_name un=r.bo__encarregado__username %}
+                {{ fn }} {{ ln }}{% if not fn and not ln %}{{ un }}{% endif %}
+              {% endwith %}
+            </div>
+            <div class="font-semibold">{{ r.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border shadow-sm p-4">
+      <h2 class="font-semibold mb-3">Top 10 · Dias do Período</h2>
+      <div class="divide-y">
+        {% for r in top_dias %}
+          <div class="flex items-center justify-between py-2">
+            <div class="text-slate-700">{{ r.dia|date:'d/m/Y' }}</div>
+            <div class="font-semibold">{{ r.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Visualizar Documento BO{% endblock %}
+{% block content %}
+<div class="container mx-auto p-6">
+    <h2 class="text-2xl font-bold mb-4 text-indigo-800">Documento do BO</h2>
+    <div class="bg-white rounded-xl shadow p-6">
+        {% if bo.documento_html %}
+            {{ bo.documento_html|safe }}
+        {% else %}
+            <p>Documento não gerado ainda.</p>
+        {% endif %}
+        <div class="mt-6 flex gap-4">
+            <a href="/bogcmi/" class="px-4 py-2 bg-blue-600 text-white rounded">Voltar à lista</a>
+            <a href="/bogcmi/{{ bo.pk }}/editar/" class="px-4 py-2 bg-green-600 text-white rounded">Editar BO</a>
+            <a href="/bogcmi/{{ bo.pk }}/baixar-documento/" class="px-4 py-2 bg-indigo-600 text-white rounded">Baixar PDF</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}
+    {% if equipe %}Editar Equipe de Apoio{% else %}Nova Equipe de Apoio{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
+    <div class="flex items-center justify-between mb-6 flex-col gap-3 sm:flex-row sm:gap-0">
+        <h2 class="text-2xl font-bold text-indigo-800">
+            {% if equipe %}✏️ Editar Equipe de Apoio{% else %}➕ Nova Equipe de Apoio{% endif %}
+        </h2>
+        <a href="{% url 'bogcmi:equipe_lista' %}" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors w-full sm:w-auto text-center">
+            ↩️ Voltar
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Viatura -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-700">
+                    (*)Viatura
+                </label>
+                {{ form.viatura }}
+                {% if form.viatura.errors %}
+                    <div class="text-red-500 text-sm">{{ form.viatura.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Instituição -->
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-700">
+                    (*)Instituição
+                </label>
+                {{ form.instituicao }}
+                {% if form.instituicao.errors %}
+                    <div class="text-red-500 text-sm">{{ form.instituicao.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Participantes -->
+        <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">
+                (*)Participantes
+            </label>
+            {{ form.participantes }}
+            <p class="text-xs text-gray-500">Liste os participantes (GCMs, PMs, Polícia Civil, etc.) com seus nomes e matrículas</p>
+            {% if form.participantes.errors %}
+                <div class="text-red-500 text-sm">{{ form.participantes.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Observações -->
+        <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">
+                Observações
+            </label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}
+                <div class="text-red-500 text-sm">{{ form.observacoes.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Botões -->
+        <div class="flex justify-center gap-4 pt-6 flex-col sm:flex-row">
+            <button type="submit" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow-lg w-full sm:w-auto">
+                💾 Salvar
+            </button>
+            <a href="{% url 'bogcmi:equipe_lista' %}" class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors shadow-lg w-full sm:w-auto text-center">
+                ❌ Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+/* Estilização dos campos do formulário */
+input[type="text"], 
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: white;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+input[readonly] {
+    background-color: #f9fafb;
+}
+
+/* Estilização específica do textarea */
+textarea {
+    resize: vertical;
+}
+</style>
+{% endblock %}

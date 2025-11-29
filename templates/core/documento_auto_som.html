@@ -1,0 +1,136 @@
+{% load static %}
+<div class="bo-print-wrapper">
+  {% if via_do_notificado %}
+  <div class="via-ribbon">VIA DO NOTIFICADO</div>
+  {% endif %}
+  <header class="bo-header no-print-shadow">
+    <div class="logo-area">
+      <img src="{% static 'img/logo_gcm.png' %}" alt="Logo" onerror="this.onerror=null;this.replaceWith(document.createElement('span'));">
+    </div>
+    <div class="titulo-area">
+      <h1>Prefeitura da Estância Turística de Ibiúna</h1>
+      <h2>Secretaria Municipal de Segurança Pública</h2>
+      <h3>Auto de Infração - Poluição Sonora</h3>
+    </div>
+    <div class="info-numero">
+      <div class="rotulo">Nº</div>
+      <div class="valor">{{ a.numero }}</div>
+      <div class="data-emissao">Emitido em {{ a.emissao_em|date:'d/m/Y H:i' }}</div>
+    </div>
+  </header>
+  <div class="linha-divisoria"></div>
+
+  <section class="bloco">
+    <h4 class="bloco-titulo">Dados do Autuado</h4>
+    <p><strong>Nome/Razão Social:</strong> {{ a.notificado_nome }}</p>
+    {% if a.notificado_email %}<p><strong>E-mail:</strong> {{ a.notificado_email }}</p>{% endif %}
+    <p>
+      <strong>CPF:</strong> {{ a.notificado_cpf|default:'-' }}
+      &nbsp;|&nbsp;
+      <strong>CNPJ:</strong> {{ a.notificado_cnpj|default:'-' }}
+    </p>
+    <p><strong>Endereço:</strong> {{ a.endereco|default:'-' }}</p>
+    {% if a.referencia %}<p><strong>Referência:</strong> {{ a.referencia }}</p>{% endif %}
+    {% if a.ponto %}<p><strong>Ponto:</strong> {{ a.ponto }}</p>{% endif %}
+  </section>
+
+  <section class="bloco">
+    <h4 class="bloco-titulo">Medição</h4>
+    <p>
+      <strong>Valor medido:</strong> {{ a.valor_medido_db|default:'-' }} dB
+      &nbsp;|&nbsp;
+      <strong>Permitido:</strong> {{ a.permitido_db|default:'-' }} dB
+      &nbsp;|&nbsp;
+      <strong>Período:</strong> {{ a.get_periodo_display|default:'-' }}
+    </p>
+    <p>
+      <strong>Reincidência:</strong> {{ a.get_reincidencia_display|default:'-' }}
+      &nbsp;|&nbsp;
+      <strong>Classificação:</strong> {{ a.get_classificacao_display|default:'-' }}
+    </p>
+  </section>
+
+  <section class="bloco">
+    <h4 class="bloco-titulo">Base Legal / Observações</h4>
+    {% if a.base_legal %}<p><strong>Base legal:</strong> {{ a.base_legal|linebreaksbr }}</p>{% endif %}
+    {% if a.observacoes %}<p><strong>Observações:</strong> {{ a.observacoes|linebreaksbr }}</p>{% endif %}
+  </section>
+
+  <section class="bloco">
+    <h4 class="bloco-titulo">Assinatura do Autuado</h4>
+    {% if a.recusou_assinar %}
+      <p>O autuado recusou-se a assinar.</p>
+    {% elif a.assinatura_notificado %}
+      <img src="{{ a.assinatura_notificado.url }}" alt="Assinatura" class="mt-1" style="max-height:80px; height:auto; width:auto;">
+    {% else %}
+      <p>Sem assinatura anexada.</p>
+    {% endif %}
+  </section>
+
+  <section class="bloco">
+    <h4 class="bloco-titulo">Fiscal Responsável</h4>
+    <div class="grid grid-cols-12 gap-4 items-start">
+      <div class="col-span-7">
+        {% with perf=a.fiscal_responsavel.perfil %}
+          <div class="mb-2">
+            <div class="text-[0.65rem] text-slate-500">Assinatura do Fiscal</div>
+            {% if perf and perf.assinatura_img %}
+              <img src="{{ perf.assinatura_img.url }}" alt="Assinatura do Fiscal" class="object-contain" style="max-height:80px; height:auto; width:auto;" onerror="this.style.display='none'">
+            {% elif perf and perf.assinatura_digital and perf.assinatura_digital|slice:':11' == 'data:image' %}
+              <img src="{{ perf.assinatura_digital }}" alt="Assinatura do Fiscal" class="object-contain" style="max-height:80px; height:auto; width:auto;">
+            {% else %}
+              <div class="text-[0.7rem] italic">Sem assinatura cadastrada no Perfil.</div>
+            {% endif %}
+          </div>
+          <p><strong>Matrícula:</strong> {{ a.fiscal_matricula|default:perf.matricula|default:'-' }}</p>
+          <p><strong>Nome:</strong> {% if a.fiscal_responsavel %}{{ a.fiscal_responsavel.get_full_name|default:'-' }}{% else %}-{% endif %}</p>
+          <p><strong>Cargo:</strong> {% if perf %}{{ perf.cargo }}{% if perf.classe_legivel %} - {{ perf.classe_legivel }}{% endif %}{% else %}-{% endif %}</p>
+        {% endwith %}
+      </div>
+      <div class="col-span-5">
+        <div class="border border-slate-300 rounded-md p-2 text-center">
+          <div class="text-[0.65rem] text-slate-600 mb-1">Verificação</div>
+          {% if qr_code_base64 %}
+            <img src="{{ qr_code_base64 }}" alt="QR Code" class="mx-auto object-contain" style="width:120px; height:120px;" />
+            <div class="text-[0.6rem] text-slate-500 mt-1">Escaneie para verificar</div>
+          {% else %}
+            <div class="text-[0.7rem] italic">QR indisponível</div>
+          {% endif %}
+          <div class="text-[0.55rem] mt-1 break-words">
+            <a href="{% url 'core:fisc_auto_som_validar' a.pk a.validacao_token %}" class="underline text-slate-700">{% url 'core:fisc_auto_som_validar' a.pk a.validacao_token %}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bo-footer">
+    <div class="footer-left">Auto (Som) {{ a.numero }}</div>
+    <div class="footer-center">Sistema GCM - Documento Gerado Automaticamente</div>
+    <div class="footer-right"></div>
+  </footer>
+</div>
+
+<style>
+.bo-print-wrapper { font-family: Arial, sans-serif; color:#111827; padding-bottom:110px; position:relative; }
+.via-ribbon { position:absolute; top:8px; right:8px; background:#b91c1c; color:#fff; padding:6px 10px; font-size:0.7rem; font-weight:700; border-radius:4px; letter-spacing:.5px; }
+.bo-header { display:flex; align-items:flex-start; gap:1.25rem; padding:1rem 0 0.5rem; }
+.bo-header .logo-area img { width:90px; max-height:90px; object-fit:contain; }
+.bo-header h1 { font-size:1.05rem; margin:0; font-weight:700; text-transform:uppercase; }
+.bo-header h2 { font-size:0.85rem; margin:2px 0 6px; font-weight:600; }
+.bo-header h3 { font-size:0.8rem; margin:0; font-weight:500; letter-spacing:.5px; color:#374151; }
+.bo-header .titulo-area { padding-top:2px; }
+.bo-header .info-numero { margin-left:auto; text-align:right; font-size:0.7rem; font-weight:600; align-self:flex-start; }
+.bo-header .info-numero .rotulo { font-size:0.55rem; letter-spacing:1px; color:#555; }
+.bo-header .info-numero .valor { font-size:1rem; font-weight:700; background:#111827; color:#fff; padding:4px 8px; border-radius:4px; margin:2px 0 4px; display:inline-block; }
+.bo-header .info-numero .data-emissao { font-weight:400; }
+.linha-divisoria { height:2px; background:#111827; margin:4px 0 10px; }
+.bloco { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:10px 14px 12px; margin-bottom:14px; page-break-inside:avoid; font-size:0.72rem; line-height:1.25rem; }
+.bloco-titulo { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#374151; margin:0 0 6px; border-left:4px solid #111827; padding-left:6px; }
+.bo-footer { position:fixed; bottom:0; left:0; right:0; font-size:0.6rem; color:#374151; display:flex; justify-content:space-between; padding:4px 20px 6px; border-top:1px solid #d1d5db; background:#f9fafb; }
+@media print { body,html { background:#fff; } .no-print-shadow, .bloco { box-shadow:none !important; }
+  .bo-footer { position:fixed; }
+  .bo-print-wrapper { padding-bottom:130px; }
+  @page { size:A4; margin:14mm 12mm 18mm 12mm; }
+}
+</style>

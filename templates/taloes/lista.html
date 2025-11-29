@@ -1,0 +1,1100 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Talões{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      <h1 class="text-xl font-bold text-slate-800">Talões</h1>
+    </div>
+  </div>
+
+  <!-- Mensagens -->
+  {% if messages %}
+    <div class="mb-4 space-y-2">
+      {% for message in messages %}
+        <div class="px-3 py-2 rounded border
+                    {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% endif %}
+                    {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% endif %}
+                    {% if message.tags == 'info' %}bg-slate-50 border-slate-200 text-slate-700{% endif %}
+                    ">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Status do Plantão -->
+  {% if plantao_ativo %}
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+            <span class="text-green-600 text-xl">📋</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-slate-900">Plantão Ativo</p>
+            <p class="text-xs text-slate-500">
+              Iniciado em {{ plantao_ativo.inicio|date:"d/m/Y H:i" }}
+              {% if plantao_ativo.viatura %} • VTR {{ plantao_ativo.viatura.prefixo }}{% endif %}
+              {% if avarias_vtr_plantao %}
+                <span class="text-red-600 font-medium"> • Avarias: {{ avarias_vtr_plantao|join:", " }}</span>
+              {% endif %}
+            </p>
+            {% if equipe_labeled %}
+              <p class="text-xs text-slate-500 mt-1 hidden md:block">
+                {% if plantao_equipe %}Equipe {{ plantao_equipe }} — {% endif %}
+                {% for label, nome in equipe_labeled %}
+                  {{ label }}: <strong>{{ nome }}</strong>{% if not forloop.last %} · {% endif %}
+                {% endfor %}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <a href="{% url 'taloes:editar_plantao' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm" onclick="return confirm('Editar equipe ou trocar a VTR do plantão ativo?');">
+            Editar equipe/VTR
+          </a>
+          <a href="{% url 'taloes:sair_plantao' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium text-sm" title="Sair apenas para este usuário, mantendo o plantão para os demais participantes." onclick="return confirm('Confirmar saída do plantão? Sua saída constará no relatório final.');">
+            Sair do Plantão
+          </a>
+          {% if usuario_e_encarregado %}
+          <a href="{% url 'taloes:encerrar_plantao' %}"
+             class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
+             onclick="return confirm('Tem certeza que quer encerrar o plantão?');">
+            Encerrar Plantão
+          </a>
+          {% else %}
+          <button disabled class="inline-flex items-center gap-2 px-4 py-2 bg-gray-400 text-gray-200 rounded-lg cursor-not-allowed font-medium text-sm" title="Apenas o Encarregado pode encerrar o plantão">
+            Encerrar Plantão
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {# Integrantes embaixo no mobile #}
+      {% if equipe_labeled %}
+        <div class="md:hidden mt-3 pt-3 border-t border-slate-200">
+          <div class="text-xs font-semibold text-slate-600 mb-1">{% if plantao_equipe %}Equipe {{ plantao_equipe }} — {% endif %}Integrantes</div>
+          <div class="flex flex-wrap gap-x-2 gap-y-1">
+            {% for label, nome in equipe_labeled %}
+              <span class="text-xs"><span class="text-slate-500">{{ label }}:</span> <strong>{{ nome }}</strong></span>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center">
+            <span class="text-slate-600 text-xl">📋</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-slate-900">Nenhum plantão ativo</p>
+            <p class="text-xs text-slate-500">Inicie um plantão para começar</p>
+          </div>
+        </div>
+        <a href="{% url 'taloes:iniciar_plantao' %}" class="inline-flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm">
+          Iniciar Plantão
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Ações Rápidas -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      
+      <!-- Botão Criar Talão -->
+      {% if plantao_ativo %}
+        <a href="{% url 'taloes:novo' %}" class="group flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-green-200 bg-green-50 hover:border-green-500 hover:bg-green-100 transition-all">
+          <span class="text-3xl">➕</span>
+          <span class="text-xs font-medium text-green-700">Criar novo talão</span>
+        </a>
+      {% else %}
+        <div class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed" title="Inicie o plantão para criar talão">
+          <span class="text-3xl">➕</span>
+          <span class="text-xs font-medium text-slate-500">Criar novo talão</span>
+        </div>
+      {% endif %}
+
+      <!-- Botão Checklist VTR -->
+      {% if plantao_ativo %}
+        <a href="{% url 'taloes:checklist_viatura' %}" class="group flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-amber-200 bg-amber-50 hover:border-amber-500 hover:bg-amber-100 transition-all">
+          <span class="text-3xl">✅</span>
+          <span class="text-xs font-medium text-amber-700">Checklist de VTR</span>
+        </a>
+      {% else %}
+        <div class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed" title="Inicie o plantão para usar o checklist">
+          <span class="text-3xl">✅</span>
+          <span class="text-xs font-medium text-slate-500">Checklist de VTR</span>
+        </div>
+      {% endif %}
+
+      <!-- Botão Documentos -->
+      <a href="{% url 'taloes:meus_documentos' %}" class="group flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-blue-200 bg-blue-50 hover:border-blue-500 hover:bg-blue-100 transition-all">
+        <span class="text-3xl">📄</span>
+        <span class="text-xs font-medium text-blue-700">Documentos</span>
+      </a>
+
+      <!-- Botão Arquivados -->
+      <a href="{% url 'taloes:arquivados' %}" class="group flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-slate-300 bg-slate-100 hover:border-slate-500 hover:bg-slate-200 transition-all">
+        <span class="text-3xl">📁</span>
+        <span class="text-xs font-medium text-slate-700">Talões Arquivados</span>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- Relatório de Ronda (rascunho na sessão) -->
+  <div class="mb-6 bg-white border rounded-xl p-3 relative z-10">
+    <form method="post" action="{% url 'taloes:relatorio_ronda_salvar' %}" class="space-y-2" id="form-relatorio-ronda" data-plantao-ativo="{% if plantao_ativo %}1{% else %}0{% endif %}">
+      {% csrf_token %}
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
+        <label class="block text-sm text-slate-700 font-semibold">Relatório de Ronda</label>
+        <!-- Ações em modo visualização -->
+        <div id="rel-view-actions" class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          {% if plantao_ativo %}
+            <button type="button" id="btn-rel-editar" class="px-3 py-1.5 rounded bg-slate-800 text-white hover:bg-slate-700">Editar</button>
+          {% else %}
+            <button type="button" id="btn-rel-editar" class="px-3 py-1.5 rounded bg-slate-400 text-white cursor-not-allowed opacity-60" disabled title="Inicie o plantão para editar o relatório">Editar</button>
+          {% endif %}
+        </div>
+        <!-- Apoio IA (mostrado somente em edição) -->
+        <div id="rel-ia-actions" class="hidden items-center gap-2 text-xs w-full sm:w-auto overflow-x-auto whitespace-nowrap pr-1">
+          <span class="text-slate-500">Apoio IA:</span>
+          <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition">Gemini</a>
+          <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition">ChatGPT</a>
+          <button type="button" id="btn-lt-check" class="px-1.5 py-0.5 text-[11px] sm:text-xs sm:px-2 sm:py-1 rounded border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium transition whitespace-nowrap" title="Verificar ortografia e gramática com LanguageTool (pt-BR)">LanguageTool</button>
+        </div>
+      </div>
+
+      <!-- Visualização somente leitura -->
+  <div id="relatorio-view-wrap" class="border rounded p-2 bg-slate-50 text-slate-800 whitespace-pre-line {% if plantao_ativo %}cursor-text{% endif %}" title="{% if plantao_ativo %}Clique para editar{% else %}Inicie o plantão para editar{% endif %}">{% if relatorio_rascunho %}{{ relatorio_rascunho|linebreaksbr }}{% else %}<span class="text-slate-400">Sem rascunho salvo.</span>{% endif %}</div>
+
+      <!-- Área de edição (inicia oculta) -->
+      <div id="relatorio-edit-wrap" class="hidden">
+        <textarea id="textarea-relatorio" name="texto" rows="5" class="w-full border rounded p-2" placeholder="Rascunho do relatório de ronda...">{{ relatorio_rascunho }}</textarea>
+        <div class="mt-2 flex items-center gap-3 flex-wrap">
+          <button type="button" id="btn-voice" class="px-4 py-2 text-sm md:text-base rounded-lg border-2 border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold transition" title="Ditado por voz (pt-BR)">🎤 Ditado</button>
+          <button type="button" id="btn-voice-insert" class="px-4 py-2 text-sm md:text-base rounded-lg border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold transition disabled:opacity-50" disabled>Inserir Prévia</button>
+        </div>
+        <div id="voice-preview-rel" class="hidden mt-1 text-[12px] text-slate-600">
+          <span class="text-slate-400">Prévia:</span>
+          <span id="voice-preview-text-rel"></span>
+        </div>
+        <!-- LanguageTool resultados -->
+        <div id="lt-panel" class="hidden mt-2 border rounded bg-emerald-50/50">
+          <div class="flex items-center justify-between px-3 py-2 border-b">
+            <div class="text-sm text-emerald-800"><strong id="lt-count">0</strong> sugestão(ões) de correção</div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="lt-apply-all" class="text-xs px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50" disabled>Aplicar todas</button>
+              <button type="button" id="lt-close" class="text-xs px-2 py-1 rounded border">Fechar</button>
+            </div>
+          </div>
+          <div id="lt-issues" class="max-h-60 overflow-auto divide-y"></div>
+          <div class="px-3 py-2 text-[11px] text-slate-500 border-t">As sugestões são fornecidas por LanguageTool (pt-BR). Revise antes de aplicar.</div>
+        </div>
+        <div class="flex items-center gap-2 justify-end mt-2">
+          <a href="{% url 'taloes:relatorio_ronda_apagar' %}"
+             onclick="return confirm('Apagar o rascunho do relatório? Essa ação não pode ser desfeita.');"
+             class="px-3 py-1.5 border rounded hover:bg-slate-50 text-rose-700 border-rose-300">Limpar</a>
+          <button type="button" id="btn-rel-cancelar" class="px-3 py-1.5 border rounded hover:bg-slate-50">Cancelar</button>
+          <button class="px-3 py-1.5 rounded text-white bg-blue-600 hover:bg-blue-700">Salvar rascunho</button>
+        </div>
+      </div>
+    </form>
+  <p class="mt-2 text-xs text-slate-500">O rascunho fica salvo para este usuário até encerrar o plantão.</p>
+  </div>
+
+  <!-- Lista Mobile (cards) -->
+  <div class="md:hidden space-y-3">
+    {% for t in taloes %}
+  <div class="bg-white border rounded-xl p-3 shadow-sm overflow-hidden">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-xs text-slate-500">Talão #{{ t.talao_numero|default:forloop.counter }}</div>
+            <div class="mt-1 font-semibold">Viatura: {{ t.viatura.prefixo|default:"-" }}</div>
+          </div>
+          <div>
+            {% with s=t.status %}
+              {% if s == 'FECHADO' %}
+                <span class="px-2 py-1 rounded border border-rose-600 bg-rose-50 text-rose-700 text-xs font-semibold shadow-sm">{{ s }}</span>
+              {% elif s == 'ABERTO' %}
+                <span class="px-2 py-1 rounded border border-emerald-600 bg-emerald-50 text-emerald-700 text-xs font-semibold shadow-sm">{{ s }}</span>
+              {% else %}
+                <span class="px-2 py-1 rounded border border-slate-400 bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm">{{ s }}</span>
+              {% endif %}
+            {% endwith %}
+          </div>
+        </div>
+
+  <div class="mt-2 space-y-1 text-sm break-words">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Iniciado</span>
+            <span>{% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">KM</span>
+            <span>
+              <span class="text-slate-500">Ini</span>
+              <span class="ml-1">{{ t.km_inicial|default:"-" }}</span>
+              <span class="mx-1 text-slate-500">/</span>
+              <span>{% if t.km_final %}{{ t.km_final }}{% else %}-{% endif %}</span>
+            </span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Ocorrência</span>
+            <span class="text-right break-words max-w-[60%]">{{ t.codigo_ocorrencia|default:"-" }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Nº BOGCM</span>
+            <span class="text-right truncate max-w-[60%]">
+              {% with bo=t.bos.last %}
+                {% if bo and bo.numero %}
+                  <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO #{{ bo.numero }}">{{ bo.numero }}</a>
+                {% elif bo %}
+                  <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO (sem número definido)">#{{ bo.pk }}</a>
+                {% else %}-{% endif %}
+              {% endwith %}
+            </span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Local</span>
+            <span class="text-right break-words max-w-[60%]">{{ t.local_display }}</span>
+          </div>
+        </div>
+
+  <div class="mt-3 grid grid-cols-2 gap-2">
+          <a href="{% url 'taloes:editar' pk=t.pk %}" class="inline-flex items-center justify-center h-9 px-3 border rounded hover:bg-blue-50">Editar</a>
+          <a href="{% url 'bogcmi:novo' %}?talao={{ t.pk }}&novo=1" class="inline-flex items-center justify-center h-9 px-3 border rounded bg-green-50 text-green-700 hover:bg-green-100" title="Criar um novo BO (BOGCM) a partir deste Talão" onclick="return confirm('Deseja abrir um novo BO a partir deste Talão?');">Novo BO</a>
+          {% if t.codigo_ocorrencia and t.codigo_ocorrencia.sigla == 'Q-03' %}
+            <a href="{% url 'taloes:abastecimento_novo' pk=t.pk %}"
+               class="inline-flex items-center justify-center h-9 px-3 border rounded bg-amber-50 text-amber-800 hover:bg-amber-100"
+               title="Registrar abastecimento para este Talão">Abastecimento</a>
+          {% endif %}
+          <a href="{% url 'taloes:aits' pk=t.pk %}"
+             class="inline-flex items-center justify-center h-9 px-3 border rounded bg-indigo-50 text-indigo-800 hover:bg-indigo-100"
+             title="Registrar AITs deste Talão">AIT's</a>
+          <a href="{% url 'taloes:abordados' pk=t.pk %}" class="inline-flex items-center justify-center h-9 px-3 border rounded hover:bg-green-50">Abordados</a>
+          {% if request.user.is_superuser and request.user.username|lower == 'moises' %}
+            <form method="post" action="{% url 'taloes:apagar' pk=t.pk %}" class="col-span-2" onsubmit="return confirm('Apagar o talão #{{ t.pk }}? Esta ação não pode ser desfeita.');">
+              {% csrf_token %}
+              <button class="w-full inline-flex items-center justify-center h-9 px-3 rounded bg-rose-600 text-white hover:bg-rose-700">Apagar</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500">Nenhum talão encontrado.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Tabela -->
+  <div class="hidden md:block">
+  <div class="overflow-x-auto bg-white border rounded-xl shadow-sm">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 border-b sticky top-0 z-10">
+        <tr class="text-left">
+          <th class="p-2 border">#</th>
+          <th class="p-2 border">Viatura</th>
+          <th class="p-2 border">Status</th>
+          <th class="p-2 border">Iniciado</th>
+          <th class="p-2 border">KM</th>
+          <th class="p-2 border">Ocorrência</th>
+          <th class="p-2 border">Nº BOGCM</th>
+          <th class="p-2 border">Local</th>
+          <th class="p-2 border w-40">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in taloes %}
+          <tr class="align-middle hover:bg-slate-50/50">
+            <td class="p-2 border">
+              #{{ t.talao_numero|default:forloop.counter }}
+            </td>
+
+            <td class="p-2 border">
+              {% if edit_pk == t.pk %}
+                <select name="viatura" class="border rounded px-2 py-1 w-28 js-choices">
+                  {% for v in viaturas_all %}
+                    <option value="{{ v.id }}" {% if t.viatura_id == v.id %}selected{% endif %}>{{ v.prefixo }}</option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                {{ t.viatura.prefixo|default:"-" }}
+              {% endif %}
+            </td>
+
+            <!-- Edição inline -->
+            <td class="p-2 border">
+              <form method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" name="inline" value="1">
+                <input type="hidden" name="pk" value="{{ t.pk }}">
+                {% if edit_pk == t.pk %}
+                  <select name="status" class="border rounded px-2 py-1">
+                    {% for s in status_choices %}
+                      <option value="{{ s }}" {% if t.status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                  </select>
+                {% else %}
+                  {% with s=t.status %}
+                    {% if s == 'FECHADO' %}
+                      <span class="px-2 py-1 rounded border border-rose-600 bg-rose-50 text-rose-700 font-semibold shadow-sm">{{ s }}</span>
+                    {% elif s == 'ABERTO' %}
+                      <span class="px-2 py-1 rounded border border-emerald-600 bg-emerald-50 text-emerald-700 font-semibold shadow-sm">{{ s }}</span>
+                    {% else %}
+                      <span class="px-2 py-1 rounded border border-slate-400 bg-slate-50 text-slate-700 font-semibold shadow-sm">{{ s }}</span>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              </form>
+            </td>
+
+            <td class="p-2 border">
+              {% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}
+            </td>
+
+            <td class="p-2 border">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-500">Ini</span>
+                <span class="min-w-10 text-right">{{ t.km_inicial|default:"-" }}</span>
+                <span class="text-slate-500">/</span>
+                <label class="sr-only" for="kmf-{{ t.pk }}">KM final</label>
+                {% if edit_pk == t.pk %}
+                  <input id="kmf-{{ t.pk }}" name="km_final" type="number" inputmode="numeric"
+                         class="border rounded px-2 py-1 w-24"
+                         value="{% if t.km_final %}{{ t.km_final }}{% endif %}">
+                {% else %}
+                  <span class="min-w-10 text-right">{% if t.km_final %}{{ t.km_final }}{% else %}-{% endif %}</span>
+                {% endif %}
+              </div>
+            </td>
+
+            <td class="p-2 border">
+              {% if edit_pk == t.pk %}
+                <select name="codigo_ocorrencia" class="border rounded px-2 py-1 w-64 js-choices">
+                  <option value="" {% if not t.codigo_ocorrencia_id %}selected{% endif %}>—</option>
+                  {% for c in codigos_all %}
+                    <option value="{{ c.id }}" {% if t.codigo_ocorrencia_id == c.id %}selected{% endif %}>
+                      {{ c.grupo.sigla }}-{{ c.sigla }} — {{ c.descricao }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                {{ t.codigo_ocorrencia|default:"-" }}
+              {% endif %}
+            </td>
+
+            <td class="p-2 border">
+              {% with bo=t.bos.last %}
+                {% if bo and bo.numero %}
+                  <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO #{{ bo.numero }}">{{ bo.numero }}</a>
+                {% elif bo %}
+                  <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO (sem número definido)">#{{ bo.pk }}</a>
+                {% else %}-{% endif %}
+              {% endwith %}
+            </td>
+
+            <td class="p-2 border">
+              {% if edit_pk == t.pk %}
+                <div class="flex items-center gap-2">
+                  <input name="local_bairro" class="border rounded px-2 py-1 w-40" placeholder="Bairro" value="{{ t.local_bairro }}">
+                  <input name="local_rua" class="border rounded px-2 py-1 w-60" placeholder="Rua/Referência" value="{{ t.local_rua }}">
+                </div>
+              {% else %}
+                {{ t.local_display }}
+              {% endif %}
+            </td>
+
+            <td class="p-2 border">
+              <div class="flex items-center gap-2 justify-end">
+                {% if edit_pk == t.pk %}
+                  <form method="post" action="" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="inline" value="1">
+                    <input type="hidden" name="pk" value="{{ t.pk }}">
+                    <button type="submit" class="inline-flex items-center h-8 px-2 py-1 rounded text-white bg-blue-600 hover:bg-blue-700">Salvar</button>
+                  </form>
+                  <a href="?page={{ page_obj.number }}" class="inline-flex items-center h-8 px-2 py-1 border rounded hover:bg-slate-50">Cancelar</a>
+                {% else %}
+                  <!-- Botão Editar -->
+                  <a href="{% url 'taloes:editar' pk=t.pk %}" class="inline-flex items-center h-8 px-2 py-1 border rounded hover:bg-blue-50">Editar</a>
+                  <!-- Atalho Novo BO sempre visível -->
+                  <a href="{% url 'bogcmi:novo' %}?talao={{ t.pk }}&novo=1" class="inline-flex items-center h-8 px-2 py-1 border rounded bg-green-50 text-green-700 hover:bg-green-100" title="Criar um novo BO (BOGCM) a partir deste Talão" onclick="return confirm('Deseja abrir um novo BO a partir deste Talão?');">Novo BO</a>
+                  {% if t.codigo_ocorrencia and t.codigo_ocorrencia.sigla == 'Q-03' %}
+                    <a href="{% url 'taloes:abastecimento_novo' pk=t.pk %}"
+                       class="inline-flex items-center h-8 px-2 py-1 border rounded bg-amber-50 text-amber-800 hover:bg-amber-100"
+                       title="Registrar abastecimento para este Talão">Abastecimento</a>
+                  {% endif %}
+            <a href="{% url 'taloes:aits' pk=t.pk %}"
+              class="inline-flex items-center h-8 px-2 py-1 border rounded bg-indigo-50 text-indigo-800 hover:bg-indigo-100"
+              title="Registrar AITs deste Talão">AIT's</a>
+                  <!-- Se já existir BO relacionado, mostrar também Ver BO -->
+                  {# Botão 'Ver BO' removido conforme solicitação #}
+                  <a href="{% url 'taloes:abordados' pk=t.pk %}" class="inline-flex items-center h-8 px-2 py-1 border rounded hover:bg-green-50">Abordados</a>
+                  {% if request.user.is_superuser and request.user.username|lower == 'moises' %}
+                    <form method="post" action="{% url 'taloes:apagar' pk=t.pk %}" class="inline" onsubmit="return confirm('Apagar o talão #{{ t.pk }}? Esta ação não pode ser desfeita.');">
+                      {% csrf_token %}
+                      <button class="inline-flex items-center h-8 px-2 py-1 rounded bg-rose-600 text-white hover:bg-rose-700">Apagar</button>
+                    </form>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="p-3 text-center text-slate-500" colspan="8">
+              Nenhum talão encontrado.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </div>
+
+  <!-- Paginação -->
+  {% if page_obj %}
+    <div class="py-3">
+      <div class="flex items-center gap-2 justify-center flex-wrap">
+        {% if page_obj.has_previous %}
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page=1">&laquo;</a>
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.previous_page_number }}">&lsaquo;</a>
+        {% else %}
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&laquo;</span>
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&lsaquo;</span>
+        {% endif %}
+
+        <span class="px-3 py-1 border rounded bg-slate-50 select-none">
+          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.next_page_number }}">&rsaquo;</a>
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+        {% else %}
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&rsaquo;</span>
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&raquo;</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="mt-6 text-xs text-slate-500">
+    Dica: ao informar <strong>KM final</strong>, o talão é fechado automaticamente.
+  </div>
+</div>
+
+<!-- Script para funcionalidade de IA -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textareaRelatorio = document.getElementById('textarea-relatorio');
+    const btnSugerir = document.getElementById('btn-sugerir-ai');
+    const btnMelhorar = document.getElementById('btn-melhorar-ai');
+    const btnDebug = document.getElementById('btn-debug-ai');
+  // Voice dictation elements
+  const btnVoice = document.getElementById('btn-voice');
+  // LanguageTool elements
+  const btnLtCheck = document.getElementById('btn-lt-check');
+  const ltPanel = document.getElementById('lt-panel');
+  const ltIssues = document.getElementById('lt-issues');
+  const ltApplyAll = document.getElementById('lt-apply-all');
+  const ltClose = document.getElementById('lt-close');
+  const ltCount = document.getElementById('lt-count');
+  let ltMatches = [];
+
+  // Toggle edição/visualização do relatório
+  const relViewWrap = document.getElementById('relatorio-view-wrap');
+  const relEditWrap = document.getElementById('relatorio-edit-wrap');
+  const relIAActions = document.getElementById('rel-ia-actions');
+  const relViewActions = document.getElementById('rel-view-actions');
+  const btnRelEditar = document.getElementById('btn-rel-editar');
+  const btnRelCancelar = document.getElementById('btn-rel-cancelar');
+  const formRel = document.getElementById('form-relatorio-ronda');
+  const insertBtn = document.getElementById('btn-voice-insert');
+  const plantaoAtivo = formRel ? (formRel.dataset.plantaoAtivo === '1') : false;
+
+  let initialRelText = textareaRelatorio ? textareaRelatorio.value : '';
+  function setMode(editing){
+    if (editing && !plantaoAtivo) {
+      // Bloqueia entrada no modo edição quando não houver plantão
+      return;
+    }
+    if(!relViewWrap || !relEditWrap) return;
+    if(editing){
+      relViewWrap.classList.add('hidden');
+      relEditWrap.classList.remove('hidden');
+      if(relIAActions) relIAActions.classList.remove('hidden');
+      if(relViewActions) relViewActions.classList.add('hidden');
+      if(textareaRelatorio) textareaRelatorio.focus();
+      if(insertBtn) insertBtn.disabled = true; // será habilitado pelo ditado
+    } else {
+      relViewWrap.classList.remove('hidden');
+      relEditWrap.classList.add('hidden');
+      if(relIAActions) relIAActions.classList.add('hidden');
+      if(relViewActions) relViewActions.classList.remove('hidden');
+      // Fecha painéis auxiliares
+      if(ltPanel) ltPanel.classList.add('hidden');
+      const voicePrev = document.getElementById('voice-preview-rel');
+      if(voicePrev) voicePrev.classList.add('hidden');
+      // Restaura texto se cancelado
+    }
+  }
+  // Estado inicial: visualização
+  setMode(false);
+  if(btnRelEditar){ btnRelEditar.addEventListener('click', ()=> {
+    if (!plantaoAtivo) { alert('Inicie o plantão para editar o relatório.'); return; }
+    setMode(true);
+  }); }
+  // Permitir clicar na área de visualização para entrar em edição apenas com plantão ativo
+  if(relViewWrap && plantaoAtivo){ relViewWrap.addEventListener('click', ()=> setMode(true)); }
+  if(btnRelCancelar){ btnRelCancelar.addEventListener('click', ()=>{ if(textareaRelatorio) textareaRelatorio.value = initialRelText; setMode(false); }); }
+  // Sem botão voltar (removido a pedido)
+
+    // Função para mostrar loading
+    function setButtonLoading(button, loading) {
+        if (loading) {
+            button.disabled = true;
+            button.classList.add('opacity-50');
+            button.innerHTML = '⏳ Processando...';
+        } else {
+            button.disabled = false;
+            button.classList.remove('opacity-50');
+        }
+    }
+
+    // Melhorar relatório com IA
+    if (btnMelhorar) {
+        btnMelhorar.addEventListener('click', async function() {
+            const texto = textareaRelatorio.value.trim();
+            
+            if (!texto) {
+                alert('Digite um texto antes de usar a IA para melhorar.');
+                return;
+            }
+
+            setButtonLoading(btnMelhorar, true);
+
+            try {
+                const response = await fetch('{% url "common:melhorar_relatorio_ai" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        texto: texto
+                    })
+                });
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                if (data.sucesso) {
+                    // Múltiplas tentativas de atualizar o textarea
+                    const textarea = document.getElementById('textarea-relatorio');
+                    
+                    // Método 1: Atualização direta
+                    textarea.value = data.texto_melhorado;
+                    
+                    // Método 2: Limpar e reescrever
+                    textarea.value = '';
+                    setTimeout(() => {
+                        textarea.value = data.texto_melhorado;
+                        textarea.focus();
+                        
+                        // Método 3: Selecionar tudo para mostrar mudança
+                        textarea.select();
+                        setTimeout(() => {
+                            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                        }, 100);
+                    }, 50);
+                    
+                    alert('✅ Texto corrigido!\n\nAntes: "' + texto + '"\nDepois: "' + data.texto_melhorado + '"');
+                } else {
+                    alert('❌ Erro: ' + (data.erro || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('❌ Erro de conexão: ' + error.message);
+            } finally {
+                setButtonLoading(btnMelhorar, false);
+                btnMelhorar.innerHTML = '✨ Corrigir';
+            }
+        });
+    }
+
+    // ==== LanguageTool: funções auxiliares ====
+    function renderLtIssues(matches) {
+      ltIssues.innerHTML = '';
+      if (!matches || matches.length === 0) {
+        // Não exibe painel quando não houver sugestões
+        ltPanel.classList.add('hidden');
+        ltApplyAll.disabled = true;
+        ltCount.textContent = '0';
+        return;
+      }
+      ltPanel.classList.remove('hidden');
+      ltApplyAll.disabled = false;
+      ltCount.textContent = String(matches.length);
+      const frag = document.createDocumentFragment();
+      matches.forEach((m, idx) => {
+        const sug = (m.replacements && m.replacements[0] && m.replacements[0].value) || null;
+        const row = document.createElement('div');
+        row.className = 'px-3 py-2 flex items-start gap-3';
+        const sample = textareaRelatorio.value.substr(m.offset, m.length);
+        row.innerHTML = `
+          <div class="flex-1">
+            <div class="text-[12px] text-slate-700 mb-1">${m.message}</div>
+            <div class="text-[12px]"><span class="px-1 rounded bg-rose-100 text-rose-800">${escapeHtml(sample)}</span>
+            ${sug ? `→ <span class="px-1 rounded bg-emerald-100 text-emerald-800">${escapeHtml(sug)}</span>` : ''}
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Regra: ${m.rule && (m.rule.id || m.rule.description) || '-'}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            ${sug ? `<button data-idx="${idx}" class="lt-apply text-xs px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700">Aplicar</button>` : ''}
+          </div>`;
+        frag.appendChild(row);
+      });
+      ltIssues.appendChild(frag);
+      // bind aplicar
+      ltIssues.querySelectorAll('.lt-apply').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const i = parseInt(e.currentTarget.getAttribute('data-idx'));
+          applyLtOne(i);
+        });
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>\"]/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+      });
+    }
+
+    function applyLtAll() {
+      if (!ltMatches || ltMatches.length === 0) return;
+      let text = textareaRelatorio.value;
+      // aplicar de trás pra frente
+      const applicable = ltMatches
+        .filter(m => m.replacements && m.replacements[0])
+        .sort((a,b) => b.offset - a.offset);
+      applicable.forEach(m => {
+        const rep = m.replacements[0].value;
+        text = text.slice(0, m.offset) + rep + text.slice(m.offset + m.length);
+      });
+      textareaRelatorio.value = text;
+      // Reexecuta para novas sugestões
+      runLt();
+    }
+
+    function applyLtOne(index) {
+      const m = ltMatches[index];
+      if (!m || !m.replacements || !m.replacements[0]) return;
+      let text = textareaRelatorio.value;
+      const rep = m.replacements[0].value;
+      // Tenta aplicar na posição atual informada; se falhar (offset inválido), reexecuta LT
+      if (m.offset < 0 || m.offset > text.length) {
+        return runLt();
+      }
+      textareaRelatorio.value = text.slice(0, m.offset) + rep + text.slice(m.offset + m.length);
+      runLt();
+    }
+
+    async function runLt() {
+      const text = textareaRelatorio.value || '';
+      if (!text.trim()) {
+        ltMatches = [];
+        renderLtIssues([]);
+        return;
+      }
+      try {
+        // LanguageTool API pública (rate limitada)
+        const params = new URLSearchParams();
+        params.append('language', 'pt-BR');
+        params.append('text', text);
+        // Algumas regras úteis podem ser habilitadas/desabilitadas conforme preferência
+        // params.append('enabledRules', 'UPPERCASE_SENTENCE_START,COMMA_PARENTHESIS_WHITESPACE');
+        const resp = await fetch('https://api.languagetool.org/v2/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+        const data = await resp.json();
+        ltMatches = data.matches || [];
+        renderLtIssues(ltMatches);
+      } catch (err) {
+        console.error('LanguageTool error:', err);
+        ltPanel.classList.remove('hidden');
+        ltIssues.innerHTML = '<div class="px-3 py-2 text-rose-700">Falha ao verificar. Verifique sua conexão.</div>';
+        ltApplyAll.disabled = true;
+        ltCount.textContent = '0';
+      }
+    }
+
+    if (btnLtCheck) btnLtCheck.addEventListener('click', runLt);
+    if (ltApplyAll) ltApplyAll.addEventListener('click', applyLtAll);
+    if (ltClose) ltClose.addEventListener('click', () => ltPanel.classList.add('hidden'));
+
+    // Sugerir texto para o relatório
+    if (btnSugerir) {
+        btnSugerir.addEventListener('click', async function() {
+            const texto = textareaRelatorio.value.trim();
+            
+            setButtonLoading(btnSugerir, true);
+
+            try {
+                const response = await fetch('{% url "common:sugerir_relatorio_ai" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        texto: texto
+                    })
+                });
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                if (data.sucesso) {
+                    // Múltiplas tentativas de atualizar o textarea
+                    const textarea = document.getElementById('textarea-relatorio');
+                    
+                    // Método 1: Atualização direta
+                    textarea.value = data.texto_melhorado;
+                    
+                    // Método 2: Limpar e reescrever
+                    textarea.value = '';
+                    setTimeout(() => {
+                        textarea.value = data.texto_melhorado;
+                        textarea.focus();
+                        
+                        // Método 3: Selecionar tudo para mostrar mudança
+                        textarea.select();
+                        setTimeout(() => {
+                            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                        }, 100);
+                    }, 50);
+                    
+                    if (texto.length === 0) {
+                        alert('💡 Texto base inserido!\n\n"' + data.texto_melhorado + '"');
+                    } else {
+                        alert('✅ Texto melhorado!\n\nAntes: "' + texto + '"\nDepois: "' + data.texto_melhorado + '"');
+                    }
+                } else {
+                    alert('❌ Erro: ' + (data.erro || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('❌ Erro de conexão: ' + error.message);
+            } finally {
+                setButtonLoading(btnSugerir, false);
+                btnSugerir.innerHTML = '🤖 Sugerir';
+            }
+        });
+    }
+
+    // Botão de debug
+    if (btnDebug) {
+        btnDebug.addEventListener('click', function() {
+            debugAI();
+        });
+    }
+
+    // ==== Ditado por voz (Web Speech API) ====
+    (function setupVoiceDictation(){
+      if (!btnVoice) return;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const Cap = window.Capacitor || null;
+  const isCapNative = !!(Cap && (typeof Cap.isNativePlatform === 'function' ? Cap.isNativePlatform() : Cap.isNativePlatform));
+  // Plugin da comunidade expõe Capacitor.Plugins.SpeechRecognition
+  const capPlugin = Cap && Cap.Plugins ? Cap.Plugins.SpeechRecognition : null;
+
+  let listening = false;
+  let recognition = null;
+  let capListeners = [];
+  let usingCap = false;
+  let engine = null; // 'cap' | 'web' | null
+  let starting = false;
+  let stopping = false;
+  // Prévia e buffers
+  const insertBtn = document.getElementById('btn-voice-insert');
+  const previewWrap = document.getElementById('voice-preview-rel');
+  const previewText = document.getElementById('voice-preview-text-rel');
+  let interim = '';
+  // Controle manual e reinício automático
+  let userWantsListening = false; // só para quando o usuário mandar
+  let restartTimer = null;
+  let restartDelayMs = 300; // backoff leve
+
+    // No-op para compat: algumas versões chamavam esta função
+    function initCommittedFromTextarea(){ /* no-op */ }
+
+      function setPreview(text){ if(previewText){ previewText.textContent = text || ''; } if(previewWrap){ previewWrap.classList.toggle('hidden', !(text && text.trim().length)); } if(insertBtn){ insertBtn.disabled = !(text && text.trim().length); } }
+
+      function setListening(on){
+        listening = on;
+        if (userWantsListening) {
+          btnVoice.textContent = '⏹️ Parar';
+          btnVoice.classList.remove('bg-sky-50');
+          btnVoice.classList.add('bg-rose-50','border-rose-200','text-rose-700','hover:bg-rose-100');
+        } else {
+          btnVoice.textContent = '🎤 Ditado';
+          btnVoice.classList.remove('bg-rose-50','border-rose-200','text-rose-700','hover:bg-rose-100');
+          btnVoice.classList.add('bg-sky-50');
+        }
+      }
+
+      // Inserção manual da prévia no textarea
+      if (insertBtn) insertBtn.addEventListener('click', ()=>{
+        const pv = (previewText && previewText.textContent) ? previewText.textContent.trim() : '';
+        if(!pv) return;
+        let base = textareaRelatorio.value || '';
+        if(base && !/\n\s*$/.test(base)) base = base.replace(/\s*$/, '') + "\n";
+        textareaRelatorio.value = base + pv + ' ';
+        setPreview('');
+        try{ textareaRelatorio.focus(); const end = textareaRelatorio.value.length; textareaRelatorio.setSelectionRange(end,end); textareaRelatorio.scrollTop = textareaRelatorio.scrollHeight; }catch(_){ }
+      });
+
+      async function startCapacitorDictation(){
+        if (!capPlugin) throw new Error('Capacitor Speech plugin não disponível');
+        try {
+          if (capPlugin.requestPermissions) await capPlugin.requestPermissions();
+          else if (capPlugin.requestPermission) await capPlugin.requestPermission();
+        } catch (e) { /* ignore */ }
+        try {
+          const res = capPlugin.checkPermissions ? await capPlugin.checkPermissions() : (capPlugin.checkPermission ? await capPlugin.checkPermission() : { granted: true });
+          if (res && (res.speechRecognition === 'granted' || res.state === 'granted' || res.granted === true)) {
+            // listeners
+            if (capPlugin.addListener) {
+              const l1 = capPlugin.addListener('partialResults', (data) => {
+                if(!userWantsListening){ try { capPlugin.stop && capPlugin.stop(); } catch(_){} return; }
+                const t = data && data.matches && data.matches[0];
+                if (t) { interim = String(t); setPreview(interim); }
+              });
+              capListeners.push(l1);
+              const l2 = capPlugin.addListener('listeningState', (data) => {
+                if (data && data.status === 'stopped') {
+                  // Em modo prévia, apenas mantém a última prévia
+                  if (userWantsListening && interim && interim.trim()) setPreview(interim);
+                  setListening(false);
+                  engine = null; usingCap = false;
+                  if (userWantsListening && !stopping) scheduleRestart('cap-stopped');
+                }
+                else if (data && data.status === 'started') {
+                  interim = '';
+                  setListening(true);
+                  engine = 'cap'; usingCap = true;
+                  restartDelayMs = 300;
+                }
+              });
+              capListeners.push(l2);
+            }
+            if (capPlugin.start) await capPlugin.start({ language: 'pt-BR', partialResults: true, popup: false, maxResults: 1 });
+            usingCap = true; engine = 'cap';
+            setListening(true);
+            restartDelayMs = 300;
+          } else {
+            throw new Error('Permissão de microfone negada');
+          }
+        } catch (err) {
+          console.error('Capacitor speech start error:', err);
+          alert('Não foi possível iniciar o ditado. Verifique permissões do microfone.');
+          setListening(false);
+          if (userWantsListening) scheduleRestart('cap-error');
+        }
+      }
+
+      async function stopCapacitorDictation(){
+        try { if (capPlugin && capPlugin.stop) await capPlugin.stop(); } catch(e) { /* ignore */ }
+        // remove listeners
+        try { capListeners.forEach(l => l && l.remove && l.remove()); } catch(e) { /* ignore */ }
+        try { if(capPlugin && typeof capPlugin.removeAllListeners === 'function') await capPlugin.removeAllListeners(); } catch(e) { /* ignore */ }
+        capListeners = [];
+        usingCap = false; engine = null;
+        // Em parada manual descartamos a parcial (evita duplicação)
+        setListening(false);
+      }
+
+      function initWebSpeech(){
+        const SR = SpeechRecognition;
+        if (!SR) return null;
+        const rec = new SR();
+        rec.lang = 'pt-BR';
+        rec.interimResults = true;
+        rec.continuous = true;
+        let webInterim = '';
+        rec.addEventListener('start', () => {
+          // Se o usuário cancelou no meio do start, interrompe imediatamente
+          if (!userWantsListening) {
+            try { rec.stop(); } catch(_){}
+            try { if (typeof rec.abort === 'function') rec.abort(); } catch(_){ }
+            return;
+          }
+          setListening(true); engine = 'web';
+        });
+        rec.addEventListener('end', () => {
+          if (userWantsListening && webInterim && webInterim.trim()) { setPreview(webInterim); webInterim = ''; }
+          setListening(false); engine = null;
+          // Reinicia se o usuário ainda deseja ditar
+          if (userWantsListening && !stopping) scheduleRestart('web-end');
+        });
+        rec.addEventListener('error', (e) => {
+          console.error('Speech recognition error', e);
+          // silencioso
+          setListening(false);
+          if (userWantsListening && !stopping) scheduleRestart('web-error');
+        });
+        rec.addEventListener('result', (event) => {
+          let interimLocal = '';
+          let finalChunk = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const res = event.results[i];
+            if (res.isFinal) finalChunk += res[0].transcript;
+            else interimLocal += res[0].transcript;
+          }
+          webInterim = interimLocal || '';
+          if (!userWantsListening) return; // não escreve nada após parar
+          // Em modo prévia, só atualiza a prévia e não escreve no textarea
+          interim = webInterim; setPreview(interim);
+          if (finalChunk) { setPreview(finalChunk.trim()); webInterim = ''; }
+        });
+        return rec;
+      }
+
+  recognition = initWebSpeech();
+
+      async function startDictation(){
+        if (starting || listening) return;
+        starting = true;
+        try {
+          if (isCapNative && capPlugin) {
+            await startCapacitorDictation();
+          } else if (recognition) {
+            // Bloqueio comum: Web Speech requer contexto seguro (HTTPS) fora de localhost
+            try {
+              if (!window.isSecureContext && !/^localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
+                if (voiceStatus) { voiceStatus.textContent = 'Navegador bloqueou microfone: use HTTPS ou localhost.'; voiceStatus.classList.remove('hidden'); }
+                return;
+              }
+            } catch(_){ }
+            try { recognition.start(); } catch(e) { /* ignore already started */ }
+          } else if (capPlugin) {
+            await startCapacitorDictation();
+          } else {
+            alert('Ditado não suportado neste dispositivo');
+          }
+        } finally { starting = false; }
+      }
+
+      async function stopDictation(){
+        if (stopping) return;
+        stopping = true;
+        try {
+          // Força parada em qualquer estado/engine
+          try { if (capPlugin && typeof capPlugin.stop === 'function') await capPlugin.stop(); } catch(_){ }
+          try { if (recognition) { try{ recognition.stop(); }catch(_){ } try{ if (typeof recognition.abort==='function') recognition.abort(); }catch(_){ } } } catch(_){ }
+          try { capListeners.forEach(l=>l && l.remove && l.remove()); } catch(_){ }
+          capListeners = []; usingCap = false; engine = null; interim='';
+          setListening(false);
+        } finally { stopping = false; }
+      }
+
+      btnVoice.addEventListener('click', async () => {
+        // Controle 100% manual
+        if (!userWantsListening) {
+          userWantsListening = true;
+          initCommittedFromTextarea();
+          if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
+          await startDictation();
+        } else {
+          // Força atualização imediata do botão/estado ao parar
+          userWantsListening = false;
+          setPreview('');
+          setListening(false);
+          // Para nativo/web em background para não travar UI
+          try { forceStopAll(); } catch(_) {}
+        }
+      });
+
+      // Se o navegador expõe Web Speech mas falhar com erro (e houver plugin nativo), tenta fallback automático
+      function scheduleRestart(reason){
+        if (!userWantsListening) return;
+        if (restartTimer) clearTimeout(restartTimer);
+        restartTimer = setTimeout(async ()=>{
+          restartTimer = null;
+          if (!userWantsListening || listening || starting) return;
+          try { await startDictation(); restartDelayMs = Math.min(restartDelayMs + 200, 1500); } catch(_){ }
+        }, restartDelayMs);
+      }
+      if (recognition) {
+        recognition.addEventListener('error', async (e) => {
+          const code = (e && (e.error || e.message)) || '';
+          const recoverable = ['not-allowed','service-not-allowed','audio-capture','network'].includes(String(code));
+          if (isCapNative && capPlugin && recoverable) {
+            try { await startCapacitorDictation(); } catch(_){ /* ignore */ }
+          }
+        });
+      }
+      async function forceStopAll(){
+        try { userWantsListening = false; } catch(_){ }
+        try { if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; } } catch(_){ }
+        try { if (capPlugin && typeof capPlugin.stop === 'function') await capPlugin.stop(); } catch(_){ }
+        try { if (capPlugin && typeof capPlugin.removeAllListeners === 'function') await capPlugin.removeAllListeners(); } catch(_){ }
+        try { if (recognition) { try{ recognition.stop(); }catch(_){ } try{ if (typeof recognition.abort==='function') recognition.abort(); }catch(_){ } } } catch(_){ }
+        try { capListeners.forEach(l=>l && l.remove && l.remove()); } catch(_){ }
+        capListeners = []; usingCap = false; engine = null; interim='';
+        setListening(false);
+      }
+      // (mantido apenas uma definição de scheduleRestart)
+    })();
+    // ==== fim ditado ====
+});
+
+// Função de debug
+function debugAI() {
+    console.log('=== DEBUG AI ===');
+    console.log('CSRF Token:', document.querySelector('[name=csrfmiddlewaretoken]')?.value);
+    console.log('Textarea:', document.getElementById('textarea-relatorio')?.value);
+    
+    // Testar chamada direta
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch('{% url "common:melhorar_relatorio_ai" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            texto: 'teste debug'
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        alert('Debug OK! Veja console.');
+    })
+    .catch(error => {
+        console.error('Debug error:', error);
+        alert('Erro no debug: ' + error.message);
+    });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,248 @@
+{% extends '_layout/base.html' %}
+{% load form_extras %}
+{% block title %}{% if is_edit %}Editar Auto (Som){% else %}Novo Auto (Som){% endif %}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="bg-slate-100 rounded-t px-4 py-3 mb-0 border-b border-slate-300">
+    <h1 class="text-xl font-semibold text-slate-800">{% if is_edit %}Editar{% else %}Novo{% endif %} Auto de Infração (Som)</h1>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="space-y-3">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+      <div>
+        <label class="block text-sm font-medium">Nome / Razão Social</label>
+        {{ form.notificado_nome }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium">E-mail</label>
+        {{ form.notificado_email }}
+        <label class="mt-2 inline-flex items-center gap-2 text-sm">
+          {{ form.enviar_segunda_via }}
+          <span>Enviar segunda via por e-mail</span>
+        </label>
+        <p class="text-xs text-slate-500">Será enviado para o endereço informado acima.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">CPF</label>
+        {{ form.notificado_cpf }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium">CNPJ</label>
+        {{ form.notificado_cnpj }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium">Endereço</label>
+        {{ form.endereco }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Referência</label>
+        {{ form.referencia }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Ponto</label>
+        {{ form.ponto }}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="block text-sm font-medium">Valor Medido (dB)</label>
+        {{ form.valor_medido_db }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Permitido (dB)</label>
+        {{ form.permitido_db }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Período</label>
+        {{ form.periodo }}
+      </div>
+    </div>
+
+    <!-- Tabela de Limites de Ruído (referência) -->
+    <div class="mt-2">
+      <div class="text-sm font-semibold text-slate-700 mb-1">Tabelas de Limites de Ruído (para referência)</div>
+      <div class="overflow-auto border rounded">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr>
+              <th class="p-2 border bg-slate-100 text-left">Zona</th>
+              <th class="p-2 border bg-slate-100 text-center">Diurno</th>
+              <th class="p-2 border bg-slate-100 text-center">Vespertino</th>
+              <th class="p-2 border bg-slate-100 text-center">Noturno</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="p-2 border">Residencial e Rural</td>
+              <td class="p-2 border text-center">55 dB</td>
+              <td class="p-2 border text-center">50 dB</td>
+              <td class="p-2 border text-center">45 dB</td>
+            </tr>
+            <tr>
+              <td class="p-2 border">Zona Mista</td>
+              <td class="p-2 border text-center">60 dB</td>
+              <td class="p-2 border text-center">55 dB</td>
+              <td class="p-2 border text-center">50 dB</td>
+            </tr>
+            <tr>
+              <td class="p-2 border">Industrial</td>
+              <td class="p-2 border text-center">70 dB</td>
+              <td class="p-2 border text-center">65 dB</td>
+              <td class="p-2 border text-center">60 dB</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm font-medium">Reincidência</label>
+        {{ form.reincidencia }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Classificação</label>
+        {{ form.classificacao }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium">Base Legal</label>
+      <div class="p-3 border rounded bg-slate-50 text-[0.95rem]">
+        Infração ao Artigo 3º da Lei nº 1.890 de 16 de Outubro de 2013, regulamentada pelo Decreto nº 3.105 de 15 de Fevereiro de 2023.
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Texto fixo para todos os autos de poluição sonora.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium">Observações</label>
+      {{ form.observacoes }}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm font-medium">Fiscal responsável (matrícula)</label>
+        {{ form.fiscal_matricula }}
+      </div>
+    </div>
+
+    <div class="p-3 border rounded space-y-3">
+      <div class="flex items-center gap-2">
+        {{ form.recusou_assinar }}
+        <label class="text-sm">Recusou-se a assinar</label>
+      </div>
+      <input type="hidden" name="{{ form.assinatura_dataurl.html_name }}" id="assinatura_dataurl">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+        <div class="space-y-2">
+          <label class="block text-sm font-medium">Assinatura</label>
+          <button type="button" class="btn btn-primary border-2 border-blue-600 text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold" id="btn-assinar">Assinar Digitalmente</button>
+
+          <div class="mt-3">
+            <label class="block text-sm font-medium">Anexar assinatura (imagem)</label>
+            {{ form.assinatura_notificado }}
+            <button type="button" class="btn ml-2" id="btn-assinatura-inserir">Inserir</button>
+            <p class="text-xs text-slate-500 mt-1">Você pode assinar digitalmente ou anexar uma imagem.</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Assinatura Atual</label>
+          <div class="border rounded p-2 bg-white min-h-[120px] flex items-center justify-center">
+            {% if obj and obj.assinatura_notificado %}
+              <img id="ass-prev" src="{{ obj.assinatura_notificado.url }}" alt="Assinatura" class="max-h-28 object-contain"/>
+            {% else %}
+              <img id="ass-prev" src="" alt="Assinatura" class="max-h-28 object-contain hidden"/>
+              <span id="ass-prev-placeholder" class="text-xs text-slate-400">Sem assinatura</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button type="submit" class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white font-semibold shadow">Salvar</button>
+      <a href="{% url 'core:fisc_auto_som' %}" class="px-4 py-2 rounded bg-slate-400 hover:bg-slate-500 text-white font-semibold">Cancelar</a>
+      <button type="button" onclick="window.history.back()" class="px-4 py-2 rounded bg-sky-700 hover:bg-sky-800 text-white font-semibold">Voltar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal Assinatura Digital -->
+<div id="modal-assinatura" class="fixed inset-0 bg-black/50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg p-4 w-full max-w-lg">
+      <h3 class="font-semibold mb-2">Assinatura Digital</h3>
+      <p class="text-sm text-slate-600 mb-2">Desenhe sua assinatura abaixo:</p>
+      <canvas id="sig-canvas" class="w-full border rounded bg-white" height="180"></canvas>
+      <div class="flex items-center gap-2 mt-3">
+        <button type="button" class="btn" id="sig-limpar">Limpar</button>
+        <button type="button" class="btn btn-primary" id="sig-salvar">Salvar</button>
+        <button type="button" class="btn" id="sig-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function qs(id){ return document.getElementById(id); }
+  window.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('textarea').forEach(t=>{ if(!t.className) t.className='w-full px-3 py-2 border rounded'; });
+
+    // Máscaras CPF/CNPJ
+    const cpfInput = document.querySelector('[name="{{ form.notificado_cpf.html_name }}"]');
+    const cnpjInput = document.querySelector('[name="{{ form.notificado_cnpj.html_name }}"]');
+    function maskCPF(v){ v=(v||'').replace(/\D/g,'').slice(0,11); v=v.replace(/(\d{3})(\d)/,'$1.$2'); v=v.replace(/(\d{3})(\d)/,'$1.$2'); v=v.replace(/(\d{3})(\d{1,2})$/,'$1-$2'); return v; }
+    function maskCNPJ(v){ v=(v||'').replace(/\D/g,'').slice(0,14); v=v.replace(/(\d{2})(\d)/,'$1.$2'); v=v.replace(/(\d{3})(\d)/,'$1.$2'); v=v.replace(/(\d{3})(\d)/,'$1/$2'); v=v.replace(/(\d{4})(\d{1,2})$/,'$1-$2'); return v; }
+    cpfInput && cpfInput.addEventListener('input', ()=>{ cpfInput.value = maskCPF(cpfInput.value); });
+    cnpjInput && cnpjInput.addEventListener('input', ()=>{ cnpjInput.value = maskCNPJ(cnpjInput.value); });
+
+    const chkRecusa = qs('{{ form.recusou_assinar.id_for_label }}');
+    const inputDataUrl = qs('assinatura_dataurl');
+    const fileInput = document.querySelector('[name="{{ form.assinatura_notificado.html_name }}"]');
+    const btnAbrir = qs('btn-assinar');
+    const btnInserir = qs('btn-assinatura-inserir');
+    const prev = qs('ass-prev');
+    const prevPlaceholder = qs('ass-prev-placeholder');
+    const modal = qs('modal-assinatura');
+    const canvas = qs('sig-canvas');
+    const ctx = canvas ? canvas.getContext('2d') : null;
+    const btnLimpar = qs('sig-limpar');
+    const btnSalvar = qs('sig-salvar');
+    const btnFechar = qs('sig-fechar');
+
+    function setPreview(src){ if(!prev) return; if(src){ prev.src = src; prev.classList.remove('hidden'); if(prevPlaceholder) prevPlaceholder.classList.add('hidden'); } else { prev.src=''; prev.classList.add('hidden'); if(prevPlaceholder) prevPlaceholder.classList.remove('hidden'); } }
+    function toggleAssinatura(){ const recusado = chkRecusa && chkRecusa.checked; if(recusado){ inputDataUrl && (inputDataUrl.value=''); setPreview(''); if(fileInput) fileInput.value=''; } }
+    chkRecusa && chkRecusa.addEventListener('change', toggleAssinatura); toggleAssinatura();
+
+    function openModal(){ if(modal) modal.classList.remove('hidden'); }
+    function closeModal(){ if(modal) modal.classList.add('hidden'); }
+    btnAbrir && btnAbrir.addEventListener('click', (e)=>{ e.preventDefault(); if(chkRecusa && chkRecusa.checked) { alert('Desmarque a recusa para assinar.'); return; } openModal(); });
+    btnFechar && btnFechar.addEventListener('click', closeModal);
+
+    if(canvas && ctx){
+      let drawing = false;
+      const pos = (ev)=>{ const r=canvas.getBoundingClientRect(); const t=ev.touches?ev.touches[0]:ev; return {x:t.clientX-r.left, y:t.clientY-r.top}; };
+      const start=(e)=>{ drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); };
+      const move=(e)=>{ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#111827'; ctx.lineWidth=2; ctx.stroke(); e.preventDefault(); };
+      const end=()=>{ drawing=false; };
+      canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+      canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', end);
+    }
+    btnLimpar && btnLimpar.addEventListener('click', ()=>{ if(ctx) ctx.clearRect(0,0,canvas.width,canvas.height); });
+    btnSalvar && btnSalvar.addEventListener('click', ()=>{ try{ const url = canvas.toDataURL('image/png'); inputDataUrl && (inputDataUrl.value=url); setPreview(url); if(fileInput) fileInput.value=''; closeModal(); }catch(e){} });
+
+    btnInserir && btnInserir.addEventListener('click', (e)=>{
+      e.preventDefault(); if(!fileInput || !fileInput.files || !fileInput.files[0]) return;
+      const f = fileInput.files[0];
+      const r = new FileReader();
+      r.onload = ()=>{ setPreview(r.result); inputDataUrl && (inputDataUrl.value=''); };
+      r.readAsDataURL(f);
+    });
+  });
+})();
+</script>
+{% endblock %}

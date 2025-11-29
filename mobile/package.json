@@ -1,0 +1,26 @@
+{
+  "name": "gcm-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo Build do shell web opcional (não usado com server.url)",
+    "android": "npx cap add android && npx cap open android",
+    "sync": "npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/core": "latest",
+    "@capacitor/browser": "latest",
+    "@capacitor/filesystem": "latest",
+    "@capacitor/share": "latest",
+    "@capacitor/geolocation": "^7.1.5",
+    "@capacitor/push-notifications": "latest",
+    "@capacitor/local-notifications": "latest",
+    "@capacitor-community/speech-recognition": "^7.0.1",
+    "pdfjs-dist": "^4.3.136"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest",
+    "typescript": "^5.4.0"
+  }
+}

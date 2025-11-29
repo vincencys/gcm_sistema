@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="pt-br">
+{% load static %}
+<head>
+<meta charset="utf-8">
+<title>Formulário Offline - Veículo Envolvido</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+ body{font-family:system-ui,-apple-system,Arial,sans-serif;margin:16px;background:#f8fafc;color:#0f172a}
+ h1{font-size:18px;margin:0 0 12px;font-weight:600}
+ fieldset{border:1px solid #cbd5e1;padding:12px 14px;margin-bottom:16px;border-radius:6px;background:#fff}
+ legend{padding:0 6px;font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.5px}
+ label{display:block;font-size:11px;font-weight:600;margin-bottom:2px;color:#475569}
+ input,select,textarea{width:100%;padding:6px 8px;border:1px solid #94a3b8;border-radius:4px;background:#fff;font-size:13px;box-sizing:border-box}
+ input:focus,select:focus,textarea:focus{outline:2px solid #6366f1;outline-offset:1px}
+ .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+ .two{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+ .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+ button,.btn{cursor:pointer;border:0;border-radius:4px;font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 14px}
+ .btn-primary{background:#2563eb;color:#fff}
+ .btn-outline{background:#fff;color:#1e293b;border:1px solid #64748b}
+ .btn-warn{background:#d97706;color:#fff}
+ .muted{font-size:11px;color:#64748b}
+ .hotspot-area{position:relative;margin:8px auto;max-width:430px;aspect-ratio:4/2.3;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px}
+ .hotspot-area img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;user-select:none}
+ .hotspot-box{position:absolute;transform:translate(-50%,-50%);background:rgba(255,255,255,.85);border:1px solid #1f2937;font-size:9px;font-weight:600;padding:2px 4px;border-radius:4px;cursor:pointer;line-height:1.05;max-width:58px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35);}
+ .hotspot-box.ativo{background:#dc2626;color:#fff;border-color:#7f1d1d;}
+ #danos-lista{background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:6px;min-height:42px;font-size:12px;display:flex;flex-wrap:wrap}
+ .tag-dano{background:#fee2e2;color:#7f1d1d;padding:4px 8px;border-radius:999px;margin:2px;font-size:11px}
+ @media print{.no-print{display:none!important}body{background:#fff;margin:8px}fieldset{break-inside:avoid-page}}
+ @media (max-width:640px){
+  .actions .btn{ width:100%; text-align:center }
+  /* Empilhar os diagramas e manter tamanho mais contido no mobile */
+  .avaliacao-danos-grid{ grid-template-columns:1fr !important; gap:16px !important; }
+  .hotspot-area{ max-width:100% !important; aspect-ratio:4/1.9 !important; min-height:160px; }
+  #area-moto.hotspot-area{ aspect-ratio:16/6.5 !important; min-height:180px; }
+  .hotspot-box{ font-size:9px; padding:3px 5px; max-width:60px; }
+ }
+</style>
+</head>
+<body>
+<h1>Formulário Offline - Veículo <span style="background:#334155;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px">BO {{ bo.numero|default:bo.id }}</span></h1>
+<p class="muted">Preencha e salve localmente. Depois importe na tela de Veículos Envolvidos.</p>
+<form id="form-offline-veic">
+ <fieldset>
+  <legend>Dados do Veículo</legend>
+  <div class="grid">
+    <div><label>Marca *</label><input name="marca" required></div>
+    <div><label>Modelo *</label><input name="modelo" required></div>
+    <div><label>Placa</label><input name="placa"></div>
+    <div><label>Renavam</label><input name="renavam"></div>
+    <div><label>Nº Chassi</label><input name="numero_chassi"></div>
+    <div><label>Nº Motor</label><input name="numero_motor"></div>
+    <div><label>Placa Cidade</label><input name="placa_cidade"></div>
+    <div><label>UF Placa</label><input name="placa_estado" maxlength="2" style="text-transform:uppercase"></div>
+    <div><label>Cor</label><input name="cor"></div>
+    <div><label>Ano Modelo</label><input name="ano_modelo" type="number" min="1900"></div>
+    <div><label>Ano Fabricação</label><input name="ano_fabricacao" type="number" min="1900"></div>
+  </div>
+ </fieldset>
+ <fieldset>
+  <legend>Condições do Acidente</legend>
+  <div class="grid">
+    <div>
+      <label>Semáforo</label>
+      <select name="semaforo">
+        <option value="">--</option>
+        <option value="funcionando">Funcionando</option>
+        <option value="nao_funcionando">Não Funcionando</option>
+        <option value="intermitente">Intermitente</option>
+        <option value="nao_ha">Não Há</option>
+      </select>
+    </div>
+    <div>
+      <label>Tipo Pista</label>
+      <select name="tipo_pista">
+        <option value="">--</option>
+        <option value="seca">Seca</option>
+        <option value="molhada">Molhada</option>
+        <option value="oleosa">Oleosa</option>
+        <option value="com_lama">Com Lama</option>
+        <option value="com_areia">Com Areia</option>
+      </select>
+    </div>
+    <div>
+      <label>Tipo Acidente</label>
+      <select name="tipo_acidente">
+        <option value="">--</option>
+        <option value="colisao_traseira">Colisão Traseira</option>
+        <option value="colisao_frontal">Colisão Frontal</option>
+        <option value="colisao_lateral">Colisão Lateral</option>
+        <option value="abalroamento">Abalroamento</option>
+        <option value="capotamento">Capotamento</option>
+        <option value="tombamento">Tombamento</option>
+        <option value="atropelamento">Atropelamento</option>
+        <option value="saida_pista">Saída de Pista</option>
+      </select>
+    </div>
+    <div>
+      <label>Tempo</label>
+      <select name="tempo">
+        <option value="">--</option>
+        <option value="sol">Sol</option>
+        <option value="chuva">Chuva</option>
+        <option value="garoa">Garoa</option>
+        <option value="nevoeiro">Nevoeiro</option>
+        <option value="vento">Vento</option>
+        <option value="nublado">Nublado</option>
+      </select>
+    </div>
+    <div>
+      <label>Iluminação</label>
+      <select name="iluminacao">
+        <option value="">--</option>
+        <option value="plena">Plena</option>
+        <option value="escuridao">Escuridão</option>
+        <option value="amanhecer">Amanhecer</option>
+        <option value="anoitecer">Anoitecer</option>
+        <option value="iluminacao_publica">Iluminação Pública</option>
+      </select>
+    </div>
+  </div>
+ </fieldset>
+ <fieldset>
+  <legend>Proprietário / Condutor</legend>
+  <div class="grid">
+    <div><label>Proprietário</label><input name="proprietario"></div>
+    <div><label>CPF</label><input name="cpf"></div>
+    <div><label>CNPJ</label><input name="cnpj"></div>
+    <div><label>CNH</label><input name="cnh"></div>
+    <div><label>Categoria CNH</label><input name="categoria_cnh"></div>
+    <div><label>Validade CNH</label><input name="validade_cnh" type="date"></div>
+  </div>
+ </fieldset>
+ <fieldset>
+  <legend>Situação e Danos</legend>
+  <div class="grid">
+    <div style="grid-column:1/-1"><label>Situação do Veículo</label>
+      <select name="situacao_veiculo">
+        <option value="">--</option>
+        <option value="circulando">Circulando</option>
+        <option value="estacionado">Estacionado</option>
+        <option value="parado_via">Parado na Via</option>
+        <option value="em_manobra">Em Manobra</option>
+        <option value="fugiu">Fugiu do Local</option>
+      </select>
+    </div>
+    <div style="grid-column:1/-1"><label>Observação Situação</label><textarea name="observacao_situacao" rows="2"></textarea></div>
+  </div>
+  <p class="muted" style="margin:10px 0 4px;font-weight:600">Avaliação de Danos</p>
+  <div class="avaliacao-danos-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+    <div>
+      <h4 style="text-align:center;font-size:12px;margin:4px 0 6px;font-weight:600;color:#334155"><span style="background:#e2e8f0;padding:2px 6px;border-radius:4px">Automóvel</span></h4>
+      <div class="hotspot-area" id="area-carro-clone" style="margin:4px auto 0">
+        <img src="{% static 'img/user_car.png' %}" onerror="this.onerror=null;carFallback();" alt="Carro" style="width:100%;height:100%;object-fit:contain;pointer-events:none" draggable="false">
+        <!-- Hotspots carro (mesmas coords) -->
+        <div class="hotspot-box" data-parte="parachoque-dianteiro" style="left:95%;top:50%">Parachoque Dianteiro</div>
+        <div class="hotspot-box" data-parte="farol-dianteiro-esquerdo" style="left:95%;top:75%">Farol Esquerdo</div>
+        <div class="hotspot-box" data-parte="farol-dianteiro-direito" style="left:95%;top:25%">Farol Direito</div>
+        <div class="hotspot-box" data-parte="capo" style="left:80%;top:50%">Capô</div>
+        <div class="hotspot-box" data-parte="porta-dianteira-esquerda" style="left:50%;top:80%">Porta D Esq</div>
+        <div class="hotspot-box" data-parte="porta-traseira-esquerda" style="left:31%;top:80%">Porta T Esq</div>
+        <div class="hotspot-box" data-parte="porta-dianteira-direita" style="left:50%;top:20%">Porta D Dir</div>
+        <div class="hotspot-box" data-parte="porta-traseira-direita" style="left:31%;top:20%">Porta T Dir</div>
+        <div class="hotspot-box" data-parte="Teto" style="left:40%;top:50%">Teto</div>
+        <div class="hotspot-box" data-parte="porta-malas" style="left:20%;top:50%">Porta Mala</div>
+        <div class="hotspot-box" data-parte="lanterna-traseira-esquerda" style="left:3%;top:75%">Lanterna E</div>
+        <div class="hotspot-box" data-parte="lanterna-traseira-direita" style="left:3%;top:25%">Lanterna D</div>
+        <div class="hotspot-box" data-parte="parachoque-traseiro" style="left:3%;top:50%">Parachoque Traseiro</div>
+        <div class="hotspot-box" data-parte="roda-dianteira-esquerda" style="left:80%;top:80%">Roda DE</div>
+        <div class="hotspot-box" data-parte="roda-dianteira-direita" style="left:80%;top:20%">Roda DD</div>
+        <div class="hotspot-box" data-parte="roda-traseira-esquerda" style="left:16%;top:80%">Roda TE</div>
+        <div class="hotspot-box" data-parte="roda-traseira-direita" style="left:16%;top:20%">Roda TD</div>
+      </div>
+    </div>
+    <div>
+      <h4 style="text-align:center;font-size:12px;margin:4px 0 6px;font-weight:600;color:#334155"><span style="background:#e2e8f0;padding:2px 6px;border-radius:4px">Motocicleta</span></h4>
+      <div class="hotspot-area" id="area-moto" style="max-width:430px;aspect-ratio:16/7">
+  <img src="{% static 'img/user_moto.png' %}" data-fallback="{% static 'img/moto_cg.svg' %}" alt="Moto" style="width:100%;height:100%;object-fit:contain;pointer-events:none" draggable="false">
+        <div class="hotspot-box" data-parte="roda-dianteira" style="left:19%;top:68%">Roda D</div>
+        <div class="hotspot-box" data-parte="roda-traseira" style="left:70%;top:68%">Roda T</div>
+        <div class="hotspot-box" data-parte="guidao" style="left:27%;top:21%">Guidão</div>
+        <div class="hotspot-box" data-parte="farol" style="left:30%;top:33%">Farol</div>
+        <div class="hotspot-box" data-parte="tanque" style="left:44%;top:37%">Tanque</div>
+        <div class="hotspot-box" data-parte="assento" style="left:58%;top:32%">Assento</div>
+        <div class="hotspot-box" data-parte="motor" style="left:52%;top:54%">Motor</div>
+        <div class="hotspot-box" data-parte="escapamento" style="left:77%;top:54%">Escap.</div>
+        <div class="hotspot-box" data-parte="rabeta" style="left:83%;top:32%">Rabeta</div>
+      </div>
+    </div>
+  </div>
+  <div id="danos-lista" style="margin:12px 0 8px;background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:6px;min-height:46px;font-size:12px;display:flex;flex-wrap:wrap"></div>
+  <p id="sem-danos" class="muted" style="font-style:italic">Clique nos quadrados para marcar danos</p>
+  <input type="hidden" name="danos_identificados" id="danos_identificados">
+  <div class="actions" style="margin-top:4px">
+    <button type="button" id="btn-limpar-danos" class="btn btn-outline">Limpar Danos</button>
+  </div>
+ </fieldset>
+
+   <fieldset>
+    <legend>Remoção de Veículo</legend>
+    <div class="grid two">
+      <div><label>n° das AIT's relacionadas</label><input name="apreensao_ait"></div>
+      <div><label>n° do CRR</label><input name="apreensao_crr"></div>
+      <div><label>Responsável pelo Guincho</label><input name="apreensao_responsavel_guincho"></div>
+      <div><label>Destino</label><input name="apreensao_destino"></div>
+    </div>
+   </fieldset>
+ <div class="actions no-print">
+  <button type="button" id="btn-exportar" class="btn btn-primary">Salvar Local (JSON)</button>
+  <button type="button" id="btn-imprimir" class="btn btn-outline">Imprimir / PDF</button>
+  <button type="button" id="btn-baixar-html" class="btn btn-outline">Baixar Formulário (HTML)</button>
+  <button type="button" id="btn-limpar-tudo" class="btn btn-warn">Limpar Tudo</button>
+ </div>
+</form>
+<div class="muted" style="margin-top:20px" class="no-print">
+ <strong>Como usar:</strong> Preencha e clique em "Salvar Local (JSON)". Depois, na lista de Veículos Envolvidos, use "Importar Offline" (iremos adicionar) ou transcreva.
+</div>
+<script>
+(function(){
+ const STORAGE_KEY = 'bogcmi-offline-veiculos:bo:{{ bo.id }}';
+ const form = document.getElementById('form-offline-veic');
+ const danosSet = new Set();
+ const danosLista = document.getElementById('danos-lista');
+ const danosInput = document.getElementById('danos_identificados');
+ const semDanos = document.getElementById('sem-danos');
+ function formatar(p){return p.replace(/-/g,' ').replace(/\b([a-z])/g,m=>m.toUpperCase());}
+ function toggleParte(p,el){ if(danosSet.has(p)){danosSet.delete(p);el.classList.remove('ativo');} else {danosSet.add(p);el.classList.add('ativo');} renderDanos(); }
+ function bindHotspots(ctx){ ctx.querySelectorAll('.hotspot-box').forEach(h=>{ h.addEventListener('click',()=>toggleParte(h.dataset.parte,h)); }); }
+ bindHotspots(document);
+ function renderDanos(){ if(!danosSet.size){danosLista.innerHTML='';danosInput.value='';semDanos.style.display='block';return;} semDanos.style.display='none'; const arr=[...danosSet]; danosLista.innerHTML=arr.map(p=>`<span class="tag-dano">${formatar(p)}</span>`).join(''); danosInput.value=arr.join(','); }
+ document.getElementById('btn-limpar-danos').addEventListener('click',()=>{danosSet.clear();document.querySelectorAll('.hotspot-box.ativo').forEach(h=>h.classList.remove('ativo'));renderDanos();});
+ function coletar(){ const fd=new FormData(form); const obj={}; fd.forEach((v,k)=>obj[k]=v); obj._ts=Date.now(); return obj; }
+ function salvarLocal(obj){ let lista=[]; try{lista=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){}; lista.push(obj); localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); }
+ document.getElementById('btn-exportar').addEventListener('click',()=>{ const obj=coletar(); salvarLocal(obj); const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='veiculo-offline-bo{{ bo.id }}-'+Date.now()+'.json'; a.click(); });
+ document.getElementById('btn-imprimir').addEventListener('click',()=>window.print());
+ document.getElementById('btn-limpar-tudo').addEventListener('click',()=>{ if(confirm('Limpar todos os campos?')){ form.reset(); danosSet.clear(); document.querySelectorAll('.hotspot-box.ativo').forEach(h=>h.classList.remove('ativo')); renderDanos(); } });
+  // Geração de HTML standalone para uso 100% offline
+  document.getElementById('btn-baixar-html').addEventListener('click',()=>{
+    gerarHTMLStandalone();
+  });
+  async function gerarHTMLStandalone(){
+    try{
+      const clone = document.documentElement.cloneNode(true);
+      // Remover botões que não fazem sentido? Mantemos todos menos este próprio (para não baixar recursivo)
+      const btnStandalone = clone.querySelector('#btn-baixar-html');
+      if(btnStandalone){ btnStandalone.textContent = 'Arquivo Local'; }
+      // Incluir nota
+      const nota = clone.createElement ? clone.createElement('div') : document.createElement('div');
+      nota.innerHTML = '<div style="font:12px system-ui;margin:10px 0;padding:8px 10px;border:1px solid #94a3b8;border-radius:6px;background:#f1f5f9">Este arquivo foi gerado para uso totalmente offline. Os dados ficam somente no seu navegador via localStorage (chave: '+STORAGE_KEY+'). Para importar no sistema, use o botão "Salvar Local (JSON)" para cada veículo e depois faça o upload na tela de importação.</div>';
+      const formClonado = clone.querySelector('#form-offline-veic');
+      formClonado?.parentNode?.insertBefore(nota, formClonado);
+      // Embutir imagens em base64
+      const imgs = clone.querySelectorAll('img');
+      for(const img of imgs){
+        const src = img.getAttribute('src');
+        if(!src || src.startsWith('data:')) continue;
+        try {
+          const blob = await fetch(src).then(r=>r.blob());
+          const dataUrl = await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); });
+          img.setAttribute('src', dataUrl);
+          img.removeAttribute('data-fallback');
+        } catch(e){ /* ignora erro */ }
+      }
+      // Remover dependência de URL do Django em static: já substituído por base64.
+      // Serializar
+      const htmlFinal = '<!DOCTYPE html>\n'+clone.outerHTML;
+      const blob = new Blob([htmlFinal], {type:'text/html'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'formulario_veiculo_offline_bo{{ bo.id }}.html';
+      a.click();
+    }catch(err){
+      alert('Falha ao gerar HTML offline: '+err);
+      console.error(err);
+    }
+  }
+ // Fallback imagem moto
+ document.querySelectorAll('img[data-fallback]').forEach(img=>{
+   img.addEventListener('error',()=>{
+     const fb = img.getAttribute('data-fallback');
+     if(fb && img.src.indexOf(fb)===-1){ img.src = fb; }
+   }, {once:true});
+ });
+})();
+</script>
+<script>
+// Máscaras e validações para CPF/CNPJ/Placa no offline
+(function(){
+  const form = document.getElementById('form-offline-veic');
+  if(!form) return;
+  const cpf = form.querySelector('input[name="cpf"]');
+  const cnpj = form.querySelector('input[name="cnpj"]');
+  const placa = form.querySelector('input[name="placa"]');
+  const digits = v => (v||'').replace(/\D+/g,'');
+  const alnum = v => (v||'').replace(/[^A-Za-z0-9]/g,'');
+  const maskCPF = v => { const d=digits(v).slice(0,11); const a=d.slice(0,3), b=d.slice(3,6), c=d.slice(6,9), e=d.slice(9,11); let out=''; if(a) out+=a; if(b) out+=(out?'.':'')+b; if(c) out+=(out?'.':'')+c; if(e) out+=(out?'-':'')+e; return out; };
+  const maskCNPJ = v => { const d=digits(v).slice(0,14); const a=d.slice(0,2), b=d.slice(2,5), c=d.slice(5,8), e=d.slice(8,12), f=d.slice(12,14); let out=''; if(a) out+=a; if(b) out+=(out?'.':'')+b; if(c) out+=(out?'.':'')+c; if(e) out+=(out?'/':'')+e; if(f) out+=(out?'-':'')+f; return out; };
+  const maskPlaca = v => { const r = alnum(v).toUpperCase().slice(0,7); if(/^[A-Z]{3}\d{4}$/.test(r)) return r.slice(0,3)+'-'+r.slice(3); return r; };
+  function cpfValid(v){ const d=digits(v); if(d.length!==11||/(\d)\1{10}/.test(d)) return false; const n=d.split('').map(x=>+x); let s=0; for(let i=0;i<9;i++) s+=n[i]*(10-i); let r=(s*10)%11; if(r===10) r=0; if(n[9]!==r) return false; s=0; for(let i=0;i<10;i++) s+=n[i]*(11-i); r=(s*10)%11; if(r===10) r=0; return n[10]===r; }
+  function cnpjValid(v){ const d=digits(v); if(d.length!==14||/(\d)\1{13}/.test(d)) return false; const n=d.split('').map(x=>+x); const dv=(arr,p)=>{let s=0; for(let i=0;i<p.length;i++) s+=arr[i]*p[i]; const r=s%11; return r<2?0:11-r;}; const dv1=dv(n,[5,4,3,2,9,8,7,6,5,4,3,2]); if(n[12]!==dv1) return false; const dv2=dv(n,[6,5,4,3,2,9,8,7,6,5,4,3,2]); return n[13]===dv2; }
+  function placaValid(v){ const p=(v||'').toUpperCase().trim(); return /^[A-Z]{3}-\d{4}$/.test(p) || /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(p); }
+  function setNote(el, ok){ if(!el) return; let n = el.parentElement.querySelector('.fld-note'); if(!n){ n=document.createElement('div'); n.className='fld-note muted'; el.parentElement.appendChild(n);} if(!(el.value||'').trim()){ n.textContent=''; return; } n.textContent = ok? 'Válido' : 'Inválido'; n.style.color = ok? '#047857' : '#b91c1c'; }
+  if(cpf){ cpf.addEventListener('input', ()=> cpf.value = maskCPF(cpf.value)); const v=()=>setNote(cpf, !cpf.value.trim() || cpfValid(cpf.value)); cpf.addEventListener('blur', v); cpf.addEventListener('change', v); }
+  if(cnpj){ cnpj.addEventListener('input', ()=> cnpj.value = maskCNPJ(cnpj.value)); const v=()=>setNote(cnpj, !cnpj.value.trim() || cnpjValid(cnpj.value)); cnpj.addEventListener('blur', v); cnpj.addEventListener('change', v); }
+  if(placa){ placa.addEventListener('input', ()=> placa.value = maskPlaca(placa.value)); const v=()=>setNote(placa, !placa.value.trim() || placaValid(placa.value)); placa.addEventListener('blur', v); placa.addEventListener('change', v); }
+  function enforce(ev){ if(cpf && cpf.value.trim() && !cpfValid(cpf.value)){ ev.preventDefault(); alert('CPF inválido.'); return true; } if(cnpj && cnpj.value.trim() && !cnpjValid(cnpj.value)){ ev.preventDefault(); alert('CNPJ inválido.'); return true; } if(placa && placa.value.trim() && !placaValid(placa.value)){ ev.preventDefault(); alert('Placa inválida. Formatos aceitos: AAA-9999 ou ABC1D23.'); return true; } return false; }
+  const btnExportar = document.getElementById('btn-exportar');
+  const btnImprimir = document.getElementById('btn-imprimir');
+  if(btnExportar){ btnExportar.addEventListener('click', (e)=>{ if(enforce(e)) return; }); }
+  if(btnImprimir){ btnImprimir.addEventListener('click', (e)=>{ if(enforce(e)) return; }); }
+})();
+</script>
+<script>
+// Fallback inline (caso static não resolva ou uso realmente offline via arquivo salvo)
+function carFallback(){
+  const area = document.getElementById('area-carro');
+  if(!area) return;
+  // Evita inserir duas vezes
+  if(area.querySelector('svg[data-inline-car]')) return;
+  const svg = `<?xml version="1.0" encoding="UTF-8"?><svg data-inline-car xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 300" preserveAspectRatio="xMidYMid meet"><rect x="5" y="120" rx="18" ry="18" width="500" height="90" fill="#eceff1" stroke="#374151" stroke-width="4"/><rect x="120" y="95" width="170" height="60" rx="12" ry="12" fill="#f1f5f9" stroke="#334155" stroke-width="4"/><circle cx="150" cy="215" r="30" fill="#1e293b" stroke="#111827" stroke-width="6"/><circle cx="390" cy="215" r="30" fill="#1e293b" stroke="#111827" stroke-width="6"/><circle cx="150" cy="215" r="14" fill="#f8fafc"/><circle cx="390" cy="215" r="14" fill="#f8fafc"/><rect x="300" y="95" width="55" height="60" rx="8" ry="8" fill="#e2e8f0" stroke="#334155" stroke-width="4"/><rect x="360" y="95" width="55" height="60" rx="8" ry="8" fill="#e2e8f0" stroke="#334155" stroke-width="4"/><rect x="125" y="100" width="70" height="50" rx="8" ry="8" fill="#e2e8f0" stroke="#334155" stroke-width="4"/><rect x="200" y="100" width="85" height="50" rx="8" ry="8" fill="#e2e8f0" stroke="#334155" stroke-width="4"/></svg>`;
+  area.querySelector('#img-carro-base')?.remove();
+  area.insertAdjacentHTML('afterbegin', svg);
+}
+</script>
+</body>
+</html>

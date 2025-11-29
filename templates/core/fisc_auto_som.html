@@ -1,0 +1,182 @@
+{% extends '_layout/base.html' %}
+{% load form_extras %}
+{% block title %}Fiscalização - Autos de Infração (Som){% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center justify-between" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">Fiscalização • Autos (Som)</h1>
+      </div>
+      <a href="{% url 'core:fisc_auto_som_novo' %}" class="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">Adicionar</a>
+    </div>
+  </div>
+
+  <form method="get" class="mb-3 grid grid-cols-1 md:grid-cols-3 gap-2 items-start">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nome do autuado" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+    <input type="text" name="endereco" value="{{ endereco }}" placeholder="Buscar por endereço" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+    <button class="btn btn-primary">Buscar</button>
+  </form>
+
+  <!-- Tabela (desktop) -->
+  <div class="overflow-auto bg-white border rounded-lg hidden md:block">
+    <table class="min-w-full border-separate border-spacing-0">
+      <thead>
+        <tr>
+          <th class="p-2 border border-slate-200 bg-slate-100">Número</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Emissão</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Autuado</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">CPF/CNPJ</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Status</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Fiscal</th>
+          <th class="p-2 border border-slate-200 bg-slate-100 w-24">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in page_obj.object_list %}
+          <tr>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">{{ a.numero }}</td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">{{ a.emissao_em|date:'d/m/Y H:i' }}</td>
+            <td class="p-2 border border-slate-200">{{ a.notificado_nome }}</td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">
+              {% if a.notificado_cpf %}
+                {{ a.notificado_cpf|format_cpf }}
+              {% elif a.notificado_cnpj %}
+                {{ a.notificado_cnpj|format_cnpj }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">
+              {% if user.is_superuser or user.username|lower == 'moises' or user.username|lower == 'administrativo' or user.username|lower == 'admnistrativo' %}
+                <select class="px-2 py-1 border rounded text-sm" onchange="alterarStatus('som', {{ a.id }}, this.value)">
+                  <option value="AGUARDANDO" {% if a.status == 'AGUARDANDO' %}selected{% endif %}>Aguardando despacho</option>
+                  <option value="DESPACHADO" {% if a.status == 'DESPACHADO' %}selected{% endif %}>Despachado</option>
+                </select>
+              {% else %}
+                <span class="badge {% if a.status == 'DESPACHADO' %}badge-success{% else %}badge-warning{% endif %}">{{ a.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="p-2 border border-slate-200">{{ a.fiscal_responsavel.get_full_name|default:a.fiscal_responsavel.username }}</td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap w-24 align-middle">
+              <div class="flex flex-col gap-1 w-24">
+                <a href="{% url 'core:fisc_auto_som_documento' a.id %}"
+                   class="h-8 px-2 bg-slate-100 text-slate-700 rounded shadow-sm hover:bg-slate-200 text-[11px] text-center flex items-center justify-center">Ver Documento</a>
+                {% if user.is_superuser or user.username|lower == 'moises' %}
+                <form method="post" action="{% url 'core:fisc_auto_som_excluir' a.id %}" class="inline"
+                      onsubmit="return confirm('Excluir o auto {{ a.numero }}? Esta ação não pode ser desfeita.');">
+                  {% csrf_token %}
+                  <button type="submit" class="h-8 w-full px-2 bg-red-600 text-white rounded shadow-sm hover:bg-red-700 text-[11px]">Excluir</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="p-2 border border-slate-200 text-center text-slate-500 py-6">Nenhum registro encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Cards (mobile) -->
+  <div class="md:hidden space-y-2">
+    {% for a in page_obj.object_list %}
+      <div class="rounded-lg border bg-white shadow-sm p-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="text-xs text-slate-500">Número</div>
+            <div class="font-semibold text-slate-800">{{ a.numero }}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-500">Emissão</div>
+            <div class="text-sm">{{ a.emissao_em|date:'d/m/Y H:i' }}</div>
+          </div>
+        </div>
+        <div class="mt-2 grid grid-cols-1 gap-1 text-sm">
+          <div>
+            <span class="text-xs text-slate-500">Autuado</span>
+            <div class="text-slate-800">{{ a.notificado_nome }}</div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-slate-500">CPF/CNPJ</div>
+            <div class="text-slate-800">{% if a.notificado_cpf %}{{ a.notificado_cpf|format_cpf }}{% elif a.notificado_cnpj %}{{ a.notificado_cnpj|format_cnpj }}{% else %}-{% endif %}</div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-slate-500">Status</div>
+            <div>
+              {% if user.is_superuser or user.username|lower == 'moises' or user.username|lower == 'administrativo' or user.username|lower == 'admnistrativo' %}
+                <select class="px-2 py-1 border rounded text-sm" onchange="alterarStatus('som', {{ a.id }}, this.value)">
+                  <option value="AGUARDANDO" {% if a.status == 'AGUARDANDO' %}selected{% endif %}>Aguardando despacho</option>
+                  <option value="DESPACHADO" {% if a.status == 'DESPACHADO' %}selected{% endif %}>Despachado</option>
+                </select>
+              {% else %}
+                <span class="badge {% if a.status == 'DESPACHADO' %}badge-success{% else %}badge-warning{% endif %}">{{ a.get_status_display }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-slate-500">Fiscal</div>
+            <div class="text-slate-800 truncate max-w-[55%] text-right">{{ a.fiscal_responsavel.get_full_name|default:a.fiscal_responsavel.username }}</div>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <a href="{% url 'core:fisc_auto_som_documento' a.id %}"
+             class="flex-1 text-center px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm">Ver</a>
+          {% if user.is_superuser or user.username|lower == 'moises' %}
+          <form method="post" action="{% url 'core:fisc_auto_som_excluir' a.id %}" class="flex-1"
+                onsubmit="return confirm('Excluir o auto {{ a.numero }}? Esta ação não pode ser desfeita.');">
+            {% csrf_token %}
+            <button type="submit" class="w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm">Excluir</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500 py-6">Nenhum registro encontrado.</div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="mt-3 flex items-center justify-between text-sm">
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    <div class="space-x-1">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&endereco={{ endereco }}" class="btn">Anterior</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&endereco={{ endereco }}" class="btn">Próxima</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+<script>
+  async function alterarStatus(tipo, id, status) {
+    try {
+      const resp = await fetch(`/fiscalizacao/${tipo}/${id}/status/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: new URLSearchParams({status})
+      });
+      if (!resp.ok) console.warn('Falha ao alterar status');
+    } catch (e) { console.error(e); }
+  }
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+{% endblock %}

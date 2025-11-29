@@ -1,0 +1,55 @@
+{% extends "_layout/base.html" %}
+{% block title %}Almoxarifado - Estoque{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-3">
+    <h1 class="text-2xl font-bold">Estoque</h1>
+    <a href="{% url 'core:almoxarifado' %}" class="link">⟵ Voltar ao Almoxarifado</a>
+  </div>
+  <p class="text-slate-700 mb-4">No controle de estoque, são cadastrados todos os produtos consumíveis como mantimentos, produtos de limpeza e escritório entre outros. O sistema também avisa quando a quantidade mínima de cada produto foi excedida.</p>
+
+  <div class="mb-3">
+  <a class="btn btn-primary" href="{% url 'core:almoxarifado:estoque_produto_novo' %}">+ Novo Produto</a>
+  </div>
+  <div class="overflow-x-auto bg-white border rounded-xl shadow-sm">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 border-b">
+        <tr class="text-left">
+          <th class="p-2 border">Produto</th>
+          <th class="p-2 border">Categoria</th>
+          <th class="p-2 border">Unid.</th>
+          <th class="p-2 border">Estoque</th>
+          <th class="p-2 border">Mínimo</th>
+          <th class="p-2 border">Alerta</th>
+          <th class="p-2 border">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produtos %}
+          <tr class="hover:bg-slate-50">
+            <td class="p-2 border">{{ p.nome }}</td>
+            <td class="p-2 border">{{ p.categoria.nome|default:"-" }}</td>
+            <td class="p-2 border">{{ p.unidade }}</td>
+            <td class="p-2 border">{{ p.estoque_atual }}</td>
+            <td class="p-2 border">{{ p.estoque_minimo }}</td>
+            <td class="p-2 border">
+              {% if p.baixo_estoque %}
+                <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-300">Abaixo do mínimo</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-300">OK</span>
+              {% endif %}
+            </td>
+            <td class="p-2 border">
+              <a href="{% url 'core:almoxarifado:estoque_movimentar' p.id %}" class="link">Movimentar</a>
+              <span class="mx-1 text-slate-400">|</span>
+              <a href="{% url 'core:almoxarifado:estoque_produto_editar' p.id %}" class="link">Editar</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-3 text-center text-slate-500" colspan="7">Nenhum produto cadastrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

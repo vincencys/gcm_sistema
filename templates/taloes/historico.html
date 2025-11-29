@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Histórico de Talões{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Histórico (últimos 200)</h1>
+<ul class="list-disc ml-6">
+  {% for t in taloes %}
+    <li>
+      <a class="link" href="{% url 'taloes:detalhe' pk=t.pk %}">#{{ t.pk }}</a>
+      — {{ t.iniciado_em|date:"d/m/Y H:i" }} — VTR {{ t.viatura.prefixo|default:"-" }}
+      — {{ t.local_bairro|default:"" }}
+    </li>
+  {% empty %}
+    <li>(vazio)</li>
+  {% endfor %}
+</ul>
+{% endblock %}

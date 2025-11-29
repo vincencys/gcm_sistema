@@ -1,0 +1,31 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verificação de Documento</title>
+  <link rel="stylesheet" href="{% static 'build/tailwind.css' %}">
+</head>
+<body class="bg-slate-50">
+  <main class="max-w-2xl mx-auto p-4 sm:p-6">
+    <div class="bg-white shadow-sm rounded-lg p-5">
+      <h1 class="text-lg font-semibold mb-3">Verificação da Notificação {{ n.numero }}</h1>
+      {% if ok %}
+        <div class="p-3 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">Documento válido.</div>
+      {% else %}
+        <div class="p-3 rounded-md bg-red-50 text-red-800 border border-red-200">Documento inválido. {{ motivo }}</div>
+      {% endif %}
+      <div class="mt-4 text-sm text-slate-700">
+        <p><strong>Elaborado em:</strong> {{ n.emissao_em|date:'d/m/Y H:i' }}</p>
+        <p><strong>Notificado:</strong> {{ n.notificado_nome }}</p>
+        {% if n.endereco %}<p><strong>Endereço:</strong> {{ n.endereco }}</p>{% endif %}
+      </div>
+      <div class="mt-6 flex gap-2">
+        <a class="px-4 py-2 bg-blue-600 text-white rounded-lg" href="{% url 'core:fisc_notificacao_documento' n.pk %}">Abrir documento</a>
+        <a class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg" href="{% url 'core:fisc_notificacao' %}">Voltar à lista</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{% extends "_layout/base.html" %}
+{% block title %}Relatório do Talão #{{ talao.pk }}{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-3">Relatório - Talão #{{ talao.pk }}</h1>
+
+<form method="post" class="space-y-3">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div>
+    <label class="block text-sm mb-1">Relatório</label>
+    {{ form.relatorio }}
+    {{ form.relatorio.errors }}
+  </div>
+  <button class="btn btn-primary">Salvar</button>
+  <a class="btn" href="{% url 'taloes:detalhe' talao.pk %}">Voltar</a>
+</form>
+{% endblock %}
+

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{% if form.instance.pk %}Editar Veículo Envolvido{% else %}Novo Veículo Envolvido{% endif %}{% endblock %}
+{% block content %}
+<div class="veiculo-envolvido-wrap max-w-none sm:max-w-3xl w-full mx-0 sm:mx-auto bg-white rounded-xl shadow p-4 sm:p-6">
+	<div class="flex items-center justify-between mb-4 sm:mb-6 flex-col gap-2 sm:flex-row sm:gap-0">
+		<h2 class="text-xl sm:text-2xl font-bold text-indigo-800">
+			{% if form.instance.pk %}✏️ Editar Veículo Envolvido{% else %}➕ Novo Veículo Envolvido{% endif %}
+		</h2>
+		{% if request.GET.bo %}
+			<a href="{% url 'bogcmi:veiculo_lista' %}?bo={{ request.GET.bo }}" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors w-full sm:w-auto text-center">
+				↩️ Voltar
+			</a>
+		{% else %}
+			<a href="{% url 'bogcmi:veiculo_lista' %}" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors w-full sm:w-auto text-center">
+				↩️ Voltar
+			</a>
+		{% endif %}
+	</div>
+
+	<form method="post" class="space-y-6" enctype="multipart/form-data">
+		{% csrf_token %}
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+			{{ form.as_p }}
+		</div>
+		{% if form.errors %}
+			<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">
+				<p class="font-semibold mb-1">Corrija os erros abaixo:</p>
+				<ul class="list-disc list-inside space-y-1">
+					{% for field, errors in form.errors.items %}
+						{% for error in errors %}<li><strong>{{ field }}:</strong> {{ error }}</li>{% endfor %}
+					{% endfor %}
+				</ul>
+			</div>
+		{% endif %}
+		<div class="flex justify-center gap-4 pt-4 sm:pt-6 flex-col sm:flex-row">
+			<button type="submit" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow w-full sm:w-auto">
+				💾 Salvar
+			</button>
+			{% if request.GET.bo %}
+				<a href="{% url 'bogcmi:veiculo_lista' %}?bo={{ request.GET.bo }}" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors shadow w-full sm:w-auto text-center">
+					❌ Cancelar
+				</a>
+			{% else %}
+				<a href="{% url 'bogcmi:veiculo_lista' %}" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors shadow w-full sm:w-auto text-center">
+					❌ Cancelar
+				</a>
+			{% endif %}
+		</div>
+	</form>
+</div>
+
+<style>
+/* Harmonizar inputs padrão */
+form input[type="text"], form input[type="number"], form input[type="date"], form input[type="time"], form select, form textarea{
+	width:100%; padding:0.6rem 0.75rem; border:1px solid #d1d5db; border-radius:0.5rem; background:#fff; font-size:0.95rem;
+}
+form input:focus, form select:focus, form textarea:focus{ outline:none; border-color:#6366f1; box-shadow:0 0 0 2px rgba(99,102,241,.2) }
+textarea{ resize:vertical }
+/* Full-bleed apenas no mobile para aumentar a largura útil */
+@media (max-width: 640px){
+	.veiculo-envolvido-wrap{ width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw); border-radius:0; }
+}
+</style>
+{% endblock %}

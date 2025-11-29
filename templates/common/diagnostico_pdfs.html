@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Diagnóstico Motores de PDF</h1>
+<p><strong>Python:</strong> {{ env.python_exec }} ({{ env.platform }})</p>
+<p><strong>wkhtmltopdf no PATH:</strong> {{ env.wkhtmltopdf_in_path }}</p>
+<table class="table table-sm table-bordered">
+  <thead><tr><th>Motor</th><th>OK</th><th>Versão</th><th>Info Extra</th><th>Erro</th></tr></thead>
+  <tbody>
+    <tr><td>pdfkit</td><td>{{ results.pdfkit.ok }}</td><td>{{ results.pdfkit.version }}</td><td>wkhtmltopdf: {{ results.pdfkit.wkhtmltopdf }}</td><td>{{ results.pdfkit.error }}</td></tr>
+    <tr><td>WeasyPrint</td><td>{{ results.weasyprint.ok }}</td><td>{{ results.weasyprint.version }}</td><td></td><td>{{ results.weasyprint.error }}</td></tr>
+    <tr><td>xhtml2pdf</td><td>{{ results.xhtml2pdf.ok }}</td><td>{{ results.xhtml2pdf.version }}</td><td></td><td>{{ results.xhtml2pdf.error }}</td></tr>
+    <tr><td>ReportLab</td><td>{{ results.reportlab.ok }}</td><td>{{ results.reportlab.version }}</td><td></td><td>{{ results.reportlab.error }}</td></tr>
+    {% for lib,info in results.pdf_readers.items %}
+      <tr><td>{{ lib }}</td><td>{{ info.ok }}</td><td>{{ info.version }}</td><td></td><td>{{ info.error }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p>Teste ReportLab tamanho bytes: {{ test_pdf_size }}</p>
+<p>Use este relatório para instalar dependências que faltam (ex: wkhtmltopdf ou libs do WeasyPrint).</p>
+{% endblock %}

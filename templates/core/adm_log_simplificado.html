@@ -1,0 +1,128 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<!-- Header -->
+<div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+  <div class="px-4 py-3 flex items-center justify-between" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+    <div class="flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      <h1 class="text-xl font-bold text-slate-800">Log Simplificado</h1>
+    </div>
+  </div>
+</div>
+
+<div class="mb-3 text-sm">
+  <a href="{% url 'core:log_sistema' %}" class="inline-block mr-2 px-3 py-1.5 rounded border hover:bg-slate-50">Log Técnico</a>
+  <span class="inline-block px-3 py-1.5 rounded bg-slate-900 text-white">Log Simplificado</span>
+</div>
+
+<form class="grid md:grid-cols-7 gap-3 bg-white p-4 rounded-lg border text-sm mb-3" method="get">
+  <div>
+    <label class="block text-xs text-slate-600 mb-1">Usuário</label>
+    <input name="usuario" value="{{ request.GET.usuario }}" class="w-full border rounded px-2 py-2" placeholder="username" />
+  </div>
+  <div>
+    <label class="block text-xs text-slate-600 mb-1">App</label>
+    <select name="app" class="w-full border rounded px-2 py-2 bg-white">
+      <option value="">---</option>
+      {% for a in apps %}
+        <option value="{{ a }}" {% if request.GET.app == a %}selected{% endif %}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-slate-600 mb-1">Evento</label>
+    <select name="evento" class="w-full border rounded px-2 py-2 bg-white">
+      <option value="">---</option>
+      {% for e in eventos %}
+        <option value="{{ e }}" {% if request.GET.evento == e %}selected{% endif %}>{{ e }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-slate-600 mb-1">De</label>
+    <input type="date" name="de" value="{{ request.GET.de }}" class="w-full border rounded px-2 py-2" />
+  </div>
+  <div>
+    <label class="block text-xs text-slate-600 mb-1">Até</label>
+    <input type="date" name="ate" value="{{ request.GET.ate }}" class="w-full border rounded px-2 py-2" />
+  </div>
+  <div class="flex items-end">
+    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow text-sm" type="submit">Filtrar</button>
+  </div>
+  <div>
+    <label class="block text-xs text-slate-600 mb-1">Por página</label>
+    <select name="per_page" class="w-full border rounded px-2 py-2 bg-white">
+      {% for n in per_page_options %}
+        <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="overflow-auto bg-white border rounded-lg">
+  <table class="min-w-full table">
+    <thead>
+      <tr class="bg-slate-100">
+        <th>Data/Hora</th>
+        <th>Usuário</th>
+        <th>App</th>
+        <th>Evento</th>
+        <th>Mensagem</th>
+        <th>Alvo</th>
+        <th>Caminho</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in logs %}
+      <tr class="border-b">
+        <td class="whitespace-nowrap">{{ l.created_at|date:'d/m/Y H:i:s' }}</td>
+        <td class="whitespace-nowrap">{{ l.user.username|default:'anon' }}</td>
+        <td class="whitespace-nowrap">{{ l.app_label }}</td>
+        <td class="whitespace-nowrap">{{ l.event }}</td>
+        <td class="max-w-[420px] truncate" title="{{ l.message }}">{{ l.message }}</td>
+        <td class="max-w-[320px] truncate" title="{{ l.target_repr }}">{{ l.target_repr|default:'—' }}</td>
+        <td class="max-w-[520px] truncate" title="{{ l.path }}">{{ l.path }}</td>
+        <td class="whitespace-nowrap">{{ l.ip }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="text-center py-6 text-slate-500">Nenhum registro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page_obj %}
+  <div class="flex items-center justify-between mt-3 text-sm">
+    <div class="text-slate-600">
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} · Total {{ page_obj.paginator.count }} registros
+    </div>
+    <div class="flex items-center gap-1">
+      {% if page_obj.has_previous %}
+        <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">« Anterior</a>
+      {% else %}
+        <span class="px-2 py-1 border rounded text-slate-400 cursor-not-allowed">« Anterior</span>
+      {% endif %}
+
+      {% for p in page_obj.paginator.page_range %}
+        {% if p == 1 or p == page_obj.paginator.num_pages or p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+          {% if p == page_obj.number %}
+            <span class="px-2 py-1 border rounded bg-slate-900 text-white">{{ p }}</span>
+          {% else %}
+            <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ p }}">{{ p }}</a>
+          {% endif %}
+        {% elif p == 2 and page_obj.number > 4 %}
+          <span class="px-2">…</span>
+        {% elif p == page_obj.paginator.num_pages|add:"-1" and page_obj.number < page_obj.paginator.num_pages|add:"-3" %}
+          <span class="px-2">…</span>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">Próxima »</a>
+      {% else %}
+        <span class="px-2 py-1 border rounded text-slate-400 cursor-not-allowed">Próxima »</span>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

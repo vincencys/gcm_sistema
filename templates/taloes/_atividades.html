@@ -1,0 +1,26 @@
+{% if msg %}<div class="text-sm text-green-700 mb-2">{{ msg }}</div>{% endif %}
+<table class="table w-full">
+  <thead>
+    <tr>
+      <th class="text-left">Horário</th>
+      <th class="text-left">Código</th>
+      <th class="text-left">Local</th>
+      <th class="text-left">KM</th>
+      <th class="text-left">Obs.</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for a in atividades %}
+      <tr class="border-t">
+        <td>{{ a.horario|date:"d/m H:i" }}</td>
+        <td>{{ a.codigo.codigo }} — {{ a.codigo.descricao }}</td>
+        <td>{{ a.local }}</td>
+        <td>{{ a.km|default:"—" }}</td>
+        <td class="max-w-[20rem] truncate" title="{{ a.observacoes }}">{{ a.observacoes }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-sm opacity-70 py-2">Sem atividades.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <!-- Layout de confirmação (primeiro acesso) -->
+    <LinearLayout
+        android:id="@+id/layoutConfirmacao"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Selecione a cidade"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp"/>
+
+        <EditText
+            android:id="@+id/editBuscaCidade"
+            android:hint="Buscar cidade..."
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:drawableLeft="@android:drawable/ic_menu_search"
+            android:drawablePadding="8dp"
+            android:layout_marginBottom="8dp"/>
+
+        <Spinner
+            android:id="@+id/spinnerCidade"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/editToken"
+            android:hint="Token de segurança"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnConfirmar"
+            android:text="Confirmar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#1F2937"
+            android:textColor="#FFF"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
+            android:id="@+id/btnRegistro"
+            android:text="Solicitar Cadastro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#374151"
+            android:textColor="#FFF"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
+    <!-- Layout pós-confirmação (uso diário) -->
+    <LinearLayout
+        android:id="@+id/layoutPanico"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/textInstrucao"
+            android:text="Pressione e segure por 2 segundos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="#374151"
+            android:layout_marginBottom="24dp"
+            android:textAlignment="center"
+            android:fontFamily="sans-serif-medium"/>
+
+        <!-- Container do botão circular -->
+        <FrameLayout
+            android:layout_width="280dp"
+            android:layout_height="280dp"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btnPanicoBig"
+                android:text="🚨\nACIONAR\nPÂNICO"
+                android:layout_width="280dp"
+                android:layout_height="280dp"
+                android:background="@drawable/btn_panic_circular"
+                android:textColor="#FFF"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:elevation="12dp"
+                android:layout_gravity="center"
+                android:stateListAnimator="@null"/>
+
+            <TextView
+                android:id="@+id/textContador"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="72sp"
+                android:textColor="#FFF"
+                android:textStyle="bold"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:elevation="16dp"
+                android:shadowColor="#000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4"/>
+        </FrameLayout>
+
+        <!-- Barra de progresso verde -->
+        <ProgressBar
+            android:id="@+id/progressBarContador"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="280dp"
+            android:layout_height="8dp"
+            android:layout_marginTop="16dp"
+            android:progressTint="#10B981"
+            android:progressBackgroundTint="#E5E7EB"
+            android:max="100"
+            android:progress="0"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/textStatusPanico"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:paddingVertical="16dp"
+            android:paddingHorizontal="20dp"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFF"
+            android:background="#10B981"
+            android:visibility="gone"
+            android:textAlignment="center"
+            android:elevation="6dp"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textFeedback"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textAlignment="center"
+        android:layout_marginTop="24dp"
+        android:textSize="16sp"/>
+</LinearLayout>

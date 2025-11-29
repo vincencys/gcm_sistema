@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Checklist de Viatura{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-xl font-semibold mb-4">Checklist de Viatura</h1>
+  <p class="text-sm text-slate-600 mb-4">
+    Marque apenas os itens que apresentam
+    <span class="font-bold bg-red-600 text-white px-2 py-0.5 rounded-sm border-2 border-black">
+      AVARIA / PROBLEMA
+    </span>.
+    <br>
+    Plantão iniciado em: {{ plantao.inicio|date:"d/m/Y H:i" }}
+  </p>
+  <form method="post" class="bg-white border rounded-lg p-4 space-y-4">
+    {% csrf_token %}
+    <div class="grid md:grid-cols-3 gap-3">
+      {% for field in form.visible_fields %}
+        {% if field.name != 'outros' %}
+          <div class="checklist-item-wrapper">
+            <label class="flex items-center gap-2 text-sm border rounded px-2 py-1 hover:bg-amber-50">
+              {{ field }}
+              <span>{{ field.label }}</span>
+            </label>
+            <div class="anexo-controls mt-1 hidden">
+              <label class="cursor-pointer inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                <span>Anexar Foto</span>
+                <input type="file" accept="image/*" capture="environment" class="hidden anexo-file-input" data-campo="{{ field.name }}">
+              </label>
+              <div class="anexo-preview mt-1 flex flex-wrap gap-2"></div>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+      <div class="md:col-span-3">
+        <label class="block text-sm font-medium mb-1">Outros (descrever)</label>
+        {{ form.outros }}
+      </div>
+    </div>
+    <div class="flex gap-2 pt-2">
+      <button class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Salvar Checklist</button>
+      <a href="{% url 'taloes:lista' %}" class="px-4 py-2 border rounded hover:bg-slate-50">Voltar</a>
+    </div>
+  </form>
+  <p class="mt-4 text-xs text-slate-500">Somente os itens marcados aparecem no PDF de encerramento. Você pode retornar e editar a qualquer momento antes de encerrar o plantão.</p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+  
+  checkboxes.forEach(checkbox => {
+    const wrapper = checkbox.closest('.checklist-item-wrapper');
+    if (!wrapper) return;
+    
+    const anexoControls = wrapper.querySelector('.anexo-controls');
+    const fileInput = wrapper.querySelector('.anexo-file-input');
+    const previewDiv = wrapper.querySelector('.anexo-preview');
+    
+    // Mostra/oculta opção de anexo quando checkbox muda
+    checkbox.addEventListener('change', function() {
+      if (this.checked) {
+        anexoControls.classList.remove('hidden');
+      } else {
+        anexoControls.classList.add('hidden');
+      }
+    });
+    
+    // Upload de arquivo
+    if (fileInput) {
+      fileInput.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const formData = new FormData();
+        formData.append('campo_avaria', this.dataset.campo);
+        formData.append('arquivo', file);
+        
+        try {
+          const response = await fetch("{% url 'taloes:upload_anexo_avaria' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.ok) {
+            // Adicionar preview
+            const img = document.createElement('div');
+            img.className = 'relative inline-block';
+            img.innerHTML = `
+              <img src="${data.url}" class="h-16 w-16 object-cover rounded border" />
+              <button type="button" class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs" 
+                      onclick="removerAnexo(${data.id}, this)">×</button>
+            `;
+            previewDiv.appendChild(img);
+          } else {
+            alert('Erro ao fazer upload: ' + (data.erro || 'Desconhecido'));
+          }
+        } catch (error) {
+          console.error('Erro:', error);
+          alert('Erro ao fazer upload do arquivo');
+        }
+        
+        // Limpar input
+        this.value = '';
+      });
+    }
+  });
+});
+
+async function removerAnexo(anexoId, btn) {
+  if (!confirm('Remover este anexo?')) return;
+  
+  try {
+    const response = await fetch(`/taloes/avaria/anexo/${anexoId}/remover/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.ok) {
+      btn.closest('.relative').remove();
+    } else {
+      alert('Erro ao remover: ' + (data.erro || 'Desconhecido'));
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    alert('Erro ao remover anexo');
+  }
+}
+</script>
+{% endblock %}

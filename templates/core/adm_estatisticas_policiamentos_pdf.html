@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Estatísticas - Policiamentos</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:Arial,sans-serif; font-size:11pt; padding:20px; }
+    h1 { font-size:18pt; margin-bottom:8px; }
+    h2 { font-size:14pt; margin-top:16px; margin-bottom:8px; border-bottom:2px solid #333; padding-bottom:4px; }
+    table { width:100%; border-collapse:collapse; margin-bottom:12px; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:left; }
+    th { background:#f0f0f0; font-weight:bold; }
+    .info { margin-bottom:12px; color:#555; }
+    .grid { display:flex; gap:20px; margin-top:16px; }
+    .col { flex:1; }
+  </style>
+</head>
+<body>
+  <h1>Estatísticas · Policiamentos</h1>
+  <div class="info">
+    <strong>Período:</strong> {{ de|date:'d/m/Y' }} a {{ ate|date:'d/m/Y' }}<br>
+    <strong>Total de Policiamentos:</strong> {{ total }}
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <h2>Top 10 · Integrantes</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Integrante</th>
+            <th style="width:60px;">Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in top_integrantes %}
+            <tr>
+              <td>
+                {% with fn=row.criado_por__first_name ln=row.criado_por__last_name un=row.criado_por__username %}
+                  {{ fn }} {{ ln }}{% if not fn and not ln %}{{ un }}{% endif %}
+                {% endwith %}
+              </td>
+              <td>{{ row.qtd }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="2">Sem registros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <h2>Top 10 · Dias do Período</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Dia</th>
+            <th style="width:60px;">Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in top_dias %}
+            <tr>
+              <td>{{ row.dia|date:'d/m/Y' }}</td>
+              <td>{{ row.qtd }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="2">Sem registros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <h2>Top 10 · Tipos de Policiamento</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th style="width:60px;">Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in top_tipos %}
+            <tr>
+              <td>{{ row.codigo_ocorrencia__descricao|default:"Não informado" }}</td>
+              <td>{{ row.qtd }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="2">Sem registros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <h2>Top 10 · Locais com Mais Paradas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Local</th>
+            <th style="width:60px;">Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in top_locais %}
+            <tr>
+              <td>{{ row.local }}</td>
+              <td>{{ row.qtd }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="2">Sem registros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</body>
+</html>

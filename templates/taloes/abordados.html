@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Abordados - Talão #{{ talao.pk }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  
+  <!-- Título -->
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-semibold">Abordados - Talão #{{ talao.pk }}</h1>
+    <a href="{% url 'taloes:lista' %}" class="px-3 py-1.5 border rounded hover:bg-slate-50">Voltar à Lista</a>
+  </div>
+
+  <!-- Info do Talão -->
+  <div class="mb-4 p-3 bg-slate-50 border rounded">
+    <div class="text-sm text-slate-600">
+      <strong>Viatura:</strong> {{ talao.viatura.prefixo|default:"-" }} | 
+      <strong>Status:</strong> {{ talao.status }} | 
+      <strong>Local:</strong> {{ talao.local_display }}
+    </div>
+  </div>
+
+  <!-- Mensagens -->
+  {% if messages %}
+    <div class="mb-4 space-y-2">
+      {% for message in messages %}
+        <div class="px-3 py-2 rounded border
+                    {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% endif %}
+                    {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Formulário para Adicionar Abordado -->
+  <div class="mb-6 bg-white border rounded-xl p-4">
+    <h2 class="text-lg font-medium mb-3">Adicionar Abordado</h2>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      
+      <!-- Tipo -->
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ form.tipo.label }}</label>
+        {{ form.tipo }}
+      </div>
+
+      <!-- Campos dinâmicos baseados no tipo -->
+      <div id="pessoa-fields" class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-1">{{ form.nome.label }}</label>
+            {{ form.nome }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">{{ form.documento.label }}</label>
+            {{ form.documento }}
+          </div>
+        </div>
+      </div>
+
+      <div id="veiculo-fields" class="space-y-3" style="display: none;">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-1">{{ form.placa.label }}</label>
+            {{ form.placa }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">{{ form.modelo.label }}</label>
+            {{ form.modelo }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">{{ form.cor.label }}</label>
+            {{ form.cor }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ form.observacoes.label }}</label>
+        {{ form.observacoes }}
+      </div>
+
+      <button type="submit" class="px-4 py-2 rounded text-white bg-green-600 hover:bg-green-700">
+        Adicionar
+      </button>
+    </form>
+  </div>
+
+  <!-- Lista de Abordados -->
+  <div class="bg-white border rounded-xl">
+    <div class="p-4 border-b">
+      <h2 class="text-lg font-medium">Abordados Registrados</h2>
+    </div>
+    
+    {% if abordados %}
+      <div class="divide-y">
+        {% for abordado in abordados %}
+          <div class="p-4 flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="px-2 py-1 rounded text-xs font-medium
+                           {% if abordado.tipo == 'PESSOA' %}bg-blue-100 text-blue-800{% else %}bg-purple-100 text-purple-800{% endif %}">
+                  {{ abordado.get_tipo_display }}
+                </span>
+                <span class="text-xs text-slate-500">{{ abordado.criado_em|date:"d/m/Y H:i" }}</span>
+              </div>
+              
+              {% if abordado.tipo == 'PESSOA' %}
+                <div class="text-sm">
+                  <strong>{{ abordado.nome|default:"Nome não informado" }}</strong>
+                  {% if abordado.documento %}<br>Doc: {{ abordado.documento }}{% endif %}
+                </div>
+              {% else %}
+                <div class="text-sm">
+                  <strong>{{ abordado.placa|default:"Placa não informada" }}</strong>
+                  {% if abordado.modelo %}<br>{{ abordado.modelo }}{% endif %}
+                  {% if abordado.cor %} - {{ abordado.cor }}{% endif %}
+                </div>
+              {% endif %}
+              
+              {% if abordado.observacoes %}
+                <div class="mt-2 text-sm text-slate-600">
+                  <em>{{ abordado.observacoes }}</em>
+                </div>
+              {% endif %}
+            </div>
+            
+            <form method="post" action="{% url 'taloes:remover_abordado' pk=talao.pk abordado_id=abordado.pk %}" 
+                  class="ml-4" onsubmit="return confirm('Remover este abordado?');">
+              {% csrf_token %}
+              <button type="submit" class="px-2 py-1 rounded text-white bg-red-600 hover:bg-red-700 text-xs">
+                Remover
+              </button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-4 text-center text-slate-500">
+        Nenhum abordado registrado neste talão.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Mostrar/ocultar campos baseado no tipo selecionado
+document.addEventListener('DOMContentLoaded', function() {
+  const tipoSelect = document.getElementById('id_tipo');
+  const pessoaFields = document.getElementById('pessoa-fields');
+  const veiculoFields = document.getElementById('veiculo-fields');
+  
+  function toggleFields() {
+    if (tipoSelect.value === 'PESSOA') {
+      pessoaFields.style.display = 'block';
+      veiculoFields.style.display = 'none';
+    } else {
+      pessoaFields.style.display = 'none';
+      veiculoFields.style.display = 'block';
+    }
+  }
+  
+  tipoSelect.addEventListener('change', toggleFields);
+  toggleFields(); // inicial
+});
+</script>
+{% endblock %}

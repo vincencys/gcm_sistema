@@ -1,0 +1,61 @@
+{% load humanize %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>BO por Código</title>
+  <style>
+    body{font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:24px;color:#0f172a}
+    h1{font-size:22px;margin:0 0 4px}
+    h2{font-size:16px;margin:16px 0 8px}
+    .muted{color:#64748b}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .card{border:1px solid #e2e8f0;border-radius:8px;padding:12px}
+    .k{font-size:11px;color:#64748b}
+    .v{font-size:22px;font-weight:700}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{border-bottom:1px solid #e2e8f0;padding:6px 8px;text-align:left}
+    th{color:#64748b}
+    .cols-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  </style>
+</head>
+<body>
+  <h1>BO por Código de Ocorrência</h1>
+  <div class="muted">Código: {{ cod|default:'(não informado)' }}{% if cod_obj %} — {{ cod_obj.descricao }}{% endif %} · Período: {{ de|date:'d/m/Y' }} a {{ ate|date:'d/m/Y' }} ({{ tab|title }})</div>
+
+  <div class="kpis" style="margin-top:12px">
+    <div class="card"><div class="k">Total BOs</div><div class="v">{{ total|intcomma }}</div></div>
+    <div class="card"><div class="k">Abertos/Finalizados</div><div class="v">{% for s in por_status %}{% if s.status == 'EDICAO' %}{{ s.qtd|default:0|intcomma }} abertos{% endif %}{% endfor %} / {% for s in por_status %}{% if s.status == 'FINALIZADO' %}{{ s.qtd|default:0|intcomma }}{% endif %}{% endfor %}</div></div>
+    <div class="card"><div class="k">Bairros distintos</div><div class="v">{{ por_bairro|length }}</div></div>
+    <div class="card"><div class="k">Usuários (top 10)</div><div class="v">{{ usuarios|length }}</div></div>
+  </div>
+
+  <div class="cols-2" style="margin-top:16px">
+    <div class="card">
+      <h2>Por Status</h2>
+      <table><thead><tr><th>Status</th><th>Qtde</th></tr></thead><tbody>
+        {% for s in por_status %}<tr><td>{{ s.status }}</td><td>{{ s.qtd|intcomma }}</td></tr>{% empty %}<tr><td colspan="2" class="muted">Sem registros.</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h2>Top Bairros</h2>
+      <table><thead><tr><th>Bairro</th><th>Qtde</th></tr></thead><tbody>
+        {% for b in por_bairro %}<tr><td>{{ b.bairro|default:'—' }}</td><td>{{ b.qtd|intcomma }}</td></tr>{% empty %}<tr><td colspan="2" class="muted">Sem registros.</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Top Usuários</h2>
+    <table><thead><tr><th>Usuário</th><th>Total</th></tr></thead><tbody>
+      {% for u in usuarios %}
+        <tr><td>{{ u.encarregado__first_name }} {{ u.encarregado__last_name }}{% if not u.encarregado__first_name and not u.encarregado__last_name %}{{ u.encarregado__username }}{% endif %}</td><td>{{ u.qtd|intcomma }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2" class="muted">Sem registros.</td></tr>
+      {% endfor %}
+    </tbody></table>
+  </div>
+
+  <div class="muted" style="margin-top:10px">Fonte: Sistema GCM · BO (BOGCMI).</div>
+</body>
+</html>

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-4">
+  <h1 class="text-xl font-bold mb-4">Relatórios de Livro - Emitidos</h1>
+  <form method="get" class="mb-4 flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar CGA, Operador, Plantão..." class="border px-2 py-1 w-72" />
+    <button class="bg-blue-600 text-white px-3 py-1 rounded">Buscar</button>
+    {% if q %}<a href="?" class="text-sm text-slate-600 underline mt-2">Limpar</a>{% endif %}
+  </form>
+  {# Mobile: cards empilhados #}
+  <div class="md:hidden space-y-3">
+    {% for rel in page.object_list %}
+      <div class="border rounded-xl bg-white p-3 shadow-sm">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-xs text-slate-500">Plantão</div>
+            <div class="mt-1 font-semibold">ID {{ rel.plantao.id }}</div>
+          </div>
+        </div>
+        <div class="mt-2 space-y-1 text-sm">
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Início</span><span class="whitespace-nowrap">{{ rel.plantao.inicio|date:'d/m/Y H:i' }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Encerrado</span><span class="whitespace-nowrap">{{ rel.plantao.encerrado_em|date:'d/m/Y H:i' }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Equipe</span><span class="text-right max-w-[60%] break-words">{{ rel.equipe_plantao|default:'-' }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">CGA</span><span class="text-right max-w-[60%] break-words">{{ rel.cga_nome|default:'-' }}{% if rel.cga_matricula %}<span class="block text-[11px] text-slate-500">{{ rel.cga_matricula }}</span>{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Operador</span><span class="text-right max-w-[60%] break-words">{% with op=rel.plantao.aux_cecom %}{% if op %}{{ op.get_full_name|default:op.username }}{% else %}-{% endif %}{% endwith %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Arquivo</span><span class="text-right max-w-[60%] break-all text-xs">{% if rel.arquivo %}{{ rel.arquivo.name }}{% else %}-{% endif %}</span></div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          {% if rel.arquivo %}
+            <a href="{{ rel.arquivo.url }}" data-href="{{ rel.arquivo.url }}" class="js-view-file px-3 py-1 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm">Visualizar</a>
+            <a href="{% url 'cecom:relatorio_livro_download' rel.id %}" download class="px-3 py-1 border rounded bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm">Download</a>
+            {% if request.user.is_superuser and request.user.username == 'moises' %}
+              <form method="post" action="{% url 'cecom:relatorio_livro_excluir' rel.id %}" onsubmit="return confirm('Excluir relatório? Esta ação não pode ser desfeita.');">
+                {% csrf_token %}
+                <button class="px-3 py-1 border rounded bg-rose-50 text-rose-700 hover:bg-rose-100 text-sm">Excluir</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500">Nenhum relatório emitido.</div>
+    {% endfor %}
+  </div>
+
+  {# Desktop: tabela #}
+  <div class="hidden md:block overflow-x-auto bg-white shadow rounded border">
+    <table class="min-w-full text-[13px] align-top">
+      <thead class="bg-slate-50 border-b text-slate-700 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="p-2 text-left border-r">ID</th>
+          <th class="p-2 text-left border-r">Plantão Início</th>
+          <th class="p-2 text-left border-r">Encerrado</th>
+          <th class="p-2 text-left border-r">Equipe</th>
+          <th class="p-2 text-left border-r">CGA</th>
+          <th class="p-2 text-left border-r">Operador</th>
+          <th class="p-2 text-left border-r">Arquivo</th>
+          <th class="p-2 text-left">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rel in page.object_list %}
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-2 border-r">{{ rel.plantao.id }}</td>
+          <td class="p-2 border-r whitespace-nowrap">{{ rel.plantao.inicio|date:'d/m/Y H:i' }}</td>
+          <td class="p-2 border-r whitespace-nowrap">{{ rel.plantao.encerrado_em|date:'d/m/Y H:i' }}</td>
+          <td class="p-2 border-r">{{ rel.equipe_plantao|default:'-' }}</td>
+          <td class="p-2 border-r">{{ rel.cga_nome|default:'-' }}{% if rel.cga_matricula %}<div class="text-[10px] text-slate-500">{{ rel.cga_matricula }}</div>{% endif %}</td>
+          <td class="p-2 border-r">{% with op=rel.plantao.aux_cecom %}{% if op %}{{ op.get_full_name|default:op.username }}{% else %}-{% endif %}{% endwith %}</td>
+          <td class="p-2 border-r">{% if rel.arquivo %}<span class="text-slate-600 text-xs">{{ rel.arquivo.name|slice:'30:' }}</span>{% else %}-{% endif %}</td>
+          <td class="p-2 flex flex-wrap gap-1">
+            {% if rel.arquivo %}
+              <a href="{{ rel.arquivo.url }}" data-href="{{ rel.arquivo.url }}" class="js-view-file px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700">Visualizar</a>
+              <a href="{% url 'cecom:relatorio_livro_download' rel.id %}" download class="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">Download</a>
+              {% if request.user.is_superuser and request.user.username == 'moises' %}
+              <form method="post" action="{% url 'cecom:relatorio_livro_excluir' rel.id %}" onsubmit="return confirm('Excluir relatório? Esta ação não pode ser desfeita.');">
+                {% csrf_token %}
+                <button class="px-2 py-1 text-xs rounded bg-rose-600 text-white hover:bg-rose-700">Excluir</button>
+              </form>
+              {% endif %}
+            {% else %}-{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum relatório emitido.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-4 flex items-center gap-2 justify-center md:justify-start">
+    {% if page.has_previous %}<a class="px-2 py-1 border rounded" href="?page={{ page.previous_page_number }}&q={{ q }}">«</a>{% endif %}
+    <span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="px-2 py-1 border rounded" href="?page={{ page.next_page_number }}&q={{ q }}">»</a>{% endif %}
+  </div>
+  <div class="mt-4">
+    <a href="{% url 'cecom:painel' %}" class="text-blue-600 hover:underline text-sm">← Voltar ao Painel</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "_layout/base.html" %}
+{% block title %}Painel do Almoxarifado{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">Painel do Almoxarifado</h1>
+      <p class="text-sm text-slate-600 mt-1">Visão geral de disponibilidade e alertas</p>
+    </div>
+    <a class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 transition" href="{% url 'core:almoxarifado:cautelas' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Ir para Cautelas
+    </a>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-6">
+    <!-- Card: Armamentos livres -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l8.21 4.11a2 2 0 001.78 0L21 7M5 19h14a2 2 0 002-2v-6a2 2 0 00-1.11-1.79l-7-3.5a2 2 0 00-1.78 0l-7 3.5A2 2 0 004 11v6a2 2 0 001 1.73" />
+        </svg>
+        <h3 class="font-semibold text-slate-800 text-sm">Armamentos livres</h3>
+      </div>
+      <div class="p-4">
+        <div class="text-xs font-medium text-slate-600 mb-2">{{ armas_livres|length }} itens</div>
+        <ul class="max-h-56 overflow-auto text-sm space-y-1">
+          {% for a in armas_livres %}
+            <li class="flex items-start gap-1">
+              <span class="w-1.5 h-1.5 rounded-full mt-2 bg-emerald-500"></span>
+              <span>{{ a.nome }}{% if a.numero_serie %} — {{ a.numero_serie }}{% endif %} {% if a.calibre %}<span class="text-slate-500">({{ a.calibre }})</span>{% endif %}</span>
+            </li>
+          {% empty %}
+            <li class="text-slate-500">Nenhum armamento livre.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <!-- Card: Armamentos em cautela -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .671-3 1.5v5c0 .829 1.343 1.5 3 1.5s3-.671 3-1.5v-5c0-.829-1.343-1.5-3-1.5z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9v6c0 2.21-3.134 4-7 4s-7-1.79-7-4V9m7-4c3.866 0 7 1.79 7 4M5 9c0-2.21 3.134-4 7-4" />
+        </svg>
+        <h3 class="font-semibold text-slate-800 text-sm">Armamentos em cautela</h3>
+      </div>
+      <div class="p-4">
+        <div class="text-xs font-medium text-slate-600 mb-2">{{ armas_em_cautela|length }} itens</div>
+        <ul class="max-h-56 overflow-auto text-sm space-y-1">
+          {% for a in armas_em_cautela %}
+            <li class="flex items-start gap-1">
+              <span class="w-1.5 h-1.5 rounded-full mt-2 bg-amber-500"></span>
+              <span>{{ a.nome }}{% if a.numero_serie %} — {{ a.numero_serie }}{% endif %} {% if a.calibre %}<span class="text-slate-500">({{ a.calibre }})</span>{% endif %}</span>
+            </li>
+          {% empty %}
+            <li class="text-slate-500">Sem armamentos em cautela.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <!-- Card: Armamentos em manutenção -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l2 12h12l2-12h2M5 7l2-4h10l2 4" />
+        </svg>
+        <h3 class="font-semibold text-slate-800 text-sm">Armamentos em manutenção</h3>
+      </div>
+      <div class="p-4">
+        <div class="text-xs font-medium text-slate-600 mb-2">{{ armas_em_manut|length }} itens</div>
+        <ul class="max-h-56 overflow-auto text-sm space-y-1">
+          {% for a in armas_em_manut %}
+            <li class="flex items-start gap-1">
+              <span class="w-1.5 h-1.5 rounded-full mt-2 bg-purple-500"></span>
+              <span>{{ a.nome }}{% if a.numero_serie %} — {{ a.numero_serie }}{% endif %} {% if a.calibre %}<span class="text-slate-500">({{ a.calibre }})</span>{% endif %}</span>
+            </li>
+          {% empty %}
+            <li class="text-slate-500">Sem armamentos em manutenção.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-8 grid md:grid-cols-2 gap-6">
+    <!-- Card: Cautelas vencidas -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="font-semibold text-slate-800 text-sm">Alertas — Cautelas vencidas</h3>
+      </div>
+      <div class="p-4">
+        <ul class="max-h-56 overflow-auto text-sm space-y-1">
+          {% for c in cautelas_vencidas %}
+            <li class="flex items-start gap-1">
+              <span class="w-1.5 h-1.5 rounded-full mt-2 bg-red-500"></span>
+              <span>#{{ c.id }} — {{ c.usuario }} — Prevista: {{ c.data_hora_prevista_devolucao|date:"d/m/Y H:i" }}</span>
+            </li>
+          {% empty %}
+            <li class="text-slate-500">Sem cautelas vencidas no momento.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <!-- Card: Munições por vencer -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a9 9 0 00-9 9v1h18v-1a9 9 0 00-9-9zm0 0v2" />
+        </svg>
+        <h3 class="font-semibold text-slate-800 text-sm">Alertas — Munição por vencer (≤ 30 dias)</h3>
+      </div>
+      <div class="p-4">
+        <ul class="max-h-56 overflow-auto text-sm space-y-1">
+          {% for m in municoes_por_vencer %}
+            <li class="flex items-start gap-1">
+              <span class="w-1.5 h-1.5 rounded-full mt-2 bg-orange-500"></span>
+              <span>{{ m.calibre }} {{ m.tipo }} — Lote {{ m.lote }} — Validade: {{ m.validade|date:"d/m/Y" }}</span>
+            </li>
+          {% empty %}
+            <li class="text-slate-500">Nenhum lote de munição próximo do vencimento.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

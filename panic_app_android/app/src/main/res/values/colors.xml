@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="panic_primary">#b91c1c</color>
+    <color name="panic_on_primary">#FFFFFF</color>
+    <color name="panic_surface">#FFFFFF</color>
+    <color name="panic_on_surface">#1F2937</color>
+    <color name="panic_outline">#9CA3AF</color>
+    <color name="panic_hint">#6B7280</color>
+</resources>

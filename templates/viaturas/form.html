@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">{{ titulo }}</h1>
+    <p class="text-sm text-slate-600 mt-1">Gerencie as informações da viatura do sistema</p>
+  </div>
+
+  {% if form.errors %}
+    <div class="mb-6 px-4 py-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-800">
+      <div class="font-semibold mb-2">Corrija os erros antes de salvar:</div>
+      <div class="text-sm">{{ form.errors }}</div>
+    </div>
+  {% endif %}
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+    
+    <!-- Card: Informações Básicas -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+          </svg>
+          Informações Básicas
+        </h2>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">{{ form.prefixo.label }}</label>
+            {{ form.prefixo }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">{{ form.placa.label }}</label>
+            {{ form.placa }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">{{ form.status.label }}</label>
+            {{ form.status }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">{{ form.km_atual.label }}</label>
+            {{ form.km_atual }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Manutenção -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Manutenção
+        </h2>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">{{ form.km_prox_troca_oleo.label }}</label>
+            {{ form.km_prox_troca_oleo }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">{{ form.km_prox_revisao.label }}</label>
+            {{ form.km_prox_revisao }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Observações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Observações
+        </h2>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+          </div>
+          <div class="flex items-center gap-2">
+            {{ form.ativo }}
+            <label class="text-sm font-medium text-slate-700">{{ form.ativo.label }}</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Ações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Salvar
+        </button>
+        <a class="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors" href="{% url 'viaturas:lista' %}">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

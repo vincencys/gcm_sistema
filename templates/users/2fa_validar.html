@@ -1,0 +1,10 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Validar 2FA</h1>
+<form method="post" class="bg-white border rounded p-4 max-w-md">
+  {% csrf_token %}
+  <label class="block text-xs text-slate-600 mb-1">Código do app autenticador</label>
+  <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" class="w-full border rounded px-2 py-2 mb-3" placeholder="123 456" />
+  <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow text-sm" type="submit">Validar</button>
+</form>
+{% endblock %}

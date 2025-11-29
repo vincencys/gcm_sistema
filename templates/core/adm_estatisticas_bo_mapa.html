@@ -1,0 +1,133 @@
+{% extends "_layout/base.html" %}
+{% block title %}Mapa de Ocorrências - BO{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-3 md:px-0">
+  <div class="mb-4 flex items-center justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold">Mapa de Ocorrências · BO</h1>
+      <p class="text-sm md:text-base text-slate-600">Filtre por período, código ou bairro. Busca aproximada por rua/endereço.</p>
+    </div>
+    <a class="btn btn-outline text-xs md:text-sm" href="{% url 'core:estatisticas_bo' %}">← Estatísticas de BO</a>
+  </div>
+
+  <form method="get" class="bg-white border rounded-xl shadow-sm px-3 py-3 grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+    <div>
+      <label class="block text-xs text-slate-500">De</label>
+      <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input w-full" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500">Até</label>
+      <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input w-full" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500">Código/Natureza</label>
+      <input type="text" name="cod" value="{{ cod }}" placeholder="Ex.: A-03" class="input w-full" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500">Bairro</label>
+      <input type="text" name="bairro" value="{{ bairro }}" placeholder="Ex.: Centro" class="input w-full" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500">Busca Aproximada</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Ex.: estrada cachoeira" class="input w-full" />
+    </div>
+    <div class="md:col-span-5">
+      <button class="btn btn-primary" type="submit">Aplicar Filtros</button>
+    </div>
+  </form>
+
+  <div id="map" class="w-full rounded-xl border relative overflow-hidden" style="height:520px;min-height:520px;">
+    <div id="map-debug" class="absolute top-2 left-2 z-[500] bg-white/80 text-[11px] px-2 py-1 rounded shadow hidden"></div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Script do mapa (versão com debug) - se nada aparecer, ver console.
+document.addEventListener('DOMContentLoaded', function(){
+  console.log('[MapaBO] DOMContentLoaded disparado');
+  function showDebug(msg){
+    try{
+      var box = document.getElementById('map-debug');
+      if(!box) return;
+      box.classList.remove('hidden');
+      box.textContent = msg;
+    }catch(_){ }
+  }
+  function ensureLeaflet(cb){
+    if(window.L && typeof window.L.map === 'function'){ console.log('[MapaBO] Leaflet pronto imediato'); cb(); return; }
+    var tries = 0;
+    var timer = setInterval(function(){
+      tries++;
+      if(window.L && typeof window.L.map === 'function'){
+        clearInterval(timer); console.log('[MapaBO] Leaflet disponível após', tries, 'tentativas'); cb();
+      } else if(tries > 60){ // ~6s
+        clearInterval(timer);
+        console.error('[MapaBO] Leaflet não carregou');
+        showDebug('Leaflet não carregou');
+      }
+    }, 100);
+  }
+
+  ensureLeaflet(function(){
+    try {
+      var mapDiv = document.getElementById('map');
+      if(!mapDiv){ console.error('[MapaBO] Div #map não encontrada'); return; }
+      console.log('[MapaBO] mapDiv dimensions', mapDiv.offsetWidth, mapDiv.offsetHeight);
+      if(mapDiv.offsetHeight === 0){ showDebug('Altura 0 - verificar CSS'); }
+      var map = L.map('map');
+      map.setView([-23.6552, -47.2230], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+      console.log('[MapaBO] TileLayer adicionado');
+      setTimeout(function(){ try{ map.invalidateSize(); console.log('[MapaBO] invalidateSize aplicado'); }catch(e){} }, 350);
+      window.addEventListener('resize', function(){ try{ map.invalidateSize(); }catch(_){ } });
+
+      // Removido marcador de teste; mapa mostra apenas ocorrências geocodificadas
+
+      const params = new URLSearchParams({
+        de: '{{ de|date:"Y-m-d" }}',
+        ate: '{{ ate|date:"Y-m-d" }}',
+        cod: '{{ cod|default:"" }}',
+        bairro: '{{ bairro|default:"" }}',
+        q: '{{ q|default:"" }}'
+      });
+      const dataUrl = '{% url "core:estatisticas_bo_mapa_data" %}?'+params.toString();
+      console.log('[MapaBO] Fetch dados', dataUrl);
+      fetch(dataUrl)
+        .then(r => { console.log('[MapaBO] Status dados', r.status); return r.json(); })
+        .then(data => {
+          const items = data.items || [];
+          console.log('[MapaBO] Total itens recebidos', items.length);
+          showDebug('Itens: '+items.length);
+          if(items.length === 0){ console.info('[MapaBO] Sem itens para mapear'); }
+          let geocoded = 0;
+          const queue = items.slice(0, 150); // limita para evitar bloqueio
+          queue.forEach(it => {
+            const addrParts = [it.rua||'', it.numero||'', it.bairro||'', it.cidade||'Ibiúna', it.uf||'SP', 'Brasil'].filter(Boolean);
+            const addr = addrParts.join(', ');
+            const q = encodeURIComponent(addr);
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1`)
+              .then(r => r.json())
+              .then(g => {
+                if(g && g.length){
+                  geocoded++;
+                  const lat = parseFloat(g[0].lat), lon = parseFloat(g[0].lon);
+                  const m = L.marker([lat, lon]).addTo(map);
+                  m.bindPopup(`<strong>BO ${it.numero}</strong><br>${it.emissao}<br>${it.cod || ''} — ${it.natureza || ''}<br>${addr}`);
+                }
+                if(geocoded === 0 && queue.length === 1){ showDebug('Geocode vazio'); }
+              })
+              .catch(err => console.warn('[MapaBO] geocode err', err));
+          });
+          setTimeout(()=>{
+            console.log('[MapaBO] Geocodificados até agora', geocoded);
+            if(geocoded === 0 && items.length > 0){ showDebug('Sem coordenadas resolvidas'); }
+          }, 3000);
+        })
+        .catch(err => { console.error('[MapaBO] map data err', err); showDebug('Erro dados'); });
+    } catch(e){ console.error('[MapaBO] map init err', e); showDebug('Init erro'); }
+  });
+});
+</script>
+{% endblock %}

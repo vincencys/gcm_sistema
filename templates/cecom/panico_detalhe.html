@@ -1,0 +1,185 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+  <!-- Header -->
+  <div class="mb-2 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">Detalhe do Disparo #{{ d.id }}</h1>
+      </div>
+    </div>
+  </div>
+  <div class="bg-white shadow border rounded p-4 space-y-2">
+    <div><span class="font-semibold">Assistida:</span> {{ d.assistida.nome }} <span class="text-xs text-slate-500">CPF {{ d.assistida.cpf }}</span></div>
+    {% if d.assistida.telefone %}<div><span class="font-semibold">Telefone:</span> <a href="tel:{{ d.assistida.telefone }}" class="text-blue-600 hover:underline">{{ d.assistida.telefone }}</a></div>{% endif %}
+    {% if d.assistida.endereco %}<div><span class="font-semibold">Endereço:</span> {{ d.assistida.endereco }}</div>{% endif %}
+    <div><span class="font-semibold">Status:</span>
+      <span class="inline-block px-2 py-1 rounded text-xs font-semibold
+        {% if d.status == 'ABERTA' %}bg-rose-600 text-white
+        {% elif d.status == 'EM_ATENDIMENTO' %}bg-orange-500 text-white
+        {% elif d.status == 'ENCERRADA' %}bg-emerald-600 text-white
+        {% elif d.status == 'CANCELADA' %}bg-gray-600 text-white
+        {% elif d.status == 'FALSO_POSITIVO' %}bg-purple-600 text-white
+        {% elif d.status == 'TESTE' %}bg-blue-600 text-white
+        {% endif %}">{{ d.get_status_display }}</span>
+    </div>
+    <div><span class="font-semibold">Aberto em:</span> {{ d.created_at|date:'d/m/Y H:i' }}</div>
+    {% if d.em_atendimento_em %}<div><span class="font-semibold">Atendimento em:</span> {{ d.em_atendimento_em|date:'d/m/Y H:i' }}</div>{% endif %}
+    {% if d.encerrado_em %}<div><span class="font-semibold">Encerrado em:</span> {{ d.encerrado_em|date:'d/m/Y H:i' }}</div>{% endif %}
+    {% if d.relato_final %}<div><span class="font-semibold">Relato Final:</span> {{ d.relato_final }}</div>{% endif %}
+    <div class="flex gap-2 mt-2">
+      {% if d.status == 'ABERTA' or d.status == 'EM_ATENDIMENTO' %}
+        <form method="post" class="inline space-x-2 items-end" onsubmit="return confirm('Encerrar este disparo?');">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="encerrar">
+          <input type="hidden" name="latitude" value="{% if d.latitude %}{{ d.latitude }}{% endif %}">
+          <input type="hidden" name="longitude" value="{% if d.longitude %}{{ d.longitude }}{% endif %}">
+          <button class="btn btn-danger btn-sm">Encerrar</button>
+        </form>
+      {% endif %}
+      <a href="{% url 'cecom:panico_list' %}" class="btn btn-light btn-sm">← Voltar</a>
+    </div>
+  </div>
+  <div class="bg-white shadow border rounded p-4">
+    <h2 class="text-lg font-semibold mb-2">Localização</h2>
+    <div id="map" style="height:400px" class="rounded border"></div>
+    <div class="mt-2 flex flex-col gap-1">
+      <p id="map-status" class="text-xs text-slate-500">
+        {% if has_coords %}Última posição registrada.{% else %}Aguardando primeira localização desta assistida...{% endif %}
+      </p>
+      <p id="latlng-line" class="text-[11px] font-mono text-slate-600">
+        Lat/Lng: {% if d.latitude and d.longitude %}{{ d.latitude }}, {{ d.longitude }}{% else %}--, --{% endif %}
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  (function initDetalhePanico(){
+    // Garante que o Leaflet (L) já está carregado antes de executar
+    if(!(window.L && typeof window.L.map === 'function')){
+      setTimeout(initDetalhePanico, 100);
+      return;
+    }
+    
+    const disparoId = {{ d.id }};
+    const initLat = {% if d.latitude %}parseFloat("{{ d.latitude|stringformat:'f' }}"){% else %}null{% endif %};
+    const initLng = {% if d.longitude %}parseFloat("{{ d.longitude|stringformat:'f' }}"){% else %}null{% endif %};
+    
+    console.log('=== DEBUG PANICO DETALHE ===');
+    console.log('Disparo ID:', disparoId);
+    console.log('Latitude:', initLat, '(tipo:', typeof initLat, ')');
+    console.log('Longitude:', initLng, '(tipo:', typeof initLng, ')');
+    console.log('=========================');
+    
+    let map = null, marker = null, circle = null;
+    const statusEl = document.getElementById('map-status');
+    const latInput = document.querySelector('form [name="latitude"]');
+    const lngInput = document.querySelector('form [name="longitude"]');
+    const latlngLine = document.getElementById('latlng-line');
+
+    function ensureMap(lat, lng, zoom){
+      try{
+        if(!map){
+          map = L.map('map');
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+          }).addTo(map);
+          
+          // Força recalcular tamanho após criação (resolve bug de tiles cinza)
+          setTimeout(() => {
+            if(map) map.invalidateSize();
+          }, 100);
+        }
+        map.setView([lat, lng], zoom || 16);
+        
+        // Força recalcular tamanho sempre que mudar view
+        setTimeout(() => {
+          if(map) map.invalidateSize();
+        }, 50);
+      }catch(e){ console.warn('leaflet ensureMap err', e); }
+    }
+
+    function setPosition(lat, lng){
+      if(typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
+      ensureMap(lat, lng, 17);
+      
+      const point = [lat, lng];
+      if(!marker){
+        marker = L.circleMarker(point, { 
+          radius: 12, 
+          color: '#dc2626', 
+          weight: 4, 
+          fillColor: '#ef4444', 
+          fillOpacity: 0.9 
+        }).addTo(map).bindPopup('<b>📍 Assistida:</b><br>{{ d.assistida.nome|escapejs }}<br><small>Lat: ' + lat.toFixed(6) + '<br>Lng: ' + lng.toFixed(6) + '</small>').openPopup();
+      } else {
+        marker.setLatLng(point);
+        marker.getPopup().setContent('<b>📍 Assistida:</b><br>{{ d.assistida.nome|escapejs }}<br><small>Lat: ' + lat.toFixed(6) + '<br>Lng: ' + lng.toFixed(6) + '</small>');
+      }
+      
+      // Área de precisão
+      if(!circle){
+        circle = L.circle(point, { 
+          radius: 30, 
+          color:'#f87171', 
+          fillOpacity: 0.15, 
+          weight:1 
+        }).addTo(map);
+      } else {
+        circle.setLatLng(point);
+      }
+      
+      if(statusEl){ statusEl.textContent = 'Última posição recebida.'; }
+      if(latInput) latInput.value = String(lat);
+      if(lngInput) lngInput.value = String(lng);
+      if(latlngLine) latlngLine.textContent = `Lat/Lng: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+
+    // Inicializa com a coordenada atual (se houver)
+    if(initLat !== null && initLng !== null && !isNaN(initLat) && !isNaN(initLng)){
+      console.log('Inicializando mapa com:', initLat, initLng);
+      setPosition(initLat, initLng);
+    } else {
+      // Se não houver coordenadas ainda, centraliza num zoom baixo
+      console.log('Sem coordenadas iniciais');
+      try{ 
+        map = L.map('map').setView([-23.518324, -47.129309], 11); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+        
+        // Força recalcular tamanho do mapa
+        setTimeout(() => {
+          if(map) map.invalidateSize();
+        }, 100);
+      }catch(e){ console.warn('mapa inicial err', e); }
+    }
+
+    // WebSocket dedicado para atualizar localização em tempo real
+    try{
+      const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+      const ws = new WebSocket(proto + location.host + '/ws/panico/alertas/');
+      ws.onmessage = function(evt){
+        try{
+          const data = JSON.parse(evt.data || '{}');
+          if(data && data.tipo === 'PANICO_LOCALIZACAO' && String(data.disparo_id) === String(disparoId)){
+            const c = data.coords || {};
+            const lat = parseFloat(c.lat);
+            const lng = parseFloat(c.lng);
+            console.log('Nova posição recebida via WS:', lat, lng);
+            if(!isNaN(lat) && !isNaN(lng)) setPosition(lat, lng);
+          }
+        }catch(e){ console.warn('ws parse err', e); }
+      };
+      ws.onerror = function(e){ console.warn('ws error', e); };
+    }catch(err){ console.warn('ws detalhe panico err', err); }
+  })();
+</script>
+{% endblock %}

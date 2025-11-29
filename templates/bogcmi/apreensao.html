@@ -1,0 +1,67 @@
+<div id="tab-apreensao" class="tab-content">
+    <h3 class="text-xl font-semibold mb-2 text-indigo-800">Apreensão</h3>
+    <div class="flex gap-2 mb-4">
+        <button id="btn-adicionar-apreensao" class="px-4 py-2 rounded bg-indigo-600 text-white font-bold">Adicionar Apreensão</button>
+        <a href="{% url 'bogcmi:apreensao_lista' %}" class="px-4 py-2 rounded bg-slate-600 text-white font-bold">Abrir Lista de Apreensões</a>
+    </div>
+    <!-- Formulário de apreensão (exibido ao clicar em adicionar) -->
+    <form id="form-apreensao" class="hidden bg-slate-50 border rounded-xl p-4 mb-4" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="font-semibold">Descrição</label>
+                <input type="text" name="descricao" class="input w-full">
+            </div>
+            <div>
+                <label class="font-semibold">Unidade de Medida</label>
+                <input type="text" name="unidade_medida" class="input w-full">
+            </div>
+            <div>
+                <label class="font-semibold">Quantidade</label>
+                <input type="number" name="quantidade" class="input w-full">
+            </div>
+            <div>
+                <label class="font-semibold">Destino</label>
+                <input type="text" name="destino" class="input w-full">
+            </div>
+            <div>
+                <label class="font-semibold">Recebedor</label>
+                <input type="text" name="recebedor" class="input w-full">
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button type="button" id="btn-adicionar-anexo" class="px-4 py-2 rounded bg-purple-600 text-white font-bold">Adicionar Anexo</button>
+            <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white font-bold">Salvar</button>
+            <button type="button" id="btn-cancelar-apreensao" class="px-4 py-2 rounded bg-gray-400 text-white font-bold">Cancelar</button>
+        </div>
+    </form>
+    <!-- Modal de anexo -->
+    <div id="modal-anexo" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-2 flex flex-col">
+            <h4 class="text-lg font-bold mb-2 text-indigo-700">Adicionar Anexo</h4>
+            <label class="font-semibold">Descrição do Anexo</label>
+            <input type="text" id="anexo-descricao" class="input mb-2">
+            <label class="font-semibold">Arquivo</label>
+            <input type="file" id="anexo-arquivo" class="input mb-2">
+            <div class="flex gap-2 mt-2">
+                <button type="button" id="btn-salvar-anexo" class="px-4 py-2 rounded bg-green-600 text-white font-bold">Salvar</button>
+                <button type="button" id="btn-fechar-anexo" class="px-4 py-2 rounded bg-gray-400 text-white font-bold">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('btn-adicionar-apreensao').onclick = function() {
+    document.getElementById('form-apreensao').classList.remove('hidden');
+};
+document.getElementById('btn-cancelar-apreensao').onclick = function() {
+    document.getElementById('form-apreensao').classList.add('hidden');
+};
+document.getElementById('btn-adicionar-anexo').onclick = function() {
+    document.getElementById('modal-anexo').classList.remove('hidden');
+};
+document.getElementById('btn-fechar-anexo').onclick = function() {
+    document.getElementById('modal-anexo').classList.add('hidden');
+};
+// Aqui você pode implementar o JS para salvar o anexo e atualizar a lista de anexos
+</script>

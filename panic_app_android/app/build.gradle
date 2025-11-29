@@ -1,0 +1,84 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
+}
+
+// Carregar propriedades do keystore para assinatura de release
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace 'com.seuprojeto.panico'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.seuprojeto.panico"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            if (keystoreProperties['storeFile']) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+// Removido bloco duplicado 'android { ... }' para evitar conflitos
+
+dependencies {
+    // Kotlin stdlib vem pelo plugin; manter explícito é opcional
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
+    // Firebase Cloud Messaging
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
+    implementation 'com.google.firebase:firebase-messaging-ktx'
+}
+
+// Permitir build sem o arquivo google-services.json (ex.: ambientes locais sem Firebase configurado)
+def hasGoogleServices = [
+        file("google-services.json"),
+        file("src/debug/google-services.json"),
+        file("src/release/google-services.json")
+].any { it.exists() }
+
+if (!hasGoogleServices) {
+    logger.lifecycle("[PanicoApp] google-services.json não encontrado; desativando tarefas do Google Services para permitir o build.")
+    tasks.whenTaskAdded { task ->
+        if (task.name.toLowerCase().contains('googleservices')) {
+            task.enabled = false
+        }
+    }
+}

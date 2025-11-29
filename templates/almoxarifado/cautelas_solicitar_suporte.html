@@ -1,0 +1,171 @@
+{% extends "_layout/base.html" %}
+{% block title %}Solicitar arma de suporte{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Solicitar arma de suporte</h1>
+    <p class="text-sm text-slate-600 mt-1">Solicite armamento e munição de suporte para operação</p>
+  </div>
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    <!-- Card: Informações da Solicitação -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Informações da Solicitação
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Supervisor</label>
+          {{ form.supervisor }}
+          <p class="text-xs text-rose-600 mt-1">Obrigatório: quem aprova a entrega e a devolução.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Previsão de Devolução</label>
+          {{ form.prevista_devolucao }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Armamento -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          Armamento
+        </h2>
+      </div>
+      <div class="p-6">
+      <h3 class="font-semibold mb-2">Armamento</h3>
+      <div class="grid grid-cols-7 gap-3 items-start">
+        <div class="col-span-3">
+          <label class="block text-sm font-medium mb-1">Disponíveis</label>
+          {{ form.armamentos }}
+        </div>
+        <div class="col-span-1 flex flex-col items-center justify-center gap-2 pt-6">
+          <button type="button" id="btn-add-arm" class="btn btn-primary w-full">Adicionar →</button>
+          <button type="button" id="btn-rem-arm" class="btn w-full">← Remover</button>
+        </div>
+        <div class="col-span-3">
+          <label class="block text-sm font-medium mb-1">Selecionados</label>
+          <select id="armamentos-escolhidos" class="input h-48 w-full" multiple size="8" aria-label="Armamentos selecionados"></select>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">Selecione um ou mais itens e use os botões Adicionar/Remover. Dica: segure Ctrl (ou Shift) para seleção múltipla.</p>
+      </div>
+    </div>
+
+    <!-- Card: Munições -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          Munições <span class="text-rose-600 text-xs font-normal ml-2">(obrigatório)</span>
+        </h2>
+      </div>
+      <div class="p-6">
+      {{ formset.management_form }}
+      <div class="space-y-2">
+        {% for f in formset %}
+          <div class="grid grid-cols-7 gap-2 items-end">
+            <div class="col-span-5">
+              <label class="block text-sm font-medium">Munição (estoque)</label>
+              {{ f.municao }}
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Qtd</label>
+              {{ f.quantidade }}
+            </div>
+            {% if formset.can_delete %}
+              <div class="text-center">
+                <label class="block text-sm font-medium">Remover</label>
+                {{ f.DELETE }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <p class="text-xs text-gray-500 mt-2">Deixe linhas em branco se não for usar.</p>
+      </div>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="bg-rose-50 border border-rose-300 rounded-lg p-4 text-rose-800 text-sm">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% if formset.non_form_errors %}
+      <div class="bg-rose-50 border border-rose-300 rounded-lg p-4 text-rose-800 text-sm">{{ formset.non_form_errors }}</div>
+    {% endif %}
+
+    <!-- Card: Ações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Solicitar
+        </button>
+        <a href="{% url 'core:almoxarifado:cautelas' %}" class="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </div>
+  </form>
+</div>
+</div>
+
+<script>
+  (function() {
+    const real = document.getElementById('id_armamentos');
+    if (!real) return;
+    // garante múltipla seleção e altura
+    real.setAttribute('multiple', 'multiple');
+    real.classList.add('h-48','w-full','input');
+    const chosen = document.getElementById('armamentos-escolhidos');
+    const addBtn = document.getElementById('btn-add-arm');
+    const remBtn = document.getElementById('btn-rem-arm');
+
+    function syncChosen() {
+      chosen.innerHTML = '';
+      Array.from(real.options).forEach(opt => {
+        if (opt.selected) {
+          const c = document.createElement('option');
+          c.value = opt.value; c.textContent = opt.textContent; c.dataset.srcIndex = opt.index;
+          chosen.appendChild(c);
+        }
+      });
+    }
+    // Modo manual: só move ao clicar nos botões (não sincroniza ao clicar no select)
+    addBtn?.addEventListener('click', () => {
+      const toAdd = Array.from(real.selectedOptions);
+      if (toAdd.length === 0) return;
+      toAdd.forEach(o => { o.selected = true; });
+      syncChosen();
+    });
+    remBtn?.addEventListener('click', () => {
+      const toRemove = Array.from(chosen.selectedOptions);
+      if (toRemove.length === 0) return;
+      toRemove.forEach(o => {
+        const idx = o.dataset.srcIndex; if (idx !== undefined) real.options[idx].selected = false;
+      });
+      syncChosen();
+    });
+    // Inicializa a coluna da direita a partir do que já estiver selecionado (se houver)
+    syncChosen();
+  })();
+</script>
+{% endblock %}

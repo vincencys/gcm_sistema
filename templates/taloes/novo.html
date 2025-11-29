@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Novo Talão{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Abrir novo talão</h1>
+<form method="post" class="space-y-3 max-w-xl">
+  {% csrf_token %}
+  <div><label>Viatura</label> {{ form.viatura }}</div>
+  <div><label>KM Inicial</label> {{ form.km_inicial }}</div>
+  <div><label>Ocorrência</label> {{ form.codigo_ocorrencia }}</div>
+  <div><label>Local - Área/Bairro</label> {{ form.local_bairro }}</div>
+  <div><label>Local - Rua/Refêrencia</label> {{ form.local_rua }}</div>
+  <button class="btn btn-primary" type="submit">Abrir</button>
+  <a class="btn" href="{% url 'taloes:lista' %}">Cancelar</a>
+</form>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectViatura = document.querySelector('select[name="viatura"]');
+  const inputKmInicial = document.querySelector('input[name="km_inicial"]');
+  const urlApi = '{% url "taloes:api_ultimo_km" %}';
+
+  async function atualizarKmInicial(viaturaId) {
+    if (!viaturaId) { return; }
+    try {
+      const resp = await fetch(urlApi + '?viatura=' + encodeURIComponent(viaturaId), { credentials: 'same-origin' });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data && typeof data.km_inicial !== 'undefined' && data.km_inicial !== null) {
+        inputKmInicial.value = data.km_inicial;
+      }
+    } catch (e) {
+      // silencioso
+    }
+  }
+
+  if (selectViatura && inputKmInicial) {
+    selectViatura.addEventListener('change', function() {
+      const vid = this.value;
+      atualizarKmInicial(vid);
+    });
+  }
+});
+</script>
+{% endblock %}

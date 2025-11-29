@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <title>Carro Top View Realista</title>
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe873"/>
+      <stop offset="55%" stop-color="#f5cf08"/>
+      <stop offset="100%" stop-color="#d2b000"/>
+    </linearGradient>
+    <linearGradient id="hood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd941"/>
+      <stop offset="100%" stop-color="#e0bd09"/>
+    </linearGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8c21d"/>
+      <stop offset="100%" stop-color="#c6a600"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5b656d"/>
+      <stop offset="100%" stop-color="#1a1f22"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="none"/>
+  <!-- Sombra -->
+  <ellipse cx="400" cy="370" rx="300" ry="22" fill="#000" opacity="0.08"/>
+  <!-- Carroceria externa (silhueta) -->
+  <path id="carroceria" d="M150 50 H650 Q700 50 725 95 L760 200 L725 305 Q700 350 650 350 H150 Q100 350 75 305 L40 200 75 95 Q100 50 150 50 Z" fill="url(#body)" stroke="#121212" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Rodas (parcialmente expostas) -->
+  <g id="rodas" stroke="#111" stroke-width="6">
+    <g>
+      <circle cx="170" cy="115" r="55" fill="#111"/>
+      <circle cx="170" cy="115" r="24" fill="#9aa0a4"/>
+    </g>
+    <g>
+      <circle cx="170" cy="285" r="55" fill="#111"/>
+      <circle cx="170" cy="285" r="24" fill="#9aa0a4"/>
+    </g>
+    <g>
+      <circle cx="630" cy="115" r="55" fill="#111"/>
+      <circle cx="630" cy="115" r="24" fill="#9aa0a4"/>
+    </g>
+    <g>
+      <circle cx="630" cy="285" r="55" fill="#111"/>
+      <circle cx="630" cy="285" r="24" fill="#9aa0a4"/>
+    </g>
+  </g>
+  <!-- Capô -->
+  <path id="capo" d="M150 50 H250 Q268 50 282 72 L305 110 L305 290 L282 328 Q268 350 250 350 H150 Q100 350 75 305 L60 260 Q170 250 170 200 Q170 150 60 140 L75 95 Q100 50 150 50 Z" fill="url(#hood)" opacity="0.9"/>
+  <!-- Porta-malas -->
+  <path id="porta-malas" d="M650 50 H550 Q532 50 518 72 L495 110 L495 290 L518 328 Q532 350 550 350 H650 Q700 350 725 305 L740 260 Q630 250 630 200 Q630 150 740 140 L725 95 Q700 50 650 50 Z" fill="url(#trunk)" opacity="0.9"/>
+  <!-- Conjunto de vidros -->
+  <path id="vidros" d="M305 110 H495 L520 160 V240 L495 290 H305 L280 240 V160 Z" fill="url(#glass)" stroke="#050505" stroke-width="5"/>
+  <!-- Divisões horizontais vidros (para-brisa / teto / traseiro) -->
+  <path d="M305 150 H495" stroke="#7f868b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M305 200 H495" stroke="#7f868b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M305 250 H495" stroke="#7f868b" stroke-width="6" stroke-linecap="round"/>
+  <!-- Linhas portas (4 portas) -->
+  <path d="M340 110 V290" stroke="#1d1d1d" stroke-width="5"/>
+  <path d="M400 110 V290" stroke="#1d1d1d" stroke-width="5"/>
+  <path d="M460 110 V290" stroke="#1d1d1d" stroke-width="5"/>
+  <!-- Maçanetas -->
+  <rect x="350" y="165" width="30" height="10" rx="4" fill="#1d1d1d"/>
+  <rect x="350" y="225" width="30" height="10" rx="4" fill="#1d1d1d"/>
+  <rect x="462" y="165" width="30" height="10" rx="4" fill="#1d1d1d"/>
+  <rect x="462" y="225" width="30" height="10" rx="4" fill="#1d1d1d"/>
+  <!-- Faróis (esquerdo/direito) -->
+  <g id="farois" stroke="#222" stroke-width="4">
+    <ellipse cx="215" cy="145" rx="26" ry="38" fill="#fffef6"/>
+    <ellipse cx="215" cy="255" rx="26" ry="38" fill="#fffef6"/>
+  </g>
+  <!-- Lanternas -->
+  <g id="lanternas" stroke="#222" stroke-width="4">
+    <ellipse cx="585" cy="145" rx="24" ry="36" fill="#d10000"/>
+    <ellipse cx="585" cy="255" rx="24" ry="36" fill="#d10000"/>
+    <ellipse cx="595" cy="145" rx="12" ry="20" fill="#ff6a6a"/>
+    <ellipse cx="595" cy="255" rx="12" ry="20" fill="#ff6a6a"/>
+  </g>
+  <!-- Retrovisores -->
+  <rect x="270" y="100" width="34" height="18" rx="4" fill="#ffd941" stroke="#222" stroke-width="3"/>
+  <rect x="270" y="282" width="34" height="18" rx="4" fill="#ffd941" stroke="#222" stroke-width="3"/>
+</svg>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<title>BO por Usuário - Gráficos PDF</title>
+<style>
+ body { font-family: Arial, sans-serif; font-size: 12px; margin: 24px; }
+ h1 { font-size: 18px; margin: 0 0 12px; }
+ h2 { font-size: 15px; margin: 18px 0 8px; }
+ table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+ th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+ th { background: #f5f5f5; }
+ .muted { color: #666; }
+ .small { font-size: 11px; }
+ .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; background:#eef; font-size:11px; }
+</style>
+</head>
+<body>
+<h1>Resumo Gráficos · BO por Usuário{% if user_nome %} — {{ user_nome }}{% endif %}</h1>
+<p class="small">Período: {{ de|date:'d/m/Y' }} a {{ ate|date:'d/m/Y' }} · Aba: {{ tab|title }}{% if flag %} · Flagrante: {{ flag|upper }}{% endif %}</p>
+<p>Total de BOs no período: <strong>{{ total }}</strong></p>
+
+<h2>Série por Dia</h2>
+<table>
+  <thead><tr><th>Dia</th><th>Qtd</th></tr></thead>
+  <tbody>
+  {% for r in serie_por_dia %}
+    <tr><td>{{ r.dia|date:'d/m/Y' }}</td><td>{{ r.qtd }}</td></tr>
+  {% empty %}
+    <tr><td colspan="2" class="muted">Sem registros.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Distribuição por Status</h2>
+<table>
+  <thead><tr><th>Status</th><th>Qtd</th><th>%</th></tr></thead>
+  <tbody>
+  {% for s in por_status %}
+    <tr><td>{{ s.status }}</td><td>{{ s.qtd }}</td><td>{% if total %}{{ (s.qtd*100/total)|floatformat:1 }}%{% else %}0%{% endif %}</td></tr>
+  {% empty %}
+    <tr><td colspan="3" class="muted">Sem registros.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Flagrante vs Não</h2>
+<table>
+  <thead><tr><th>Tipo</th><th>Qtd</th><th>%</th></tr></thead>
+  <tbody>
+    <tr><td>Flagrante</td><td>{{ qtd_flag }}</td><td>{{ pct_flag }}%</td></tr>
+    <tr><td>Não flagrante</td><td>{{ qtd_nao }}</td><td>{{ pct_nao }}%</td></tr>
+  </tbody>
+</table>
+
+<h2>Top Códigos</h2>
+<table>
+  <thead><tr><th>Código</th><th>Natureza</th><th>Qtd</th></tr></thead>
+  <tbody>
+  {% for r in ranking_codigos %}
+    <tr><td>{{ r.cod_natureza|default:'—' }}</td><td>{{ r.natureza|default:'(sem descrição)' }}</td><td>{{ r.qtd }}</td></tr>
+  {% empty %}
+    <tr><td colspan="3" class="muted">Sem registros.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<p class="small muted">Gerado em {{ now|default:None }}</p>
+</body>
+</html>

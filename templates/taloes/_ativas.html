@@ -1,0 +1,19 @@
+<div class="border rounded p-3">
+  <h3 class="font-semibold mb-2">Viaturas Ativas</h3>
+  <div class="grid md:grid-cols-2 gap-3">
+    {% for t in taloes %}
+      <div class="border rounded p-3">
+        <div class="text-sm">VTR <b>{{ t.viatura.prefixo }}</b> — Talão #{{ t.pk }}</div>
+        <div class="text-xs text-slate-600">Início: {{ t.iniciado_em|date:"d/m/Y H:i" }}</div>
+        {% if t.codigo_ocorrencia %}
+          <div class="text-xs">Código: {{ t.codigo_ocorrencia.sigla }} — {{ t.codigo_ocorrencia.descricao }}</div>
+        {% endif %}
+        {% if t.local_bairro %}
+          <div class="text-xs">Local: {{ t.local_bairro }}</div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p class="text-sm">Sem viaturas ativas.</p>
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,454 @@
+{% extends "_layout/base.html" %}
+{% load bogcmi_extras %}
+{% block title %}Dispensas{% endblock %}
+
+{% block content %}
+<div class="container max-w-screen-2xl mx-auto p-3 md:p-4">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center justify-between" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V8H3v11a2 2 0 002 2z"/></svg>
+        <h1 class="text-xl font-bold text-slate-800">Dispensas</h1>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" class="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-end gap-3 mb-4">
+    <div class="flex-1 md:flex-none">
+      <label class="block text-xs font-semibold mb-1">Plantão</label>
+      <div class="flex gap-2">
+        <select name="plantao" class="border rounded p-2 flex-1 md:flex-none">
+          <option value="A" {% if plantao == 'A' %}selected{% endif %}>A</option>
+          <option value="B" {% if plantao == 'B' %}selected{% endif %}>B</option>
+          <option value="C" {% if plantao == 'C' %}selected{% endif %}>C</option>
+          <option value="D" {% if plantao == 'D' %}selected{% endif %}>D</option>
+        </select>
+        <button type="submit" class="btn">Selecionar</button>
+      </div>
+    </div>
+    <div class="flex-1 md:flex-none">
+      <label class="block text-xs font-semibold mb-1">Mês</label>
+      <div class="flex items-center gap-2">
+        <a class="btn px-3" href="{{ prev_url }}">◀</a>
+        <div class="px-3 py-2 border rounded flex-1 md:min-w-[110px] text-center">{{ mes }}/{{ ano }}</div>
+        <a class="btn px-3" href="{{ next_url }}">▶</a>
+      </div>
+    </div>
+    <div class="md:ml-auto">
+      <a class="btn w-full md:w-auto" href="{% url 'core:dashboard' %}">⟵ Voltar</a>
+    </div>
+  </form>
+
+  <div class="space-y-6">
+    <div>
+      <div class="mb-2 font-semibold text-sm md:text-base">Calendário — Plantão {{ plantao }}</div>
+      <div class="border rounded overflow-hidden">
+        <div class="grid grid-cols-7 text-center bg-slate-50 border-b">
+          <div class="p-1 md:p-2 text-[10px] md:text-xs font-semibold">Seg</div>
+          <div class="p-1 md:p-2 text-[10px] md:text-xs font-semibold">Ter</div>
+          <div class="p-1 md:p-2 text-[10px] md:text-xs font-semibold">Qua</div>
+          <div class="p-1 md:p-2 text-[10px] md:text-xs font-semibold">Qui</div>
+          <div class="p-1 md:p-2 text-[10px] md:text-xs font-semibold">Sex</div>
+          <div class="p-1 md:p-2 text-[10px] md:text-xs font-semibold">Sáb</div>
+          <div class="p-1 md:p-2 text-[10px] md:text-xs font-semibold">Dom</div>
+        </div>
+        {% for w in weeks %}
+        <div class="grid grid-cols-7 border-b last:border-0">
+          {% for d in w %}
+            <div class="p-1 md:p-2 min-h-[100px] md:min-h-[170px] border-r last:border-0 {% if d.month != mes %}bg-slate-50{% endif %} flex flex-col justify-between">
+              <div>
+                <div class="text-[10px] md:text-xs text-slate-500 font-semibold mb-1">{{ d|date:'j' }}</div>
+                {% if d.month == mes %}
+                  {% with itens=cal_por_dia|get_item:d.day %}
+                    {% if itens %}
+                      {% for it in itens|slice:':3' %}
+                        {% if it.status == 'PENDENTE' %}
+                          <div class="mt-0.5 text-[9px] md:text-[11px] text-blue-700 truncate" title="{{ it.nome }} (pendente)">{{ it.nome|truncatewords:1 }} <span class="hidden md:inline text-blue-600">(pend.)</span></div>
+                        {% elif it.status == 'APROVADA' %}
+                          <div class="mt-0.5 text-[9px] md:text-[11px] text-emerald-700 truncate" title="{{ it.nome }} (aprovado)">{{ it.nome|truncatewords:1 }} <span class="hidden md:inline text-emerald-600">(aprov.)</span></div>
+                        {% elif it.status == 'RECUSADA' %}
+                          <div class="mt-0.5 text-[9px] md:text-[11px] text-rose-700 truncate" title="{{ it.nome }} (recusado)">{{ it.nome|truncatewords:1 }} <span class="hidden md:inline text-rose-600">(recus.)</span></div>
+                        {% elif it.status == 'CANCELADA' %}
+                          <div class="mt-0.5 text-[9px] md:text-[11px] text-amber-700 truncate" title="{{ it.nome }} (cancelado)">{{ it.nome|truncatewords:1 }} <span class="hidden md:inline text-amber-600">(canc.)</span></div>
+                        {% else %}
+                          <div class="mt-0.5 text-[9px] md:text-[11px] truncate" title="{{ it.nome }}">{{ it.nome|truncatewords:1 }}</div>
+                        {% endif %}
+                      {% endfor %}
+                      {% if itens|length > 3 %}
+                        <div class="mt-0.5 text-[9px] md:text-[11px] text-slate-500">+{{ itens|length|add:'-3' }}</div>
+                      {% endif %}
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              </div>
+              {% if d.month == mes %}
+              <div class="mt-1">
+                <a class="block text-center text-[9px] md:text-xs px-1 py-0.5 md:px-2 md:py-1 border rounded hover:bg-slate-50 bg-white" href="{% url 'core:dispensas_solicitar' %}?plantao={{ plantao }}&data={{ d|date:'Y-m-d' }}">+</a>
+              </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <div class="mb-4">
+        <div class="font-semibold mb-2 text-sm md:text-base">Minhas solicitações</div>
+        
+        {# Mobile: cards verticais #}
+        <div class="md:hidden space-y-3">
+          {% for r in minhas %}
+            <div class="bg-white border rounded-xl p-3 shadow-sm">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex-1">
+                  <div class="text-xs text-slate-500">Dia {{ r.data|date:'d/m' }}</div>
+                  <div class="font-semibold">{{ r.get_tipo_display }}</div>
+                </div>
+                <div class="shrink-0">
+                  <span class="inline-block px-2 py-1 rounded text-xs font-semibold
+                    {% if r.status == 'PENDENTE' %}bg-yellow-100 text-yellow-800
+                    {% elif r.status == 'APROVADA' %}bg-green-100 text-green-800
+                    {% elif r.status == 'RECUSADA' %}bg-red-100 text-red-800
+                    {% elif r.status == 'CANCELADA' %}bg-gray-100 text-gray-800
+                    {% endif %}
+                  ">{{ r.get_status_display }}</span>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between"><span class="text-slate-500">Turno:</span><span>{{ r.get_turno_display }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Obs/Motivo:</span><span class="text-xs text-right">{{ r.observacao|default:'-' }}</span></div>
+              </div>
+              {% if request.user.username|lower == 'moises' %}
+              <div class="mt-3">
+                <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                  {% csrf_token %}
+                  <button class="w-full btn btn-danger text-xs px-2 py-2">Excluir</button>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="text-center text-slate-500 py-8 text-sm">Sem registros no mês.</div>
+          {% endfor %}
+        </div>
+
+        {# Desktop: tabela #}
+        <div class="hidden md:block border rounded overflow-x-auto">
+          <table class="w-full table">
+            <thead>
+              <tr>
+                <th>Dia</th><th>Tipo</th><th>Turno</th><th>Status</th><th>Obs/Motivo</th>
+                {% if request.user.username|lower == 'moises' %}<th style="width:120px">Ações</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in minhas %}
+              <tr>
+                <td class="p-2 border">{{ r.data|date:'d/m' }}</td>
+                <td class="p-2 border">{{ r.get_tipo_display }}</td>
+                <td class="p-2 border">{{ r.get_turno_display }}</td>
+                <td class="p-2 border">{{ r.get_status_display }}</td>
+                <td class="p-2 border text-xs text-slate-600">{{ r.observacao|default:'-' }}</td>
+                {% if request.user.username|lower == 'moises' %}
+                <td class="p-2 border text-center">
+                  <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                    {% csrf_token %}
+                    <button class="btn btn-danger text-xs px-2 py-1">Excluir</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% empty %}
+              <tr><td class="p-2 text-slate-500" colspan="{% if request.user.username|lower == 'moises' %}6{% else %}5{% endif %}">Sem registros no mês.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="font-semibold mb-2 text-sm md:text-base">Pendentes (aprovação)</div>
+        
+        {# Mobile: cards verticais #}
+        <div class="md:hidden space-y-3">
+          {% for r in pendentes %}
+            <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-yellow-500">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex-1">
+                  <div class="text-xs text-slate-500">Dia {{ r.data|date:'d/m' }}</div>
+                  <div class="font-semibold text-sm">{% with pf=r.solicitante.perfil %}{{ pf.matricula|default:r.solicitante.username }} - {{ r.solicitante.get_full_name|default:r.solicitante.username }}{% endwith %}</div>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between"><span class="text-slate-500">Tipo:</span><span>{{ r.get_tipo_display }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Turno:</span><span>{{ r.get_turno_display }}</span></div>
+              </div>
+              <div class="mt-3 flex flex-col gap-2">
+                <a class="btn btn-primary text-xs px-2 py-2 text-center" href="{% url 'core:dispensas_aprovar' r.id %}">Aprovar/Recusar</a>
+                {% if request.user.username|lower == 'moises' %}
+                <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                  {% csrf_token %}
+                  <button class="w-full btn btn-danger text-xs px-2 py-2">Excluir</button>
+                </form>
+                {% endif %}
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-center text-slate-500 py-8 text-sm">Sem pendências.</div>
+          {% endfor %}
+        </div>
+
+        {# Desktop: tabela #}
+        <div class="hidden md:block border rounded overflow-x-auto">
+          <table class="w-full table">
+            <thead><tr><th>Dia</th><th>Agente</th><th>Tipo</th><th>Turno</th><th style="width:120px">Ações</th></tr></thead>
+            <tbody>
+              {% for r in pendentes %}
+              <tr>
+                <td class="p-2 border">{{ r.data|date:'d/m' }}</td>
+                <td class="p-2 border">{% with pf=r.solicitante.perfil %}{{ pf.matricula|default:r.solicitante.username }} - {{ r.solicitante.get_full_name|default:r.solicitante.username }}{% endwith %}</td>
+                <td class="p-2 border">{{ r.get_tipo_display }}</td>
+                <td class="p-2 border">{{ r.get_turno_display }}</td>
+                <td class="p-2 border text-center whitespace-nowrap">
+                  <a class="btn btn-primary text-xs px-2 py-1" href="{% url 'core:dispensas_aprovar' r.id %}">Aprovar/Recusar</a>
+                  {% if request.user.username|lower == 'moises' %}
+                  <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" class="inline" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                    {% csrf_token %}
+                    <button class="btn btn-danger text-xs px-2 py-1 ml-1">Excluir</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td class="p-2 text-slate-500" colspan="5">Sem pendências.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="font-semibold mb-2 text-sm md:text-base">Aprovadas</div>
+        
+        {# Mobile: cards verticais #}
+        <div class="md:hidden space-y-3">
+          {% for r in aprovadas %}
+            <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-green-600">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex-1">
+                  <div class="text-xs text-slate-500">Dia {{ r.data|date:'d/m' }}</div>
+                  <div class="font-semibold">{{ r.get_tipo_display }}</div>
+                </div>
+                <div class="shrink-0">
+                  <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">Aprovada</span>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between"><span class="text-slate-500">Turno:</span><span>{{ r.get_turno_display }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Obs/Motivo:</span><span class="text-xs text-right">{{ r.observacao|default:'-' }}</span></div>
+              </div>
+              {% if request.user.username|lower == 'moises' %}
+              <div class="mt-3">
+                <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                  {% csrf_token %}
+                  <button class="w-full btn btn-danger text-xs px-2 py-2">Excluir</button>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="text-center text-slate-500 py-8 text-sm">Sem registros.</div>
+          {% endfor %}
+        </div>
+
+        {# Desktop: tabela #}
+        <div class="hidden md:block border rounded overflow-x-auto">
+          <table class="w-full table">
+            <thead>
+              <tr>
+                <th>Dia</th><th>Tipo</th><th>Turno</th><th>Obs/Motivo</th>
+                {% if request.user.username|lower == 'moises' %}<th style="width:120px">Ações</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in aprovadas %}
+              <tr>
+                <td class="p-2 border">{{ r.data|date:'d/m' }}</td>
+                <td class="p-2 border">{{ r.get_tipo_display }}</td>
+                <td class="p-2 border">{{ r.get_turno_display }}</td>
+                <td class="p-2 border text-xs text-slate-600">{{ r.observacao|default:'-' }}</td>
+                {% if request.user.username|lower == 'moises' %}
+                <td class="p-2 border text-center">
+                  <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                    {% csrf_token %}
+                    <button class="btn btn-danger text-xs px-2 py-1">Excluir</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% empty %}
+              <tr><td class="p-2 text-slate-500" colspan="{% if request.user.username|lower == 'moises' %}5{% else %}4{% endif %}">Sem registros.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="font-semibold mb-2 text-sm md:text-base">Aprovadas (supervisão)</div>
+        
+        {# Mobile: cards verticais #}
+        <div class="md:hidden space-y-3">
+          {% for r in aprovadas_supervisao %}
+            <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-emerald-600">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex-1">
+                  <div class="text-xs text-slate-500">Dia {{ r.data|date:'d/m' }}</div>
+                  <div class="font-semibold text-sm">{% with pf=r.solicitante.perfil %}{{ pf.matricula|default:r.solicitante.username }} - {{ r.solicitante.get_full_name|default:r.solicitante.username }}{% endwith %}</div>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between"><span class="text-slate-500">Tipo:</span><span>{{ r.get_tipo_display }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Turno:</span><span>{{ r.get_turno_display }}</span></div>
+              </div>
+              <div class="mt-3 flex flex-col gap-2">
+                <form method="post" action="{% url 'core:dispensas_cancelar' r.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="w-full btn btn-outline text-xs px-2 py-2" onclick="return confirm('Cancelar esta dispensa aprovada?');">Cancelar</button>
+                </form>
+                {% if request.user.username|lower == 'moises' %}
+                <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                  {% csrf_token %}
+                  <button class="w-full btn btn-danger text-xs px-2 py-2">Excluir</button>
+                </form>
+                {% endif %}
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-center text-slate-500 py-8 text-sm">Sem registros.</div>
+          {% endfor %}
+        </div>
+
+        {# Desktop: tabela #}
+        <div class="hidden md:block border rounded overflow-x-auto">
+          <table class="w-full table">
+            <thead><tr><th>Dia</th><th>Agente</th><th>Tipo</th><th>Turno</th><th style="width:120px">Ações</th></tr></thead>
+            <tbody>
+              {% for r in aprovadas_supervisao %}
+              <tr>
+                <td class="p-2 border">{{ r.data|date:'d/m' }}</td>
+                <td class="p-2 border">{% with pf=r.solicitante.perfil %}{{ pf.matricula|default:r.solicitante.username }} - {{ r.solicitante.get_full_name|default:r.solicitante.username }}{% endwith %}</td>
+                <td class="p-2 border">{{ r.get_tipo_display }}</td>
+                <td class="p-2 border">{{ r.get_turno_display }}</td>
+                <td class="p-2 border text-center whitespace-nowrap">
+                  <form method="post" action="{% url 'core:dispensas_cancelar' r.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline text-xs px-2 py-1" onclick="return confirm('Cancelar esta dispensa aprovada?');">Cancelar</button>
+                  </form>
+                  {% if request.user.username|lower == 'moises' %}
+                  <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" class="inline" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                    {% csrf_token %}
+                    <button class="btn btn-danger text-xs px-2 py-1 ml-1">Excluir</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td class="p-2 text-slate-500" colspan="5">Sem registros.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="font-semibold mb-2 text-sm md:text-base">Recusadas</div>
+        
+        {# Mobile: cards verticais #}
+        <div class="md:hidden space-y-3">
+          {% for r in recusadas %}
+            <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-red-600">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex-1">
+                  <div class="text-xs text-slate-500">Dia {{ r.data|date:'d/m' }}</div>
+                  <div class="font-semibold">{{ r.get_tipo_display }}</div>
+                </div>
+                <div class="shrink-0">
+                  <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-800">Recusada</span>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between"><span class="text-slate-500">Turno:</span><span>{{ r.get_turno_display }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Motivo:</span><span class="text-xs text-right">{{ r.mensagem_recusa|default:'-' }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Obs:</span><span class="text-xs text-right">{{ r.observacao|default:'-' }}</span></div>
+              </div>
+              {% if request.user.username|lower == 'moises' %}
+              <div class="mt-3">
+                <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                  {% csrf_token %}
+                  <button class="w-full btn btn-danger text-xs px-2 py-2">Excluir</button>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="text-center text-slate-500 py-8 text-sm">Sem registros.</div>
+          {% endfor %}
+        </div>
+
+        {# Desktop: tabela #}
+        <div class="hidden md:block border rounded overflow-x-auto">
+          <table class="w-full table">
+            <thead>
+              <tr>
+                <th>Dia</th><th>Tipo</th><th>Turno</th><th>Motivo</th><th>Obs</th>
+                {% if request.user.username|lower == 'moises' %}<th style="width:120px">Ações</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recusadas %}
+              <tr>
+                <td class="p-2 border">{{ r.data|date:'d/m' }}</td>
+                <td class="p-2 border">{{ r.get_tipo_display }}</td>
+                <td class="p-2 border">{{ r.get_turno_display }}</td>
+                <td class="p-2 border">{{ r.mensagem_recusa|default:'-' }}</td>
+                <td class="p-2 border text-xs text-slate-600">{{ r.observacao|default:'-' }}</td>
+                {% if request.user.username|lower == 'moises' %}
+                <td class="p-2 border text-center">
+                  <form method="post" action="{% url 'core:dispensas_excluir' r.id %}" onsubmit="return confirm('Excluir esta solicitação definitivamente?');">
+                    {% csrf_token %}
+                    <button class="btn btn-danger text-xs px-2 py-1">Excluir</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% empty %}
+              <tr><td class="p-2 text-slate-500" colspan="{% if request.user.username|lower == 'moises' %}6{% else %}5{% endif %}">Sem registros.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function navMes(delta){
+  const url = new URL(window.location);
+  let ano = parseInt(url.searchParams.get('ano')||'{{ ano }}');
+  let mes = parseInt(url.searchParams.get('mes')||'{{ mes }}');
+  mes += delta;
+  if(mes<1){ mes=12; ano-=1; }
+  if(mes>12){ mes=1; ano+=1; }
+  url.searchParams.set('ano', String(ano));
+  url.searchParams.set('mes', String(mes));
+  history.replaceState({}, '', url);
+  window.location = url.href;
+  return false;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,316 @@
+{% extends "_layout/base.html" %}
+{% block title %}CECOM - Despachos Arquivados{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+  
+  <!-- Cabeçalho responsivo -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">📁</span>
+      <h1 class="text-2xl font-bold">Despachos Arquivados</h1>
+    </div>
+    <!-- Toolbar mobile: dois botões lado a lado -->
+    <div class="grid grid-cols-2 gap-2 w-full md:w-auto md:flex md:grid-cols-1">
+      <a href="{% url 'cecom:painel' %}" 
+         class="px-3 py-2 border rounded bg-white text-slate-700 hover:bg-slate-50 text-center shadow-sm">
+        ← Painel CECOM
+      </a>
+      <a href="{% url 'cecom:despachos' %}" 
+         class="px-3 py-2 border rounded bg-white text-slate-700 hover:bg-slate-50 text-center shadow-sm">
+        📡 Despachos Ativos
+      </a>
+      {% if request.user.username == "moises" and page_obj.paginator.count > 0 %}
+        <button onclick="confirmarExclusaoTodos()" 
+                class="px-3 py-2 border rounded bg-red-600 text-white hover:bg-red-700 text-center shadow-sm">
+          🗑️ Excluir Todos
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white border rounded-lg p-4">
+    <form method="get" class="flex gap-4 items-end flex-wrap">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Status Final</label>
+        <select name="status" class="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+          <option value="">Todos</option>
+          <option value="FINALIZADO" {% if status_filtro == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+          <option value="CANCELADO" {% if status_filtro == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+          <option value="RECUSADO" {% if status_filtro == 'RECUSADO' %}selected{% endif %}>Recusado</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Período</label>
+        <select name="periodo" class="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500">
+          <option value="">Todos</option>
+          <option value="hoje" {% if periodo_filtro == 'hoje' %}selected{% endif %}>Hoje</option>
+          <option value="semana" {% if periodo_filtro == 'semana' %}selected{% endif %}>Esta Semana</option>
+          <option value="mes" {% if periodo_filtro == 'mes' %}selected{% endif %}>Este Mês</option>
+        </select>
+      </div>
+      <button type="submit" class="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700">
+        Filtrar
+      </button>
+      {% if status_filtro or periodo_filtro %}
+        <a href="{% url 'cecom:despachos_arquivados' %}" 
+           class="px-4 py-2 border rounded hover:bg-slate-50">
+          Limpar Filtros
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Estatísticas -->
+  {% if page_obj %}
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white border rounded-lg p-4">
+      <h3 class="text-sm font-medium text-slate-600">Total de Registros</h3>
+      <p class="text-2xl font-bold text-slate-800">{{ page_obj.paginator.count }}</p>
+    </div>
+    <div class="bg-white border rounded-lg p-4">
+      <h3 class="text-sm font-medium text-slate-600">Finalizados</h3>
+      <p class="text-2xl font-bold text-green-600">
+        {{ page_obj.object_list|length }}
+      </p>
+    </div>
+    <div class="bg-white border rounded-lg p-4">
+      <h3 class="text-sm font-medium text-slate-600">Página Atual</h3>
+      <p class="text-2xl font-bold text-blue-600">{{ page_obj.number }}</p>
+    </div>
+    <div class="bg-white border rounded-lg p-4">
+      <h3 class="text-sm font-medium text-slate-600">Total de Páginas</h3>
+      <p class="text-2xl font-bold text-purple-600">{{ page_obj.paginator.num_pages }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Lista de Despachos Arquivados -->
+  <div class="bg-white border rounded-lg">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold">Histórico de Despachos</h2>
+      {% if page_obj %}
+        <p class="text-sm text-slate-600">
+          Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+        </p>
+      {% endif %}
+    </div>
+
+    {# Mobile: cards empilhados #}
+    <div class="md:hidden p-3 space-y-3">
+      {% for despacho in page_obj %}
+        <div class="border rounded-xl bg-white p-3 shadow-sm">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-xs text-slate-500">#</div>
+              <div class="mt-1 font-semibold">#{{ despacho.pk }} · VTR {{ despacho.viatura.prefixo }}</div>
+            </div>
+            <div class="shrink-0 flex items-center gap-2">
+              {% if despacho.status == 'FINALIZADO' %}
+                <span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-medium">✅ {{ despacho.get_status_display }}</span>
+              {% elif despacho.status == 'CANCELADO' %}
+                <span class="px-2 py-1 rounded bg-red-100 text-red-800 text-xs font-medium">❌ {{ despacho.get_status_display }}</span>
+              {% elif despacho.status == 'RECUSADO' %}
+                <span class="px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-medium">🚫 {{ despacho.get_status_display }}</span>
+              {% else %}
+                <span class="px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+              {% endif %}
+              {% if request.user.username == "moises" %}
+                <button onclick="confirmarExclusao({{ despacho.pk }})" 
+                        class="px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 text-xs" 
+                        title="Excluir despacho">
+                  🗑️
+                </button>
+              {% endif %}
+            </div>
+          </div>
+          <div class="mt-2 space-y-1 text-sm">
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Ocorrência</span><span class="text-right max-w-[60%] break-words">{% if despacho.cod_natureza %}{{ despacho.cod_natureza }}{% if despacho.natureza %} — {{ despacho.natureza|truncatechars:60 }}{% endif %}{% else %}-{% endif %}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Endereço</span><span class="text-right max-w-[60%] break-words">{{ despacho.endereco|default:'-' }}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Solicitante</span>
+              <span class="text-right max-w-[60%] break-words">
+                {% if despacho.nome_solicitante %}{{ despacho.nome_solicitante }}{% else %}-{% endif %}
+                {% if despacho.telefone_solicitante %}<span class="block text-[11px] text-slate-500">📞 {{ despacho.telefone_solicitante }}</span>{% endif %}
+              </span>
+            </div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Despachado</span><span class="text-right max-w-[60%] break-words">{{ despacho.despachado_em|date:"d/m H:i" }}<span class="block text-[11px] text-slate-500">por {{ despacho.despachado_por.get_full_name|default:despacho.despachado_por.username }}</span></span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Respondido</span><span class="text-right max-w-[60%] break-words">{% if despacho.respondido_em %}{{ despacho.respondido_em|date:"d/m H:i" }}{% else %}-{% endif %}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Arquivado</span><span class="text-right max-w-[60%] break-words">{% if despacho.arquivado_em %}{{ despacho.arquivado_em|date:"d/m H:i" }}{% else %}-{% endif %}</span></div>
+            {% if despacho.observacoes_encarregado or despacho.observacoes %}
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Observações</span>
+              <span class="text-right max-w-[60%] break-words text-xs">
+                {% if despacho.observacoes_encarregado %}<div><strong>Enc.:</strong> {{ despacho.observacoes_encarregado }}</div>{% endif %}
+                {% if despacho.observacoes %}<div><strong>CECOM:</strong> {{ despacho.observacoes }}</div>{% endif %}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-slate-500">
+          {% if status_filtro or periodo_filtro %}
+            Nenhum despacho arquivado encontrado com os filtros aplicados.
+          {% else %}
+            Nenhum despacho arquivado encontrado.
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    {# Desktop: tabela #}
+    <div class="hidden md:block overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b text-xs uppercase tracking-wide">
+          <tr>
+            <th class="p-2 text-left border-r last:border-r-0">#</th>
+            <th class="p-2 text-left border-r last:border-r-0">Viatura</th>
+            <th class="p-2 text-left border-r last:border-r-0">Ocorrência</th>
+            <th class="p-2 text-left border-r last:border-r-0">Status Final</th>
+            <th class="p-2 text-left border-r last:border-r-0">Endereço</th>
+            <th class="p-2 text-left border-r last:border-r-0">Solicitante</th>
+            <th class="p-2 text-left border-r last:border-r-0">Despachado</th>
+            <th class="p-2 text-left border-r last:border-r-0">Respondido</th>
+            <th class="p-2 text-left border-r last:border-r-0">Arquivado</th>
+            <th class="p-2 text-left border-r last:border-r-0">Observações</th>
+            {% if request.user.username == "moises" %}
+              <th class="p-2 text-center border-r last:border-r-0">Ações</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody class="align-top">
+          {% for despacho in page_obj %}
+            <tr class="border-b hover:bg-slate-50">
+              <td class="p-2 border-r last:border-r-0 font-medium">#{{ despacho.pk }}</td>
+              <td class="p-2 border-r last:border-r-0">{{ despacho.viatura.prefixo }}</td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.cod_natureza %}
+                  <span class="font-mono text-xs">{{ despacho.cod_natureza }}</span>
+                  {% if despacho.natureza %}<br><span class="text-xs text-slate-600">{{ despacho.natureza|truncatechars:40 }}</span>{% endif %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.status == 'FINALIZADO' %}
+                  <span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-medium">✅ {{ despacho.get_status_display }}</span>
+                {% elif despacho.status == 'CANCELADO' %}
+                  <span class="px-2 py-1 rounded bg-red-100 text-red-800 text-xs font-medium">❌ {{ despacho.get_status_display }}</span>
+                {% elif despacho.status == 'RECUSADO' %}
+                  <span class="px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-medium">🚫 {{ despacho.get_status_display }}</span>
+                {% else %}
+                  <span class="px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs font-medium">{{ despacho.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">{{ despacho.endereco|truncatechars:40 }}</td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.nome_solicitante %}
+                  {{ despacho.nome_solicitante }}
+                  {% if despacho.telefone_solicitante %}
+                    <br><span class="text-xs text-slate-600">📞 {{ despacho.telefone_solicitante }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-slate-500">-</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {{ despacho.despachado_em|date:"d/m H:i" }}
+                <br><span class="text-xs text-slate-600">por {{ despacho.despachado_por.get_full_name|default:despacho.despachado_por.username }}</span>
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.respondido_em %}
+                  {{ despacho.respondido_em|date:"d/m H:i" }}
+                  {% if despacho.respondido_por %}
+                    <br><span class="text-xs text-slate-600">por {{ despacho.respondido_por.get_full_name|default:despacho.respondido_por.username }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-slate-500">-</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.arquivado_em %}
+                  {{ despacho.arquivado_em|date:"d/m H:i" }}
+                {% else %}
+                  <span class="text-slate-500">-</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if despacho.observacoes_encarregado or despacho.observacoes %}
+                  <div class="max-w-xs">
+                    {% if despacho.observacoes_encarregado %}
+                      <div class="text-xs mb-1">
+                        <strong>Encarregado:</strong> {{ despacho.observacoes_encarregado|truncatechars:50 }}
+                      </div>
+                    {% endif %}
+                    {% if despacho.observacoes %}
+                      <div class="text-xs">
+                        <strong>CECOM:</strong> {{ despacho.observacoes|truncatechars:50 }}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% else %}
+                  <span class="text-slate-500">-</span>
+                {% endif %}
+              </td>
+              {% if request.user.username == "moises" %}
+                <td class="p-2 border-r last:border-r-0 text-center">
+                  <button onclick="confirmarExclusao({{ despacho.pk }})" 
+                          class="px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 text-xs" 
+                          title="Excluir despacho">
+                    🗑️ Excluir
+                  </button>
+                </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="p-6 text-center text-slate-500">
+                {% if status_filtro or periodo_filtro %}
+                  Nenhum despacho arquivado encontrado com os filtros aplicados.
+                {% else %}
+                  Nenhum despacho arquivado encontrado.
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj %}
+      {% with extra_query='' %}
+        {% if status_filtro or periodo_filtro %}
+          {% firstof extra_query '' %}
+        {% endif %}
+      {% endwith %}
+      {% include '_partials/pagination.html' with page_obj=page_obj %}
+    {% endif %}
+  </div>
+
+</div>
+
+{% if request.user.username == "moises" %}
+<!-- Formulários de Exclusão (hidden) -->
+<form id="formExcluirTodos" method="post" action="{% url 'cecom:despachos_excluir_todos' %}" style="display:none;">
+  {% csrf_token %}
+</form>
+
+<form id="formExcluirSingle" method="post" action="" style="display:none;">
+  {% csrf_token %}
+</form>
+
+<script>
+function confirmarExclusaoTodos() {
+  if (confirm('⚠️ ATENÇÃO: Você está prestes a EXCLUIR TODOS os {{ page_obj.paginator.count }} despachos arquivados!\n\nEsta ação NÃO pode ser desfeita.\n\nDeseja realmente continuar?')) {
+    document.getElementById('formExcluirTodos').submit();
+  }
+}
+
+function confirmarExclusao(pk) {
+  if (confirm('Deseja realmente excluir o despacho #' + pk + '?\n\nEsta ação não pode ser desfeita.')) {
+    const form = document.getElementById('formExcluirSingle');
+    form.action = "{% url 'cecom:despachos_excluir_single' pk=0 %}".replace('/0/', '/' + pk + '/');
+    form.submit();
+  }
+}
+</script>
+{% endif %}
+{% endblock %}

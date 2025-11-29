@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-xl font-bold mb-4">Adicionar Anexo à Apreensão</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white font-bold">Salvar</button>
+    <a href="{% url 'bogcmi:apreensao_lista' %}" class="px-4 py-2 rounded bg-gray-400 text-white font-bold">Cancelar</a>
+</form>
+{% endblock %}

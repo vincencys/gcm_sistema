@@ -1,0 +1,279 @@
+{% extends "_layout/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+      <h1 class="text-xl font-bold text-slate-800">Mural Eletrônico</h1>
+    </div>
+  </div>
+
+<!-- Últimas Escalas -->
+{% load core_extras %}
+{% load cecom_extras %}
+<div class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+	<div class="px-4 py-3 border-b font-semibold flex items-center justify-between" style="background:#f1f5f9;">
+		<span class="text-sm text-slate-800">Últimas Escalas</span>
+		<a href="{% url 'core:escala_mensal' %}" class="text-indigo-600 hover:text-indigo-700 text-xs underline">Ver todas</a>
+	</div>
+	<div class="p-3 grid sm:grid-cols-2 gap-3">
+		{% for e in ultimas_escalas %}
+			<div class="border rounded p-2 flex gap-3 items-center">
+				<div class="w-24 h-16 bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+					{% if e.arquivo.url|is_image %}
+						<img src="{{ e.arquivo.url }}" alt="Escala {{ e.mes }}/{{ e.ano }}" class="max-w-full max-h-full object-contain"/>
+					{% elif e.arquivo.url|is_pdf %}
+						<span class="text-2xl" title="PDF">📄</span>
+					{% else %}
+						<span class="text-xs text-slate-500">Arquivo</span>
+					{% endif %}
+				</div>
+				<div class="min-w-0">
+					<div class="font-medium">{{ e.mes|mes_nome }} / {{ e.ano }}</div>
+					<div class="text-xs text-slate-500">Atualizado em {{ e.updated_at|date:"d/m/Y H:i" }}</div>
+					<div class="mt-2">
+						<a class="inline-flex items-center gap-1 px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-sm shadow-sm js-view-file" href="{{ e.arquivo.url }}" data-href="{{ e.arquivo.url }}" title="Abrir arquivo">
+							Abrir
+						</a>
+					</div>
+				</div>
+			</div>
+		{% empty %}
+			<div class="text-slate-500 text-sm">Ainda não há escalas enviadas.</div>
+		{% endfor %}
+	</div>
+	</div>
+
+<!-- Banco de Horas (minha linha) -->
+<div class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+	<div class="px-4 py-3 border-b font-semibold text-sm text-slate-800" style="background:#f1f5f9;">Banco de Horas</div>
+	<div class="overflow-x-auto">
+		<table class="min-w-full text-sm border-separate border-spacing-0">
+			<thead class="bg-slate-50">
+				<tr class="text-left">
+					<th class="p-2 border-r">Nome</th>
+					<th class="p-2 border-r">Matrícula</th>
+					<th class="p-2 border-r">Horas Positivas</th>
+					<th class="p-2">Horas Devidas</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr class="align-middle">
+					<td class="p-2 border-t border-r">{{ banco_user.nome }}</td>
+					<td class="p-2 border-t border-r">{{ banco_user.matricula|default:"-" }}</td>
+					<td class="p-2 border-t border-r text-emerald-700">{{ banco_user.positivas }}</td>
+					<td class="p-2 border-t text-rose-700">{{ banco_user.devidas }}</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<!-- Viaturas Ativas -->
+<div class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+	<div class="px-4 py-3 border-b font-semibold text-sm text-slate-800" style="background:#f1f5f9;">Viaturas Ativas</div>
+    
+	{# Mobile: cards verticais #}
+		<div class="md:hidden p-3 space-y-3">
+		{% for t in taloes_abertos %}
+			<div class="border rounded-xl bg-white p-3 shadow-sm">
+				<div class="flex items-start justify-between gap-2">
+					<div class="min-w-0">
+						<div class="text-xs text-slate-500">Talão <b>#{{ t.talao_numero|default:forloop.counter }}</b></div>
+						<div class="mt-1 font-semibold">VTR {{ t.viatura.prefixo|default:"-" }}</div>
+					</div>
+					<div>
+						{% with s=t.status %}
+							{% if s == 'FECHADO' %}
+								<span class="px-2 py-1 rounded border border-rose-600 bg-rose-50 text-rose-700 text-xs font-semibold">{{ s }}</span>
+							{% elif s == 'ABERTO' %}
+								<span class="px-2 py-1 rounded border border-emerald-600 bg-emerald-50 text-emerald-700 text-xs font-semibold">{{ s }}</span>
+							{% else %}
+								<span class="px-2 py-1 rounded border border-slate-400 bg-slate-50 text-slate-700 text-xs font-semibold">{{ s }}</span>
+							{% endif %}
+						{% endwith %}
+					</div>
+				</div>
+
+				<div class="mt-2 space-y-1 text-sm">
+					<div class="flex justify-between"><span class="text-slate-500">Iniciado</span><span>{% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</span></div>
+					<div class="flex justify-between gap-3"><span class="text-slate-500">Ocorrência</span><span class="text-right max-w-[60%] break-words">{{ t.codigo_ocorrencia|default:"-" }}</span></div>
+					<div class="flex justify-between gap-3"><span class="text-slate-500">Nº BOGCM</span><span class="text-right truncate max-w-[60%]">{% with bo=t.bos.last %}{% if bo and bo.numero %}{{ bo.numero }}{% elif bo %}#{{ bo.pk }}{% else %}-{% endif %}{% endwith %}</span></div>
+					<div class="flex justify-between gap-3"><span class="text-slate-500">Local</span><span class="text-right max-w-[60%] break-words">{{ t.local_display }}</span></div>
+					<div class="flex justify-between gap-3 text-xs">
+						<span class="text-slate-500">Equipe / Integrantes</span>
+						<span class="text-right max-w-[60%] break-words">
+							{% with enc=t.encarregado mot=t.motorista a1=t.auxiliar1 a2=t.auxiliar2 bo=t.bos.last integ=integrantes_map|dict_get:t.viatura_id %}
+								{% if plantao_equipe %}<span class="text-slate-600">Equipe {{ plantao_equipe }} — </span>{% endif %}
+								{% if integ %}
+									{{ integ }}
+								{% elif enc or mot or a1 or a2 %}
+									{% if enc %}<span><strong>Enc:</strong> {{ enc.get_full_name|default:enc.username }}</span>{% endif %}
+									{% if mot %}<span class="ml-1"><strong>Mot:</strong> {{ mot.get_full_name|default:mot.username }}</span>{% endif %}
+									{% if a1 %}<span class="ml-1"><strong>A1:</strong> {{ a1.get_full_name|default:a1.username }}</span>{% endif %}
+									{% if a2 %}<span class="ml-1"><strong>A2:</strong> {{ a2.get_full_name|default:a2.username }}</span>{% endif %}
+								{% elif t.equipe_texto %}
+									{{ t.equipe_texto }}
+								{% elif bo %}
+									{% if bo.encarregado %}<span><strong>Enc:</strong> {{ bo.encarregado.get_full_name|default:bo.encarregado.username }}</span>{% endif %}
+									{% if bo.motorista %}<span class="ml-1"><strong>Mot:</strong> {{ bo.motorista.get_full_name|default:bo.motorista.username }}</span>{% endif %}
+									{% if bo.auxiliar1 %}<span class="ml-1"><strong>A1:</strong> {{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}</span>{% endif %}
+									{% if bo.auxiliar2 %}<span class="ml-1"><strong>A2:</strong> {{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}</span>{% endif %}
+								{% else %}-{% endif %}
+							{% endwith %}
+						</span>
+					</div>
+				</div>
+			</div>
+		{% empty %}
+			<div class="text-center text-slate-500">Sem viaturas ativas.</div>
+		{% endfor %}
+	</div>
+
+	{# Desktop: tabela atual #}
+	<div class="hidden md:block overflow-x-auto">
+		<table class="min-w-full text-sm">
+			<thead class="bg-slate-50">
+				<tr class="text-left">
+					<th class="p-2 border">#</th>
+					<th class="p-2 border">Viatura</th>
+					<th class="p-2 border">Status</th>
+					<th class="p-2 border">Iniciado</th>
+					<th class="p-2 border">Ocorrência</th>
+					<th class="p-2 border">Nº BOGCM</th>
+					<th class="p-2 border">Local</th>
+					<th class="p-2 border">Equipe / Integrantes</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for t in taloes_abertos %}
+					<tr class="align-middle">
+						<td class="p-2 border">#{{ t.talao_numero|default:forloop.counter }}</td>
+						<td class="p-2 border">{{ t.viatura.prefixo|default:"-" }}</td>
+						<td class="p-2 border">
+							{% with s=t.status %}
+								{% if s == 'FECHADO' %}
+									<span class="px-2 py-0.5 rounded border border-rose-600 bg-rose-50 text-rose-700 text-xs font-semibold">{{ s }}</span>
+								{% elif s == 'ABERTO' %}
+									<span class="px-2 py-0.5 rounded border border-emerald-600 bg-emerald-50 text-emerald-700 text-xs font-semibold">{{ s }}</span>
+								{% else %}
+									<span class="px-2 py-0.5 rounded border border-slate-400 bg-slate-50 text-slate-700 text-xs font-semibold">{{ s }}</span>
+								{% endif %}
+							{% endwith %}
+						</td>
+						<td class="p-2 border">{% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</td>
+						<td class="p-2 border">{{ t.codigo_ocorrencia|default:"-" }}</td>
+						<td class="p-2 border">
+							{% with bo=t.bos.last %}
+								{% if bo and bo.numero %}
+									{{ bo.numero }}
+								{% elif bo %}
+									#{{ bo.pk }}
+								{% else %}-{% endif %}
+							{% endwith %}
+						</td>
+						<td class="p-2 border">{{ t.local_display }}</td>
+						<td class="p-2 border text-xs">
+							{% with enc=t.encarregado mot=t.motorista a1=t.auxiliar1 a2=t.auxiliar2 bo=t.bos.last integ=integrantes_map|dict_get:t.viatura_id %}
+								{% if plantao_equipe %}<div class="text-slate-700 mb-0.5"><span class="inline-block px-2 py-0.5 bg-slate-100 rounded">Equipe {{ plantao_equipe }}</span></div>{% endif %}
+								{% if integ %}
+									<div>{{ integ }}</div>
+								{% elif enc or mot or a1 or a2 %}
+									<div class="space-x-2">
+										{% if enc %}<span>Enc: <strong>{{ enc.get_full_name|default:enc.username }}</strong></span>{% endif %}
+										{% if mot %}<span>Mot: <strong>{{ mot.get_full_name|default:mot.username }}</strong></span>{% endif %}
+										{% if a1 %}<span>A1: <strong>{{ a1.get_full_name|default:a1.username }}</strong></span>{% endif %}
+										{% if a2 %}<span>A2: <strong>{{ a2.get_full_name|default:a2.username }}</strong></span>{% endif %}
+									</div>
+								{% elif t.equipe_texto %}
+									<div>{{ t.equipe_texto }}</div>
+								{% elif bo %}
+									<div class="space-x-2">
+										{% if bo.encarregado %}<span>Enc: <strong>{{ bo.encarregado.get_full_name|default:bo.encarregado.username }}</strong></span>{% endif %}
+										{% if bo.motorista %}<span>Mot: <strong>{{ bo.motorista.get_full_name|default:bo.motorista.username }}</strong></span>{% endif %}
+										{% if bo.auxiliar1 %}<span>A1: <strong>{{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}</strong></span>{% endif %}
+										{% if bo.auxiliar2 %}<span>A2: <strong>{{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}</strong></span>{% endif %}
+									</div>
+								{% else %}-{% endif %}
+							{% endwith %}
+						</td>
+					</tr>
+				{% empty %}
+					<tr><td colspan="8" class="p-3 text-center text-slate-500">Sem viaturas ativas.</td></tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<!-- Ordens de Serviço -->
+<div class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+	<div class="px-4 py-3 border-b font-semibold flex items-center justify-between text-sm text-slate-800" style="background:#f1f5f9;">
+		<span>Últimas Ordens de Serviço</span>
+		<a href="{% url 'core:ordem_servico' %}" class="text-indigo-600 hover:text-indigo-700 text-xs underline">Ver todas</a>
+	</div>
+	<div class="p-3 grid sm:grid-cols-2 gap-3">
+		{% for os in ultimas_os %}
+			<div class="border rounded p-2 flex gap-3 items-center">
+				<div class="w-24 h-16 bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+					{% if os.arquivo.url|is_image %}
+						<img src="{{ os.arquivo.url }}" alt="OS {{ os.mes }}/{{ os.ano }}" class="max-w-full max-h-full object-contain"/>
+					{% elif os.arquivo.url|is_pdf %}
+						<span class="text-2xl" title="PDF">📄</span>
+					{% else %}
+						<span class="text-xs text-slate-500">Arquivo</span>
+					{% endif %}
+				</div>
+				<div class="min-w-0">
+					<div class="font-medium">{{ os.mes|mes_nome }} / {{ os.ano }}</div>
+					<div class="text-xs text-slate-500">Atualizado em {{ os.updated_at|date:"d/m/Y H:i" }}</div>
+					<div class="mt-2">
+						<a class="inline-flex items-center gap-1 px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-sm shadow-sm js-view-file" href="{{ os.arquivo.url }}" data-href="{{ os.arquivo.url }}" title="Abrir arquivo">
+							Abrir
+						</a>
+					</div>
+				</div>
+			</div>
+		{% empty %}
+			<div class="text-slate-500 text-sm">Sem anexos de Ordens de Serviço.</div>
+		{% endfor %}
+	</div>
+</div>
+<!-- Audiências -->
+<div class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+	<div class="px-4 py-3 border-b font-semibold flex items-center justify-between text-sm text-slate-800" style="background:#f1f5f9;">
+		<span>Audiências</span>
+		<a href="{% url 'core:audiencias' %}" class="text-indigo-600 hover:text-indigo-700 text-xs underline">Ver</a>
+	</div>
+	<div class="p-3">
+		{% if audiencia_doc %}
+			<div class="flex items-center gap-3">
+				<div class="w-24 h-16 bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+					{% if audiencia_doc.arquivo.url|is_image %}
+						<img src="{{ audiencia_doc.arquivo.url }}" alt="Audiências" class="max-w-full max-h-full object-contain"/>
+					{% elif audiencia_doc.arquivo.url|is_pdf %}
+						<span class="text-2xl" title="PDF">📄</span>
+					{% else %}
+						<span class="text-xs text-slate-500">Arquivo</span>
+					{% endif %}
+				</div>
+				<div>
+					<div class="font-medium">Audiências</div>
+					<div class="text-xs text-slate-500">Atualizado em {{ audiencia_doc.updated_at|date:"d/m/Y H:i" }}</div>
+					<div class="mt-2">
+						<a class="inline-flex items-center gap-1 px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-sm shadow-sm js-view-file" href="{{ audiencia_doc.arquivo.url }}" data-href="{{ audiencia_doc.arquivo.url }}" title="Abrir arquivo">
+							Abrir
+						</a>
+					</div>
+				</div>
+			</div>
+		{% else %}
+			<div class="text-slate-500 text-sm">Nenhum arquivo de audiências enviado.</div>
+		{% endif %}
+	</div>
+</div>
+</div>
+{% endblock %}
+

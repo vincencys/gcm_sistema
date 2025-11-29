@@ -1,0 +1,38 @@
+
+{% extends "_layout/base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Meus Talões{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-3">
+  <h1 class="text-2xl font-semibold">Meus Talões</h1>
+  <a class="btn btn-primary" href="{% url 'taloes:novo' %}">Abrir viatura</a>
+</div>
+<form method="get" class="grid md:grid-cols-4 gap-3 mb-4">
+  {{ filter.form|crispy }}
+  <div class="col-span-4">
+    <button class="btn btn-primary">Filtrar</button>
+    <a href="." class="btn">Limpar</a>
+  </div>
+</form>
+<div class="bg-white rounded-lg border overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead><tr class="bg-gray-50">
+      <th class="px-3 py-2">Viatura</th><th class="px-3 py-2">Equipe</th><th class="px-3 py-2">Turno</th>
+      <th class="px-3 py-2">Início</th><th class="px-3 py-2">Status</th><th class="px-3 py-2"></th>
+    </tr></thead>
+    <tbody>
+      {% for t in page %}
+        <tr class="border-t">
+          <td class="px-3 py-2">{{ t.viatura.prefixo }}</td>
+          <td class="px-3 py-2 text-center">{{ t.equipe }}</td>
+          <td class="px-3 py-2 text-center">{{ t.turno }}</td>
+          <td class="px-3 py-2">{{ t.inicio|date:"d/m/Y H:i" }}</td>
+          <td class="px-3 py-2">{{ t.status }}</td>
+          <td class="px-3 py-2 text-right"><a class="link" href="{% url 'taloes:detalhe' t.id %}">Abrir</a></td>
+        </tr>
+      {% empty %}<tr><td class="px-3 py-4" colspan="6">Nada por aqui.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+

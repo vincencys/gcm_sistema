@@ -1,0 +1,16 @@
+<div class="grid-2">
+  {% for item in itens %}
+    {% with r=respostas|get_item:item.id %}
+    <div class="card checklist-item">
+      <label class="ck">
+        <input type="checkbox" name="item_{{ item.id }}_ok" {% if r %}{% if r.ok %}checked{% endif %}{% else %}checked{% endif %}>
+        <span>{{ item.nome }}</span>
+      </label>
+      <input type="text" name="item_{{ item.id }}_obs" placeholder="Observação (opcional)" value="{% if r %}{{ r.observacao }}{% endif %}">
+    </div>
+    {% endwith %}
+  {% empty %}
+    <p class="muted">Nenhum item de checklist cadastrado ainda.</p>
+  {% endfor %}
+</div>
+

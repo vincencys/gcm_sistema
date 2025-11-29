@@ -1,0 +1,127 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-2xl font-semibold mb-6">Adicionar Assistida</h1>
+  <div class="bg-white shadow rounded-lg p-6">
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      
+      <div>
+        <label class="block font-semibold mb-1">{{ form.nome.label }}</label>
+        {{ form.nome }}
+        {% if form.nome.errors %}<p class="text-red-600 text-sm">{{ form.nome.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block font-semibold mb-1">{{ form.cpf.label }}</label>
+          {{ form.cpf }}
+          {% if form.cpf.errors %}<p class="text-red-600 text-sm">{{ form.cpf.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">{{ form.telefone.label }}</label>
+          {{ form.telefone }}
+          {% if form.telefone.errors %}<p class="text-red-600 text-sm">{{ form.telefone.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold mb-1">{{ form.processo_mp.label }}</label>
+        {{ form.processo_mp }}
+        {% if form.processo_mp.errors %}<p class="text-red-600 text-sm">{{ form.processo_mp.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="border-t pt-4 mt-4">
+        <h3 class="font-semibold text-lg mb-3">Endereço</h3>
+        
+        <div class="space-y-3">
+          <div>
+            <label class="block font-semibold mb-1">{{ form.rua.label }}</label>
+            {{ form.rua }}
+            {% if form.rua.errors %}<p class="text-red-600 text-sm">{{ form.rua.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block font-semibold mb-1">{{ form.numero.label }}</label>
+              {{ form.numero }}
+              {% if form.numero.errors %}<p class="text-red-600 text-sm">{{ form.numero.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">{{ form.bairro.label }}</label>
+              {{ form.bairro }}
+              {% if form.bairro.errors %}<p class="text-red-600 text-sm">{{ form.bairro.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-1">{{ form.referencia.label }}</label>
+            {{ form.referencia }}
+            {% if form.referencia.errors %}<p class="text-red-600 text-sm">{{ form.referencia.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <label class="block font-semibold mb-1">{{ form.documento_mp.label }}</label>
+        {{ form.documento_mp }}
+        {% if form.documento_mp.errors %}<p class="text-red-600 text-sm">{{ form.documento_mp.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="flex space-x-2 pt-4">
+        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Salvar e Aprovar</button>
+        <a href="{% url 'panic:assistidas_list' %}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Máscara para CPF
+document.querySelector('[data-mask="cpf"]')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    
+    if (value.length > 9) {
+        value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+    } else if (value.length > 6) {
+        value = value.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    } else if (value.length > 3) {
+        value = value.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+    }
+    e.target.value = value;
+});
+
+// Máscara para telefone
+document.querySelector('[data-mask="telefone"]')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    
+    if (value.length > 10) {
+        value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+    } else if (value.length > 6) {
+        value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+    } else if (value.length > 2) {
+        value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+    }
+    e.target.value = value;
+});
+
+// Máscara para processo (formato: 1500747-64.2025.8.26.0238)
+document.querySelector('[data-mask="processo"]')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 20) value = value.slice(0, 20);
+    
+    if (value.length > 14) {
+        value = value.replace(/(\d{7})(\d{2})(\d{4})(\d{1})(\d{2})(\d{0,4})/, '$1-$2.$3.$4.$5.$6');
+    } else if (value.length > 13) {
+        value = value.replace(/(\d{7})(\d{2})(\d{4})(\d{0,1})/, '$1-$2.$3.$4');
+    } else if (value.length > 9) {
+        value = value.replace(/(\d{7})(\d{2})(\d{0,4})/, '$1-$2.$3');
+    } else if (value.length > 7) {
+        value = value.replace(/(\d{7})(\d{0,2})/, '$1-$2');
+    }
+    e.target.value = value;
+});
+</script>
+{% endblock %}

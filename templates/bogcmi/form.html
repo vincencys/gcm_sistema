@@ -1,0 +1,13 @@
+{% extends '_layout/base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-3">{{ titulo }}</h1>
+<form method="post" class="bg-white p-4 rounded-lg border max-w-3xl">{% csrf_token %}
+  {{ form|crispy }}
+  <div class="flex items-center gap-2 mt-3">
+    <button class="px-3 py-2 bg-blue-600 text-white rounded">Salvar</button>
+    {% if bo %}<a class="px-3 py-2 bg-purple-600 text-white rounded" href="{% url 'bogcmi:finalizar' bo.pk %}">Finalizar</a>{% endif %}
+  </div>
+</form>
+{% endblock %}
+

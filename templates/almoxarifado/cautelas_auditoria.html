@@ -1,0 +1,56 @@
+{% extends "_layout/base.html" %}
+{% block title %}Auditoria · Cautela #{{ c.id }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  <div class="flex items-center justify-between mb-3">
+    <h1 class="text-2xl font-bold">Auditoria · Cautela #{{ c.id }}</h1>
+    <div class="flex gap-2">
+      <a class="btn" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Detalhe</a>
+      <a class="btn" href="{% url 'core:almoxarifado:cautelas_lista' %}">Lista</a>
+    </div>
+  </div>
+
+  <div class="bg-white border rounded-xl shadow-sm overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left">
+          <th class="p-2 border">#</th>
+          <th class="p-2 border">Data/Hora</th>
+          <th class="p-2 border">Evento</th>
+          <th class="p-2 border">Ator</th>
+          <th class="p-2 border">Mensagem</th>
+          <th class="p-2 border">Hash Prev</th>
+          <th class="p-2 border">Hash Atual</th>
+          <th class="p-2 border">OK</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in cadeia %}
+        {% with e=row.e %}
+        <tr class="align-top">
+          <td class="p-2 border">{{ forloop.counter }}</td>
+          <td class="p-2 border">{{ e.created_at|date:"d/m/Y H:i:s" }}</td>
+          <td class="p-2 border">{{ e.get_event_display }}</td>
+          <td class="p-2 border">{{ e.actor|default:"-" }}</td>
+          <td class="p-2 border">{{ e.message }}</td>
+          <td class="p-2 border font-mono text-xs">{{ e.hash_prev|default:"" }}</td>
+          <td class="p-2 border font-mono text-xs">{{ e.hash_current }}</td>
+          <td class="p-2 border">{% if row.encadeamento_ok %}<span class="text-green-700">✓</span>{% else %}<span class="text-red-700">✗</span>{% endif %}</td>
+        </tr>
+        <tr class="bg-slate-50">
+          <td class="p-2 border text-right text-slate-500" colspan="2">before</td>
+          <td class="p-2 border font-mono text-xs" colspan="6"><pre class="whitespace-pre-wrap">{{ e.before }}</pre></td>
+        </tr>
+        <tr>
+          <td class="p-2 border text-right text-slate-500" colspan="2">after</td>
+          <td class="p-2 border font-mono text-xs" colspan="6"><pre class="whitespace-pre-wrap">{{ e.after }}</pre></td>
+        </tr>
+        {% endwith %}
+      {% empty %}
+        <tr><td class="p-3 text-center text-slate-500" colspan="8">Sem eventos.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

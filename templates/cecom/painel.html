@@ -1,0 +1,895 @@
+{% extends "_layout/base.html" %}
+{% load static %}
+{% load cecom_extras %}
+{% block title %}CECOM - Painel de Controle{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+      <h1 class="text-xl font-bold text-slate-800">CECOM - Painel de Controle</h1>
+    </div>
+  </div>
+  
+  <div class="space-y-6">
+    
+    <!-- Status do Plantão -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      {% if plantao_cecom %}
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+              <span class="text-green-600 text-xl">📘</span>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-900">Plantão Ativo</p>
+              <p class="text-xs text-slate-500">Iniciado por {{ plantao_cecom.usuario.get_full_name|default:plantao_cecom.usuario.username }} em {{ plantao_cecom.inicio|date:"d/m H:i" }}</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <a href="{% url 'cecom:livro_cecom' plantao_cecom.pk %}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm">
+              <span>📘</span>
+              <span>Livro Eletrônico</span>
+            </a>
+            {% if pode_editar_global %}
+              <a href="{% url 'cecom:encerrar_plantao_cecom' plantao_cecom.pk %}" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm" onclick="return confirm('Preencheu o livro? Encerrar plantão CECOM agora?');">
+                Encerrar Plantão
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        {% if plantao_cecom_iniciar_form %}
+        <form id="form-iniciar-plantao" method="post" action="{% url 'cecom:iniciar_plantao_cecom' %}" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {% csrf_token %}
+          <div class="flex-1">{{ plantao_cecom_iniciar_form.aux_cecom }}</div>
+          <button class="inline-flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
+            Iniciar Plantão
+          </button>
+          <span id="erro-operador" class="hidden text-xs text-red-600 mt-1">Selecione o operador para iniciar.</span>
+        </form>
+        {% else %}
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center">
+              <span class="text-slate-600 text-xl">👁️</span>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-900">Plantão em andamento (visualização)</p>
+              {% if ativo_global %}
+                <p class="text-xs text-slate-500">Iniciado por {{ ativo_global.usuario.get_full_name|default:ativo_global.usuario.username }} em {{ ativo_global.inicio|date:"d/m H:i" }}</p>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="grid grid-cols-3 gap-4">
+        
+        <!-- Botão Áudio -->
+        {% if plantao_cecom or user.username|lower == 'moises' or user.username|lower == 'comandante' or user.username|lower == 'subcomandante' %}
+          <button onclick="toggleAudio()" class="group flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all">
+            <span id="audio-status" class="text-2xl">🔊</span>
+            <span id="audio-text" class="text-[11px] font-medium text-slate-700 group-hover:text-blue-700">Áudio Ligado</span>
+          </button>
+        {% else %}
+          <div class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed" title="Disponível apenas com plantão iniciado ou para moises, comandante e subcomandante">
+            <span id="audio-status" class="text-2xl">🔊</span>
+            <span class="text-[11px] font-medium text-slate-500">Áudio Bloqueado</span>
+          </div>
+        {% endif %}
+
+        <!-- Botão Pânico -->
+        {% if plantao_cecom or user.username|lower == 'moises' or user.username|lower == 'comandante' or user.username|lower == 'subcomandante' %}
+          <a href="{% url 'cecom:panico_list' %}" class="group relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-red-200 bg-red-50 hover:border-red-500 hover:bg-red-100 transition-all">
+            <span class="text-2xl">🚨</span>
+            <span class="text-[11px] font-medium text-red-700">Pânico</span>
+            {% if panico_abertos_count and panico_abertos_count > 0 %}
+              <span class="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full shadow-lg">{{ panico_abertos_count }}</span>
+            {% endif %}
+          </a>
+        {% else %}
+          <div class="relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed" title="Disponível apenas com plantão iniciado ou para moises, comandante e subcomandante">
+            <span class="text-2xl">🚨</span>
+            <span class="text-[11px] font-medium text-slate-500">Pânico</span>
+            {% if panico_abertos_count and panico_abertos_count > 0 %}
+              <span class="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full shadow-lg">{{ panico_abertos_count }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <!-- Botão Nova Ocorrência -->
+        {% if pode_criar_ocorrencia %}
+          <a href="{% url 'cecom:despachar' %}" class="group flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-blue-200 bg-blue-50 hover:border-blue-500 hover:bg-blue-100 transition-all">
+            <span class="text-2xl">📝</span>
+            <span class="text-[11px] font-medium text-blue-700">Nova Ocorrência</span>
+          </a>
+        {% else %}
+          <div class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed" title="Apenas o usuário que iniciou o plantão pode criar ocorrências">
+            <span class="text-2xl">📝</span>
+            <span class="text-[11px] font-medium text-slate-500">Nova Ocorrência</span>
+          </div>
+        {% endif %}
+
+        <!-- Botão Localização -->
+        {% if plantao_cecom and plantao_cecom.usuario_id == user.id or user.username|lower == 'moises' or user.username|lower == 'comandante' or user.username|lower == 'subcomandante' %}
+          <a href="{% url 'cecom:mapa_viaturas' %}" class="group flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-green-200 bg-green-50 hover:border-green-500 hover:bg-green-100 transition-all">
+            <span class="text-2xl">📍</span>
+            <span class="text-[11px] font-medium text-green-700">Localização VTR's</span>
+          </a>
+        {% else %}
+          <div class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed" title="Apenas quem iniciou o plantão ou moises/comandante/subcomandante podem acessar">
+            <span class="text-2xl">📍</span>
+            <span class="text-[11px] font-medium text-slate-500">Localização VTR's</span>
+          </div>
+        {% endif %}
+
+        <!-- Botão Despachos Ativos -->
+        {% if plantao_cecom or user.username|lower == 'moises' or user.username|lower == 'comandante' or user.username|lower == 'subcomandante' %}
+          <a href="{% url 'cecom:despachos' %}" class="group flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-orange-200 bg-orange-50 hover:border-orange-500 hover:bg-orange-100 transition-all">
+            <span class="text-2xl">📋</span>
+            <span class="text-[11px] font-medium text-orange-700">Despachos Ativos</span>
+          </a>
+        {% else %}
+          <div class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed" title="Disponível apenas com plantão iniciado ou para moises, comandante e subcomandante">
+            <span class="text-2xl">📋</span>
+            <span class="text-[11px] font-medium text-slate-500">Despachos Ativos</span>
+          </div>
+        {% endif %}
+
+        <!-- Botão Arquivados -->
+        <a href="{% url 'cecom:despachos_arquivados' %}" class="group flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-slate-300 bg-slate-100 hover:border-slate-500 hover:bg-slate-200 transition-all">
+          <span class="text-2xl">📁</span>
+          <span class="text-[11px] font-medium text-slate-700">Arquivados</span>
+        </a>
+
+      </div>
+    </div>
+
+
+    <!-- Status Geral -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <h3 class="text-sm font-medium text-slate-600">Talões Abertos</h3>
+      <p class="text-2xl font-bold text-green-600">{{ taloes_abertos_count }}</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <h3 class="text-sm font-medium text-slate-600">Despachos Pendentes</h3>
+      <p class="text-2xl font-bold text-orange-600">
+        {{ despachos_pendentes_count }}
+      </p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <h3 class="text-sm font-medium text-slate-600">Cancelados / Recusados</h3>
+      <p class="text-2xl font-bold text-red-600">{{ cancelados_recusados_count }}</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <h3 class="text-sm font-medium text-slate-600">Atualizado em</h3>
+      <p class="text-sm text-slate-700">{{ agora|date:"H:i:s" }}</p>
+      <button onclick="location.reload()" class="text-xs text-blue-600 hover:underline">
+        Atualizar
+      </button>
+    </div>
+  </div>
+  
+  <!-- Relatório do Livro -->
+  <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div>
+      <h2 class="text-lg font-semibold mb-1">Relatório do Livro</h2>
+      {% if plantao_cecom %}
+        {% if plantao_cecom.relatorio_pdf %}
+          <p class="text-sm text-green-700">Relatório consolidado gerado para o plantão atual.</p>
+        {% else %}
+          <p class="text-sm text-slate-600">Será gerado automaticamente ao encerrar o plantão em andamento.</p>
+        {% endif %}
+      {% else %}
+        <p class="text-sm text-slate-600">Inicie um plantão para gerar novo relatório. Os já emitidos continuam acessíveis.</p>
+      {% endif %}
+    </div>
+    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      <a href="{% url 'cecom:relatorios_livro' %}" class="px-3 py-2 text-sm border rounded hover:bg-slate-50 w-full sm:w-auto">📄 Relatórios Emitidos</a>
+      {% if plantao_cecom and plantao_cecom.relatorio_pdf and plantao_cecom.relatorio_pdf.arquivo %}
+        <div class="flex gap-2 w-full sm:w-auto">
+          <a href="{{ plantao_cecom.relatorio_pdf.arquivo.url }}" data-href="{{ plantao_cecom.relatorio_pdf.arquivo.url }}" class="js-view-file px-3 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 w-full sm:w-auto">👁️ Visualizar</a>
+          <a href="{{ plantao_cecom.relatorio_pdf.arquivo.url }}" download target="_blank" class="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 w-full sm:w-auto">⬇️ Baixar</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Talões Abertos -->
+  <div class="bg-white border border-slate-200 rounded-lg shadow-sm">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold">Talões em Aberto</h2>
+      <p class="text-sm text-slate-600">Todas as viaturas com talões ativos no sistema</p>
+    </div>
+    
+    {# Mobile: cards verticais #}
+    <div class="md:hidden p-3 space-y-3">
+      {% for t in taloes_page %}
+        <div class="border rounded-xl bg-white p-3 shadow-sm">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-xs text-slate-500">Talão <b>#{{ t.talao_numero|default:forloop.counter }}</b></div>
+              <div class="mt-1 font-semibold">VTR {{ t.viatura.prefixo|default:"-" }}</div>
+            </div>
+            <div>
+              <span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-medium">{{ t.status }}</span>
+            </div>
+          </div>
+          <div class="mt-2 space-y-1 text-sm">
+            <div class="flex justify-between"><span class="text-slate-500">Iniciado</span><span>{% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m H:i" }}{% else %}-{% endif %}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">KM</span><span>Ini: {{ t.km_inicial|default:"-" }}{% if t.km_final %} · Fim: {{ t.km_final }}{% endif %}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Ocorrência</span><span class="text-right max-w-[60%] break-words">{% if t.codigo_ocorrencia %}{{ t.codigo_ocorrencia.sigla }} - {{ t.codigo_ocorrencia.descricao|truncatechars:60 }}{% else %}-{% endif %}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Nº BOGCM</span><span class="text-right max-w-[60%] truncate">{% with bo=t.bos.last %}{% if bo and bo.numero %}{{ bo.numero }}{% elif bo %}#{{ bo.pk }}{% else %}-{% endif %}{% endwith %}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-500">Local</span><span class="text-right max-w-[60%] break-words">{% if t.local_bairro or t.local_rua %}{% if t.local_bairro %}{{ t.local_bairro }}{% endif %}{% if t.local_rua %}{% if t.local_bairro %}, {% endif %}{{ t.local_rua }}{% endif %}{% else %}-{% endif %}</span></div>
+            <div class="flex justify-between gap-3 text-xs"><span class="text-slate-500">Equipe / Integrantes</span>
+              <span class="text-right max-w-[60%] break-words">
+                {% with enc=t.encarregado mot=t.motorista a1=t.auxiliar1 a2=t.auxiliar2 bo=t.bos.last integ=integrantes_map|dict_get:t.viatura_id %}
+                  {% if plantao_equipe %}<span class="text-slate-600">Equipe {{ plantao_equipe }} — </span>{% endif %}
+                  {% if integ %}
+                    {{ integ }}
+                  {% elif enc or mot or a1 or a2 %}
+                    {% if enc %}<span><strong>Enc:</strong> {{ enc.get_full_name|default:enc.username }}</span>{% endif %}
+                    {% if mot %}<span class="ml-1"><strong>Mot:</strong> {{ mot.get_full_name|default:mot.username }}</span>{% endif %}
+                    {% if a1 %}<span class="ml-1"><strong>Aux1:</strong> {{ a1.get_full_name|default:a1.username }}</span>{% endif %}
+                    {% if a2 %}<span class="ml-1"><strong>Aux2:</strong> {{ a2.get_full_name|default:a2.username }}</span>{% endif %}
+                  {% elif t.equipe_texto %}
+                    {{ t.equipe_texto }}
+                  {% elif bo %}
+                    {% if bo.encarregado %}<span><strong>Enc:</strong> {{ bo.encarregado.get_full_name|default:bo.encarregado.username }}</span>{% endif %}
+                    {% if bo.motorista %}<span class="ml-1"><strong>Mot:</strong> {{ bo.motorista.get_full_name|default:bo.motorista.username }}</span>{% endif %}
+                    {% if bo.auxiliar1 %}<span class="ml-1"><strong>Aux1:</strong> {{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}</span>{% endif %}
+                    {% if bo.auxiliar2 %}<span class="ml-1"><strong>Aux2:</strong> {{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}</span>{% endif %}
+                  {% else %}<span class="text-slate-500">N/I</span>{% endif %}
+                {% endwith %}
+              </span>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-slate-500">Nenhum talão em aberto no momento.</div>
+      {% endfor %}
+      {% include '_partials/pagination.html' with page_obj=taloes_page extra_query='&page_des='|add:despachos_page.number %}
+    </div>
+
+    <div class="hidden md:block overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b text-xs uppercase tracking-wide">
+          <tr class="">
+            <th class="p-2 text-left border-r last:border-r-0">#</th>
+            <th class="p-2 text-left border-r last:border-r-0">Viatura</th>
+            <th class="p-2 text-left border-r last:border-r-0">Status</th>
+            <th class="p-2 text-left border-r last:border-r-0">Iniciado</th>
+            <th class="p-2 text-left border-r last:border-r-0">KM</th>
+            <th class="p-2 text-left border-r last:border-r-0">Ocorrência</th>
+            <th class="p-2 text-left border-r last:border-r-0">Nº BOGCM</th>
+            <th class="p-2 text-left border-r last:border-r-0">Local</th>
+            <th class="p-2 text-left border-r last:border-r-0">Equipe / Integrantes</th>
+          </tr>
+        </thead>
+        <tbody id="taloes-tbody" class="align-top">
+          {% for t in taloes_page %}
+            <tr class="border-b hover:bg-slate-50">
+              <td class="p-2 border-r last:border-r-0">#{{ t.talao_numero|default:forloop.counter }}</td>
+              <td class="p-2 border-r last:border-r-0 font-medium">{{ t.viatura.prefixo|default:"-" }}</td>
+              <td class="p-2 border-r last:border-r-0">
+                <span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-medium">{{ t.status }}</span>
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m H:i" }}{% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                <span class="text-slate-600">Ini:</span> {{ t.km_inicial|default:"-" }}
+                {% if t.km_final %}<br><span class="text-slate-600">Fim:</span> {{ t.km_final }}{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if t.codigo_ocorrencia %}{{ t.codigo_ocorrencia.sigla }} - {{ t.codigo_ocorrencia.descricao|truncatechars:40 }}{% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% with bo=t.bos.last %}
+                  {% if bo and bo.numero %}
+                    {{ bo.numero }}
+                  {% elif bo %}
+                    #{{ bo.pk }}
+                  {% else %}-{% endif %}
+                {% endwith %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if t.local_bairro or t.local_rua %}
+                  {% if t.local_bairro %}{{ t.local_bairro }}{% endif %}{% if t.local_rua %}{% if t.local_bairro %}, {% endif %}{{ t.local_rua }}{% endif %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0 text-xs">
+                {% with enc=t.encarregado mot=t.motorista a1=t.auxiliar1 a2=t.auxiliar2 bo=t.bos.last integ=integrantes_map|dict_get:t.viatura_id %}
+                  {% if plantao_equipe %}<div class="text-slate-700 mb-0.5"><span class="inline-block px-2 py-0.5 bg-slate-100 rounded">Equipe {{ plantao_equipe }}</span></div>{% endif %}
+                  {% if integ %}
+                    <div>{{ integ }}</div>
+                  {% elif enc or mot or a1 or a2 %}
+                    {% if enc %}<div><strong>Enc:</strong> {{ enc.get_full_name|default:enc.username }}</div>{% endif %}
+                    {% if mot %}<div><strong>Mot:</strong> {{ mot.get_full_name|default:mot.username }}</div>{% endif %}
+                    {% if a1 %}<div><strong>Aux1:</strong> {{ a1.get_full_name|default:a1.username }}</div>{% endif %}
+                    {% if a2 %}<div><strong>Aux2:</strong> {{ a2.get_full_name|default:a2.username }}</div>{% endif %}
+                  {% elif t.equipe_texto %}
+                    <div>{{ t.equipe_texto }}</div>
+                  {% elif bo %}
+                    {% if bo.encarregado %}<div><strong>Enc:</strong> {{ bo.encarregado.get_full_name|default:bo.encarregado.username }}</div>{% endif %}
+                    {% if bo.motorista %}<div><strong>Mot:</strong> {{ bo.motorista.get_full_name|default:bo.motorista.username }}</div>{% endif %}
+                    {% if bo.auxiliar1 %}<div><strong>Aux1:</strong> {{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}</div>{% endif %}
+                    {% if bo.auxiliar2 %}<div><strong>Aux2:</strong> {{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}</div>{% endif %}
+                  {% else %}<span class="text-slate-500">N/I</span>{% endif %}
+                {% endwith %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="p-6 text-center text-slate-500">Nenhum talão em aberto no momento.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  </div>
+    <div class="px-4 py-3 border-t">
+      {% include '_partials/pagination.html' with page_obj=taloes_page extra_query='&page_des='|add:despachos_page.number %}
+    </div>
+  </div>
+
+  <!-- Despachos Recentes -->
+  {% if despachos_recentes %}
+  <div class="bg-white border rounded-lg">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold">Despachos Recentes</h2>
+      <p class="text-sm text-slate-600">Últimas ocorrências despachadas</p>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b text-xs uppercase tracking-wide">
+          <tr>
+            <th class="p-2 text-left border-r last:border-r-0">Viatura</th>
+            <th class="p-2 text-left border-r last:border-r-0">Ocorrência</th>
+            <th class="p-2 text-left border-r last:border-r-0">Status</th>
+            <th class="p-2 text-left border-r last:border-r-0">Endereço</th>
+            <th class="p-2 text-left border-r last:border-r-0">Solicitante</th>
+            <th class="p-2 text-left border-r last:border-r-0">Despachado</th>
+            <th class="p-2 text-left border-r last:border-r-0">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="align-top">
+          {% for d in despachos_page %}
+            <tr class="border-b hover:bg-slate-50">
+              <td class="p-2 border-r last:border-r-0 font-medium">{{ d.viatura.prefixo }}</td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if d.cod_natureza %}
+                  <span class="font-mono text-xs">{{ d.cod_natureza }}</span>
+                  {% if d.natureza %}<br><span class="text-xs text-slate-600">{{ d.natureza|truncatechars:32 }}</span>{% endif %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if d.status == 'PENDENTE' %}
+                  <span class="px-2 py-1 rounded bg-yellow-100 text-yellow-800 text-xs font-medium">Pendente</span>
+                {% elif d.status == 'EM_ANDAMENTO' %}
+                  <span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-medium">Em Andamento</span>
+                {% elif d.status == 'RECUSADO' %}
+                  <span class="px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-medium">Recusado</span>
+                {% elif d.status == 'CANCELADO' %}
+                  <span class="px-2 py-1 rounded bg-red-100 text-red-800 text-xs font-medium">Cancelado</span>
+                {% else %}
+                  <span class="px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs font-medium">{{ d.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-r last:border-r-0">{{ d.endereco|truncatechars:40 }}</td>
+              <td class="p-2 border-r last:border-r-0">{{ d.nome_solicitante|default:"-" }}</td>
+              <td class="p-2 border-r last:border-r-0">{{ d.despachado_em|date:"d/m H:i" }}</td>
+              <td class="p-2 border-r last:border-r-0">
+                {% if d.status == 'EM_ANDAMENTO' %}
+                  <button data-finalizar-id="{{ d.pk }}" class="btn-finalizar px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 mr-1">✅ Finalizar</button>
+                {% elif d.pode_ser_arquivado %}
+                  <button data-arquivar-id="{{ d.pk }}" class="btn-arquivar px-2 py-1 bg-slate-600 text-white rounded text-xs hover:bg-slate-700">📁 Arquivar</button>
+                {% else %}
+                  <span class="text-xs text-slate-500">-</span>
+                {% endif %}
+              </td>
+  {% if cancelados_recusados %}
+  <div class="bg-white border rounded-lg">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold">Cancelados / Recusados Recentes</h2>
+        <p class="text-sm text-slate-600">Últimos registros não arquivados</p>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b text-xs uppercase tracking-wide">
+          <tr>
+            <th class="p-2 text-left border-r">#</th>
+            <th class="p-2 text-left border-r">Viatura</th>
+            <th class="p-2 text-left border-r">Ocorrência</th>
+            <th class="p-2 text-left border-r">Status</th>
+            <th class="p-2 text-left border-r">Endereço</th>
+            <th class="p-2 text-left border-r">Despachado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cancelados_recusados %}
+            <tr class="border-b hover:bg-slate-50">
+              <td class="p-2 border-r">#{{ c.pk }}</td>
+              <td class="p-2 border-r">{{ c.viatura.prefixo }}</td>
+              <td class="p-2 border-r">
+                {% if c.cod_natureza %}
+                  <span class="font-mono text-xs">{{ c.cod_natureza }}</span>
+                  {% if c.natureza %}<br><span class="text-xs text-slate-600">{{ c.natureza|truncatechars:28 }}</span>{% endif %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border-r">
+                {% if c.status == 'RECUSADO' %}
+                  <span class="px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-medium">Recusado</span>
+                {% else %}
+                  <span class="px-2 py-1 rounded bg-red-100 text-red-800 text-xs font-medium">Cancelado</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-r">{{ c.endereco|truncatechars:40 }}</td>
+              <td class="p-2 border-r">{{ c.despachado_em|date:"d/m H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum registro.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="p-6 text-center text-slate-500">Nenhum despacho recente.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include '_partials/pagination.html' with page_obj=despachos_page extra_query='&page_tal='|add:taloes_page.number %}
+  </div>
+  {% endif %}
+
+</div>
+</div>
+
+<script>
+// Sistema de alertas CECOM
+let ultimaAtualizacao = null;
+let ultimoNumeroDespachos = parseInt('{{ despachos_recentes|length }}');
+let ultimoDespachosPendentes = parseInt('{{ despachos_pendentes_count }}'); // Controlar apenas despachos pendentes para alertas
+let sireneInterval = null; // Controlar o loop da sirene
+let alertaPanicoInterval = null; // Controlar reabertura de alertas
+
+// Som de notificação - Web Audio API
+let audioContext;
+let audioHabilitado = localStorage.getItem('cecom_audio') !== 'false';
+
+function inicializarAudio() {
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) {
+    console.log('Web Audio API não suportada');
+  }
+}
+
+function toggleAudio() {
+  audioHabilitado = !audioHabilitado;
+  localStorage.setItem('cecom_audio', audioHabilitado);
+  document.getElementById('audio-status').textContent = audioHabilitado ? '🔊' : '🔇';
+  document.getElementById('audio-text').textContent = audioHabilitado ? 'Áudio Ligado' : 'Áudio Desligado';
+  
+  // Inicializar áudio quando habilitado
+  if (audioHabilitado && !audioContext) {
+    inicializarAudio();
+  }
+}
+
+function tocarAlerta() {
+  if (!audioHabilitado) return;
+  
+  // Inicializar áudio se necessário
+  if (!audioContext) {
+    inicializarAudio();
+  }
+  
+  if (!audioContext) return;
+  
+  try {
+    // Primeiro bip
+    const oscillator1 = audioContext.createOscillator();
+    const gainNode1 = audioContext.createGain();
+    
+    oscillator1.connect(gainNode1);
+    gainNode1.connect(audioContext.destination);
+    
+    oscillator1.frequency.setValueAtTime(800, audioContext.currentTime);
+    gainNode1.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    
+    oscillator1.start(audioContext.currentTime);
+    oscillator1.stop(audioContext.currentTime + 0.2);
+    
+    // Segundo bip após 300ms
+    setTimeout(function() {
+      if (!audioContext) return;
+      
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode2 = audioContext.createGain();
+      
+      oscillator2.connect(gainNode2);
+      gainNode2.connect(audioContext.destination);
+      
+      oscillator2.frequency.setValueAtTime(1000, audioContext.currentTime);
+      gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      
+      oscillator2.start(audioContext.currentTime);
+      oscillator2.stop(audioContext.currentTime + 0.2);
+    }, 300);
+    
+  } catch (e) {
+    console.log('Erro ao tocar áudio:', e);
+  }
+}
+
+function tocarSirenePanico() {
+  if (!audioHabilitado) return;
+  
+  // Inicializar áudio se necessário
+  if (!audioContext) {
+    inicializarAudio();
+  }
+  
+  if (!audioContext) return;
+  
+  try {
+    // Criar áudio HTML5 para tocar a sirene
+    const audio = new Audio('/static/sounds/sirene.mp3');
+    audio.volume = 0.8;
+    audio.loop = false; // Não usar loop nativo, vamos controlar manualmente
+    audio.play().catch(function(e) {
+      console.log('Erro ao tocar sirene:', e);
+      // Se falhar, usar Web Audio API como fallback
+      tocarSireneWebAudio();
+    });
+    
+    // Quando terminar, tocar novamente se ainda houver alertas
+    audio.onended = function() {
+      if (sireneInterval) {
+        setTimeout(tocarSirenePanico, 500); // Pequena pausa entre repetições
+      }
+    };
+  } catch (e) {
+    console.log('Erro ao criar áudio:', e);
+    // Fallback para Web Audio API
+    tocarSireneWebAudio();
+  }
+}
+
+function iniciarSireneLoop() {
+  if (sireneInterval) return; // Já está tocando
+  
+  sireneInterval = true; // Marca que a sirene está ativa
+  tocarSirenePanico();
+  
+  // Mostrar botão para parar a sirene
+  mostrarBotaoParar();
+  
+  // Iniciar loop de alertas visuais a cada 5 segundos
+  if (!alertaPanicoInterval) {
+    alertaPanicoInterval = setInterval(function() {
+      mostrarNotificacao(
+        '🚨 ALERTA DE PÂNICO ATIVO!',
+        'Há alertas de pânico não encerrados! Verifique agora!'
+      );
+    }, 5000);
+  }
+}
+
+function pararSirene() {
+  sireneInterval = null;
+  
+  // Parar loop de alertas visuais
+  if (alertaPanicoInterval) {
+    clearInterval(alertaPanicoInterval);
+    alertaPanicoInterval = null;
+  }
+  
+  // Remover botão de parar
+  const botao = document.getElementById('btn-parar-sirene');
+  if (botao) botao.remove();
+}
+
+function tocarSireneWebAudio() {
+  if (!audioContext) return;
+  
+  try {
+    // Sirene simulada com osciladores (efeito de polícia europeia)
+    let tempo = audioContext.currentTime;
+    const duracao = 3; // 3 segundos de sirene
+    
+    for (let i = 0; i < 6; i++) {
+      // Tom alto (600Hz)
+      const osc1 = audioContext.createOscillator();
+      const gain1 = audioContext.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioContext.destination);
+      osc1.frequency.setValueAtTime(600, tempo);
+      gain1.gain.setValueAtTime(0.4, tempo);
+      osc1.start(tempo);
+      osc1.stop(tempo + 0.25);
+      tempo += 0.25;
+      
+      // Tom baixo (400Hz)
+      const osc2 = audioContext.createOscillator();
+      const gain2 = audioContext.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioContext.destination);
+      osc2.frequency.setValueAtTime(400, tempo);
+      gain2.gain.setValueAtTime(0.4, tempo);
+      osc2.start(tempo);
+      osc2.stop(tempo + 0.25);
+      tempo += 0.25;
+    }
+    
+    // Repetir se ainda houver alertas
+    if (sireneInterval) {
+      setTimeout(tocarSireneWebAudio, 3500);
+    }
+  } catch (e) {
+    console.log('Erro ao tocar sirene web audio:', e);
+  }
+}
+
+function mostrarBotaoParar() {
+  // Evitar duplicar botão
+  if (document.getElementById('btn-parar-sirene')) return;
+  
+  const botao = document.createElement('button');
+  botao.id = 'btn-parar-sirene';
+  botao.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-2xl animate-pulse font-bold text-lg hover:bg-red-700 border-4 border-white';
+  botao.style.zIndex = '999997';
+  botao.innerHTML = '🔇 PARAR SIRENE';
+  botao.onclick = pararSirene;
+  document.body.appendChild(botao);
+}
+
+function mostrarNotificacao(titulo, mensagem) {
+  // Notificação visual no navegador (se permitido)
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(titulo, {
+      body: mensagem,
+      icon: '/static/favicon.ico'
+    });
+  }
+  
+  // Alerta visual na página - SEMPRE NA FRENTE!
+  const alertaDiv = document.createElement('div');
+  alertaDiv.className = 'fixed top-4 right-4 bg-red-600 text-white p-4 rounded-lg shadow-2xl animate-pulse border-4 border-white';
+  alertaDiv.style.zIndex = '999998';
+  alertaDiv.innerHTML = '<div class="flex items-center space-x-2">' +
+    '<span class="text-2xl">🚨</span>' +
+    '<div>' +
+      '<div class="font-bold text-lg">' + titulo + '</div>' +
+      '<div class="text-sm">' + mensagem + '</div>' +
+    '</div>' +
+    '<button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-300 text-xl font-bold">✕</button>' +
+  '</div>';
+  document.body.appendChild(alertaDiv);
+  
+  // Remove o alerta após 10 segundos
+  setTimeout(function() {
+    if (alertaDiv.parentElement) {
+      alertaDiv.remove();
+    }
+  }, 10000);
+}
+
+// Auto-atualização e verificação de novos despachos
+let ultimoPanicoAbertos = parseInt('{{ panico_abertos_count }}') || 0;
+
+setInterval(function() {
+  fetch('{% url "cecom:ativos_json" %}')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      console.log('CECOM atualizado:', data.agora);
+      
+      // *** VERIFICAR NOVOS ALERTAS DE PÂNICO ***
+      if (data.panico_abertos_count > ultimoPanicoAbertos) {
+        const novosPanico = data.panico_abertos_count - ultimoPanicoAbertos;
+        
+        // Iniciar sirene em loop contínuo!
+        iniciarSireneLoop();
+        
+        // Mostrar notificação de PÂNICO
+        mostrarNotificacao(
+          '🚨 ALERTA DE PÂNICO!', 
+          novosPanico + ' novo' + (novosPanico > 1 ? 's' : '') + ' alerta' + (novosPanico > 1 ? 's' : '') + ' de pânico!'
+        );
+        
+        ultimoPanicoAbertos = data.panico_abertos_count;
+        
+        // NÃO RECARREGAR - deixar a sirene tocar!
+        // Atualizar contadores visualmente sem reload
+        const badgePanico = document.querySelector('a[href*="panico"] span');
+        if (badgePanico) {
+          badgePanico.textContent = data.panico_abertos_count;
+          badgePanico.classList.remove('hidden');
+        }
+        
+        return; // Sair da função para não processar despachos
+      }
+      
+      // Manter sirene tocando enquanto houver alertas abertos
+      if (data.panico_abertos_count > 0 && !sireneInterval) {
+        iniciarSireneLoop();
+      }
+      
+      // Se não há mais alertas de pânico, parar a sirene
+      if (data.panico_abertos_count === 0 && sireneInterval) {
+        pararSirene();
+      }
+      
+      // Atualizar contadores de pânico silenciosamente
+      ultimoPanicoAbertos = data.panico_abertos_count || 0;
+      
+      // Verificar se há novos despachos PENDENTES (não respondidos)
+      if (data.despachos_pendentes_count > ultimoDespachosPendentes) {
+        const novosDespachos = data.despachos_pendentes_count - ultimoDespachosPendentes;
+        
+        // Tocar alerta sonoro
+        tocarAlerta();
+        
+        // Mostrar notificação
+        mostrarNotificacao(
+          'Nova Ocorrência!', 
+          novosDespachos + ' novo' + (novosDespachos > 1 ? 's' : '') + ' despacho' + (novosDespachos > 1 ? 's' : '') + ' pendente' + (novosDespachos > 1 ? 's' : '')
+        );
+        
+        ultimoDespachosPendentes = data.despachos_pendentes_count;
+        
+        // Atualizar a página após 3 segundos para mostrar novos dados
+        setTimeout(function() {
+          location.reload();
+        }, 3000);
+      } else {
+        // Atualizar contadores silenciosamente
+        ultimoDespachosPendentes = data.despachos_pendentes_count;
+      }
+      
+      // Alertas de avarias no início do plantão desabilitados a pedido
+      try {
+        // no-op
+        if (window.__plantoesAtivosPrev == null) {
+          window.__plantoesAtivosPrev = (data.plantoes || []).map(p => p.id);
+        } else {
+          window.__plantoesAtivosPrev = (data.plantoes || []).map(p => p.id);
+        }
+      } catch (e) { /* silencioso */ }
+
+      ultimaAtualizacao = data.agora;
+    })
+    .catch(function(error) {
+      console.error('Erro ao atualizar CECOM:', error);
+    });
+}, 10000); // Verificar a cada 10 segundos
+
+// Solicitar permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+// Inicializar controle de áudio
+document.addEventListener('DOMContentLoaded', function() {
+  // Configurar controles de som
+  document.getElementById('som-status').textContent = audioHabilitado ? '🔊' : '🔇';
+  document.getElementById('som-text').textContent = audioHabilitado ? 'Som Ligado' : 'Som Desligado';
+  
+  if (audioHabilitado) {
+    inicializarAudio();
+  }
+  
+  const audioStatus = document.getElementById('audio-status');
+  const audioText = document.getElementById('audio-text');
+  
+  if (audioStatus && audioText) {
+    audioStatus.textContent = audioHabilitado ? '🔊' : '🔇';
+    audioText.textContent = audioHabilitado ? 'Áudio Ligado' : 'Áudio Desligado';
+  }
+
+  // Bind botões finalizar/arquivar (sem inline onclick)
+  document.querySelectorAll('[data-finalizar-id]').forEach(btn => {
+    btn.addEventListener('click', () => finalizarDespacho(btn.getAttribute('data-finalizar-id')));
+  });
+  document.querySelectorAll('[data-arquivar-id]').forEach(btn => {
+    btn.addEventListener('click', () => arquivarDespacho(btn.getAttribute('data-arquivar-id')));
+  });
+});
+
+// Funções para gerenciar despachos
+function finalizarDespacho(despachoId) {
+  const observacoes = prompt('Observações sobre a finalização (opcional):');
+  
+  const formData = new FormData();
+  formData.append('observacoes', observacoes || '');
+  
+  fetch(`/cecom/despacho/${despachoId}/finalizar/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.sucesso) {
+      alert(data.mensagem);
+      location.reload();
+    } else {
+      alert('Erro: ' + (data.erro || 'Erro desconhecido'));
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro ao finalizar despacho');
+  });
+}
+
+function arquivarDespacho(despachoId) {
+  if (confirm('Confirma o arquivamento deste despacho?')) {
+    fetch(`/cecom/despacho/${despachoId}/arquivar/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.sucesso) {
+        alert(data.mensagem);
+        location.reload();
+      } else {
+        alert('Erro: ' + (data.erro || 'Erro desconhecido'));
+      }
+    })
+    .catch(error => {
+      console.error('Erro:', error);
+      alert('Erro ao arquivar despacho');
+    });
+  }
+}
+</script>
+
+<script>
+// Validação imediata do operador para iniciar plantão
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('form-iniciar-plantao');
+  if(!form) return;
+  const select = form.querySelector('select[name="aux_cecom"]');
+  const erroSpan = document.getElementById('erro-operador');
+  // Remover required do select original (Choices.js cria clone e torna original invisível causando warning)
+  if(select) select.removeAttribute('required');
+  form.addEventListener('submit', function(e){
+    if(select && !select.value){
+      e.preventDefault();
+      erroSpan.classList.remove('hidden');
+      // Breve destaque
+      form.classList.add('ring','ring-red-300');
+      setTimeout(()=>form.classList.remove('ring','ring-red-300'),1200);
+    }
+  });
+  if(select){
+    select.addEventListener('change', ()=>{
+      if(select.value){ erroSpan.classList.add('hidden'); }
+    });
+  }
+});
+</script>
+
+{% csrf_token %}
+{% endblock %}

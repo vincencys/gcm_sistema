@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "31653208221",
+    "project_id": "gcm-sistema",
+    "storage_bucket": "gcm-sistema.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:31653208221:android:f36f1ec6f0f86a2da5b474",
+        "android_client_info": {
+          "package_name": "br.gov.gcm.sistema"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvsoL5PB5h8vAJV_iHeBaUp4c0zIflnmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:31653208221:android:c7d8622ed4dab64da5b474",
+        "android_client_info": {
+          "package_name": "com.seuprojeto.panico"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvsoL5PB5h8vAJV_iHeBaUp4c0zIflnmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

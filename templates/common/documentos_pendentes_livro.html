@@ -1,0 +1,47 @@
+{% extends 'common/documentos_base.html' %}
+{% block extra_nav %}
+  <div class="mb-4 bg-white rounded-lg shadow-sm border border-slate-200 p-3">
+    <div class="flex flex-wrap gap-2">
+      
+      <a href="{% url 'common:documentos_pendentes' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if request.resolver_match.url_name == 'documentos_pendentes' %}border-slate-500 bg-slate-50{% else %}border-slate-200 hover:border-slate-400 hover:bg-slate-50{% endif %} transition-all">
+        <span class="text-xl">📋</span>
+        <span class="text-sm font-medium text-slate-700">Todos</span>
+        <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-slate-700 text-white text-xs font-bold rounded-full">{{ pend_counts.ronda|add:pend_counts.bogcm|add:pend_counts.livro }}</span>
+      </a>
+
+      <a href="{% url 'common:documentos_pendentes_ronda' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if request.resolver_match.url_name == 'documentos_pendentes_ronda' %}border-blue-500 bg-blue-50{% else %}border-blue-200 hover:border-blue-400 hover:bg-blue-50{% endif %} transition-all">
+        <span class="text-xl">📝</span>
+        <span class="text-sm font-medium text-blue-700">Ronda</span>
+        {% if pend_counts.ronda > 0 %}
+          <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-blue-600 text-white text-xs font-bold rounded-full">{{ pend_counts.ronda }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{% url 'common:documentos_pendentes_bogcm' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if request.resolver_match.url_name == 'documentos_pendentes_bogcm' %}border-green-500 bg-green-50{% else %}border-green-200 hover:border-green-400 hover:bg-green-50{% endif %} transition-all">
+        <span class="text-xl">📰</span>
+        <span class="text-sm font-medium text-green-700">BOGCM</span>
+        {% if pend_counts.bogcm > 0 %}
+          <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-green-600 text-white text-xs font-bold rounded-full">{{ pend_counts.bogcm }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{% url 'common:documentos_pendentes_livro' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if request.resolver_match.url_name == 'documentos_pendentes_livro' %}border-indigo-500 bg-indigo-50{% else %}border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50{% endif %} transition-all">
+        <span class="text-xl">📖</span>
+        <span class="text-sm font-medium text-indigo-700">Livro CECOM</span>
+        {% if pend_counts.livro > 0 %}
+          <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full">{{ pend_counts.livro }}</span>
+        {% endif %}
+      </a>
+
+    </div>
+  </div>
+{% endblock %}
+{% block content %}
+  {% with titulo='Livro CECOM - Pendentes de Assinatura' bulk_sign=True %}{{ block.super }}{% endwith %}
+{% endblock %}
+{% block linha_acoes %}
+  <form method="post" action="{% url 'common:assinar_documento' d.id %}" onsubmit="return confirm('Assinar este documento do Livro CECOM?');">
+    {% csrf_token %}
+    <button class="bg-indigo-600 text-white px-3 py-1 rounded text-xs">Assinar</button>
+  </form>
+{% endblock %}

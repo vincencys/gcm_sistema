@@ -1,0 +1,1689 @@
+{% extends "base.html" %}
+{% block title %}Novo BOGCMI{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-4 min-h-[70vh]">
+	<!-- Navegação vertical -->
+	<nav class="w-full md:w-64 bg-white border rounded-xl shadow p-2 md:p-4 flex flex-col md:flex-col gap-1 md:gap-2 md:sticky md:top-6 h-fit z-10">
+		<h2 class="hidden md:block text-lg font-bold mb-2 text-indigo-700">BOGCMI</h2>
+		<span id="bo-status-badge" class="hidden md:block text-[10px] font-semibold ml-auto md:ml-0 md:mt-1 px-2 py-0.5 rounded bg-amber-100 text-amber-700"></span>
+		<ul class="grid grid-cols-3 w-full gap-1 md:gap-2 md:flex md:flex-col md:w-auto">
+			<li><button class="nav-btn" data-tab="abertura">Abertura</button></li>
+			<li><button class="nav-btn" data-tab="envolvido">Qualificação dos Envolvidos</button></li>
+			<li><button class="nav-btn" data-tab="apreensao">Apreensão</button></li>
+			<li><button class="nav-btn" data-tab="veiculo-envolvido">Veículo Envolvido</button></li>
+			<li><button class="nav-btn" data-tab="equipes-apoio">Equipes de Apoio</button></li>
+			<li><button class="nav-btn" data-tab="historico">Histórico</button></li>
+			<li><button class="nav-btn" data-tab="anexos">Anexos</button></li>
+			<li><button class="nav-btn" data-tab="finalizacao">Finalização</button></li>
+		</ul>
+	</nav>
+
+	<div class="flex-1 bg-white border rounded-xl shadow p-3 md:p-6">
+		<div id="tab-abertura" class="tab-content">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800 flex items-center justify-between">
+				<span>Abertura</span>
+				<div class="flex items-center gap-2">
+					<button type="button" id="btn-editar-abertura" class="px-3 py-1.5 text-xs font-semibold rounded border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition">Editar</button>
+					<button type="button" id="btn-salvar-abertura" class="hidden px-3 py-1.5 text-xs font-semibold rounded border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">Salvar</button>
+					<button type="button" id="btn-cancelar-abertura" class="hidden px-3 py-1.5 text-xs font-semibold rounded border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+				</div>
+			</h3>
+			<form id="form-abertura" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+				{% if bo %}
+				<div class="md:col-span-1">
+					<label class="block text-xs font-medium text-slate-600 mb-1">Nº BOGCM</label>
+					<input type="text" id="codigo-bogcm" class="w-full px-2 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm" value="{{ bo.numero }}" readonly>
+				</div>
+				{% endif %}
+				<!-- SEÇÃO: Dados Gerais -->
+				<div class="md:col-span-4 -mb-2 mt-1">
+					<h4 class="text-[11px] tracking-wide font-semibold text-indigo-700/80 uppercase select-none">Dados Gerais</h4>
+				</div>
+				<div class="md:col-span-2">
+					<label class="block text-xs font-medium text-slate-600 mb-1">Código de Ocorrência <span class="text-rose-600" title="Obrigatório">*</span></label>
+					<select id="codigo-ocorrencia" name="codigo_ocorrencia" required class="w-full px-2 py-2 border border-gray-300 rounded-lg bg-white text-sm">
+						<option value="">Selecione...</option>
+						{% for c in codigos_ocorrencia %}
+						<option value="{{ c.id }}" data-sigla="{{ c.sigla }}" data-descricao="{{ c.descricao }}" {% if bo and bo.cod_natureza == c.sigla %}selected{% endif %}>{{ c.sigla }} - {{ c.descricao }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="md:col-span-1">
+					<label class="block text-xs font-medium text-slate-600 mb-1">Tipo Solicitação</label>
+					<select id="tipo-solicitacao" name="tipo_solicitacao" class="w-full px-2 py-2 border border-gray-300 rounded-lg bg-white text-sm">
+						{% for t in tipos_solicitacao %}
+						<option value="{{ t }}" {% if t == 'Selecione...' %}selected{% endif %}>{{ t }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				{# Hidden natureza/sigla #}
+				<input type="hidden" id="natureza" name="natureza" value="{% if bo %}{{ bo.natureza }}{% endif %}">
+				<input type="hidden" id="cod-natureza" name="cod_natureza" value="{% if bo %}{{ bo.cod_natureza }}{% endif %}">
+				<div class="md:col-span-2">
+					<label class="block text-xs font-medium text-slate-600 mb-1">Solicitante</label>
+					<input type="text" id="solicitante" name="solicitante" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo %}{{ bo.solicitante }}{% endif %}">
+				</div>
+				<div class="md:col-span-1">
+					<label class="block text-xs font-medium text-slate-600 mb-1">Telefone</label>
+					<input type="text" id="telefone-solicitante" name="telefone_solicitante" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="(11)99999-9999">
+				</div>
+				<!-- SEÇÃO: Endereço -->
+				<div class="md:col-span-4 pt-4 border-t border-slate-200">
+					<h4 class="text-[11px] tracking-wide font-semibold text-indigo-700/80 uppercase select-none">Endereço da Ocorrência</h4>
+				</div>
+				<div class="md:col-span-2">
+					<label class="block text-xs font-medium text-slate-600 mb-1">Rua / Logradouro <span class="text-rose-600" title="Obrigatório">*</span></label>
+					<input type="text" id="rua" name="rua" required class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo %}{{ bo.rua }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Número</label>
+					<input type="text" id="numero" name="numero" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo %}{{ bo.numero_endereco }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Bairro</label>
+					<input type="text" id="bairro" name="bairro" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo %}{{ bo.bairro }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Cidade <span class="text-rose-600" title="Obrigatório">*</span></label>
+					<input type="text" id="cidade" name="cidade" required class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo %}{{ bo.cidade }}{% else %}Ibiúna{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">UF</label>
+					{% with uf_sel=bo.uf|default:'SP' %}
+					<select id="uf" name="uf" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+						<option value="AC" {% if uf_sel == 'AC' %}selected{% endif %}>AC</option>
+						<option value="AL" {% if uf_sel == 'AL' %}selected{% endif %}>AL</option>
+						<option value="AM" {% if uf_sel == 'AM' %}selected{% endif %}>AM</option>
+						<option value="AP" {% if uf_sel == 'AP' %}selected{% endif %}>AP</option>
+						<option value="BA" {% if uf_sel == 'BA' %}selected{% endif %}>BA</option>
+						<option value="CE" {% if uf_sel == 'CE' %}selected{% endif %}>CE</option>
+						<option value="DF" {% if uf_sel == 'DF' %}selected{% endif %}>DF</option>
+						<option value="ES" {% if uf_sel == 'ES' %}selected{% endif %}>ES</option>
+						<option value="GO" {% if uf_sel == 'GO' %}selected{% endif %}>GO</option>
+						<option value="MA" {% if uf_sel == 'MA' %}selected{% endif %}>MA</option>
+						<option value="MG" {% if uf_sel == 'MG' %}selected{% endif %}>MG</option>
+						<option value="MS" {% if uf_sel == 'MS' %}selected{% endif %}>MS</option>
+						<option value="MT" {% if uf_sel == 'MT' %}selected{% endif %}>MT</option>
+						<option value="PA" {% if uf_sel == 'PA' %}selected{% endif %}>PA</option>
+						<option value="PB" {% if uf_sel == 'PB' %}selected{% endif %}>PB</option>
+						<option value="PE" {% if uf_sel == 'PE' %}selected{% endif %}>PE</option>
+						<option value="PI" {% if uf_sel == 'PI' %}selected{% endif %}>PI</option>
+						<option value="PR" {% if uf_sel == 'PR' %}selected{% endif %}>PR</option>
+						<option value="RJ" {% if uf_sel == 'RJ' %}selected{% endif %}>RJ</option>
+						<option value="RN" {% if uf_sel == 'RN' %}selected{% endif %}>RN</option>
+						<option value="RO" {% if uf_sel == 'RO' %}selected{% endif %}>RO</option>
+						<option value="RR" {% if uf_sel == 'RR' %}selected{% endif %}>RR</option>
+						<option value="RS" {% if uf_sel == 'RS' %}selected{% endif %}>RS</option>
+						<option value="SC" {% if uf_sel == 'SC' %}selected{% endif %}>SC</option>
+						<option value="SE" {% if uf_sel == 'SE' %}selected{% endif %}>SE</option>
+						<option value="SP" {% if uf_sel == 'SP' %}selected{% endif %}>SP</option>
+						<option value="TO" {% if uf_sel == 'TO' %}selected{% endif %}>TO</option>
+					</select>
+					{% endwith %}
+				</div>
+				<div class="md:col-span-2">
+					<label class="block text-xs font-medium text-slate-600 mb-1">Referência / Ponto</label>
+					<input type="text" id="referencia" name="referencia" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo %}{{ bo.referencia }}{% endif %}">
+				</div>
+				<!-- SEÇÃO: GCMs Envolvidos -->
+				<div class="md:col-span-4 pt-4 border-t border-slate-200">
+					<h4 class="text-[11px] tracking-wide font-semibold text-indigo-700/80 uppercase select-none">GCMs Envolvidos</h4>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Viatura</label>
+					<select id="viatura" name="viatura" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+						<option value="">Selecione...</option>
+						{% for v in viaturas %}
+						<option value="{{ v.id }}" {% if bo and bo.viatura and bo.viatura.id == v.id %}selected{% endif %}>{{ v.prefixo }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Motorista</label>
+					<select id="motorista" name="motorista" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+						<option value="">Selecione...</option>
+						{% for p in perfis %}
+						<option value="{{ p.id }}" {% if bo and bo.motorista and bo.motorista.id == p.id %}selected{% endif %}>{{ p.matricula }} - {{ p.nome }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Encarregado</label>
+					<select id="encarregado" name="encarregado" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+						{% for p in perfis %}
+						<option value="{{ p.id }}" {% if bo and bo.encarregado.id == p.id %}selected{% elif not bo and p.id == request.user.id %}selected{% endif %}>{{ p.matricula }} - {{ p.nome }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">CECOM</label>
+					<select id="cecom" name="cecom" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+						<option value="">Selecione...</option>
+						{% for p in perfis %}
+						<option value="{{ p.id }}" {% if bo and bo.cecom and bo.cecom.id == p.id %}selected{% endif %}>{{ p.matricula }} - {{ p.nome }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Auxiliar 1</label>
+					<select id="auxiliar1" name="auxiliar1" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+						<option value="">Selecione...</option>
+						{% for p in perfis %}
+						<option value="{{ p.id }}" {% if bo and bo.auxiliar1 and bo.auxiliar1.id == p.id %}selected{% endif %}>{{ p.matricula }} - {{ p.nome }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Auxiliar 2</label>
+					<select id="auxiliar2" name="auxiliar2" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+						<option value="">Selecione...</option>
+						{% for p in perfis %}
+						<option value="{{ p.id }}" {% if bo and bo.auxiliar2 and bo.auxiliar2.id == p.id %}selected{% endif %}>{{ p.matricula }} - {{ p.nome }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<!-- SEÇÃO: Deslocamento & Tempo -->
+				<div class="md:col-span-4 pt-4 border-t border-slate-200">
+					<h4 class="text-[11px] tracking-wide font-semibold text-indigo-700/80 uppercase select-none">Deslocamento & Tempo</h4>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">KM Início</label>
+					<input type="number" id="km-inicio" name="km_inicio" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo and bo.km_inicio %}{{ bo.km_inicio }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">KM Final</label>
+					<input type="number" id="km-final" name="km_final" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo and bo.km_final %}{{ bo.km_final }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">KM Utilizada</label>
+					<input type="text" id="km-utilizada" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Horário Inicial</label>
+					<input type="time" id="horario-inicial" name="horario_inicial" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo and bo.horario_inicial %}{{ bo.horario_inicial|time:'H:i' }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Horário Final</label>
+					<input type="time" id="horario-final" name="horario_final" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="{% if bo and bo.horario_final %}{{ bo.horario_final|time:'H:i' }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-xs font-medium text-slate-600 mb-1">Duração</label>
+					<input type="text" id="horario-total" name="duracao" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+				</div>
+			</form>
+		</div>
+
+		<div id="tab-envolvido" class="tab-content hidden">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800">Qualificação dos Envolvidos</h3>
+			<p class="text-slate-600 mb-4">Gerencie as pessoas relacionadas à ocorrência.</p>
+			<div class="flex flex-wrap gap-3 mb-4">
+				<a href="{% url 'bogcmi:envolvido_form' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 rounded bg-indigo-600 text-white font-bold w-full sm:w-auto text-center">Adicionar Envolvido</a>
+				<a href="{% url 'bogcmi:envolvido_list' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 rounded bg-slate-600 text-white font-bold w-full sm:w-auto text-center">Lista de Envolvidos</a>
+			</div>
+			<div id="envolvidos-lista-dados" class="mt-2 text-sm text-slate-500">Itens serão exibidos na lista dedicada.</div>
+		</div>
+
+		<script id="script-persist-abertura">
+		(function(){
+			const FORM_ID = 'form-abertura';
+			const CURRENT_BO_ID = '{{ bo.id }}';
+			const STORAGE_KEY = 'bogcmi-form-v2:' + location.pathname + ':' + CURRENT_BO_ID;
+			const LEGACY_KEY = 'bogcmi-form-data'; // compat para Finalização
+			window._boId = CURRENT_BO_ID; // expõe ID do BO atual
+			window._boClientUUID = '{{ bo.client_uuid|default_if_none:"" }}'; // expõe client_uuid existente (se houver)
+			let debounceTimer = null;
+			let lastSave = 0;
+			let aberturaSnapshot = null; // estado antes de editar
+			
+			// Função para obter CSRF token
+			function getCsrf(){ 
+				const m=document.cookie.match(/csrftoken=([^;]+)/); 
+				return m?m[1]:''; 
+			}
+
+			function calcularKmUtilizada(){
+				const ini = parseFloat(document.getElementById('km-inicio').value)||0;
+				const fin = parseFloat(document.getElementById('km-final').value)||0;
+				const out = document.getElementById('km-utilizada');
+				if(fin && fin >= ini){ out.value = (fin-ini).toString(); } else { out.value = ''; }
+			}
+			function calcularHorarioTotal(){
+				const ini = document.getElementById('horario-inicial').value;
+				const fin = document.getElementById('horario-final').value;
+				const out = document.getElementById('horario-total');
+				if(ini && fin){
+					const [h1,m1] = ini.split(':').map(Number); const [h2,m2]=fin.split(':').map(Number);
+					let t1=h1*60+m1, t2=h2*60+m2; if(t2<t1) t2+=1440; const dif=t2-t1; const hh=Math.floor(dif/60).toString().padStart(2,'0'); const mm=(dif%60).toString().padStart(2,'0'); out.value=`${hh}:${mm}`;
+				} else { out.value=''; }
+			}
+
+			function coletar(){
+				const form = document.getElementById(FORM_ID); if(!form) return {};
+				const data = {};
+				form.querySelectorAll('input, select, textarea').forEach(el=>{
+					if(!el.id && !el.name) return;
+					// Nunca persistir o número do BO para evitar carregar número de outro BO
+					if(el.id === 'codigo-bogcm') return;
+					const key = el.id || el.name;
+					if(el.type==='checkbox') data[key]=el.checked; else data[key]=el.value;
+				});
+				// derivados
+				calcularKmUtilizada(); calcularHorarioTotal();
+				data['km_utilizada']=document.getElementById('km-utilizada').value;
+				data['duracao']=document.getElementById('horario-total').value;
+				return data;
+			}
+			function salvar(imediato=false){
+				const now = Date.now();
+				const doSave = ()=>{
+					const dados = coletar();
+					const envelope = {ts: Date.now(), origem:'v2', path: location.pathname, dados};
+					try {
+						localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
+						localStorage.setItem(LEGACY_KEY, JSON.stringify(dados)); // compat finalização
+						lastSave = Date.now();
+						window._unsavedChanges = true;
+						
+						// Auto-save no backend se o BO já existe e estamos online
+						if(CURRENT_BO_ID && navigator.onLine) {
+							enviarParaBackend(dados);
+						}
+					}catch(e){ console.warn('Falha ao salvar abertura', e); }
+				};
+				if(imediato){ if(debounceTimer) clearTimeout(debounceTimer); return doSave(); }
+				if(debounceTimer) clearTimeout(debounceTimer);
+				debounceTimer = setTimeout(doSave, 1000); // 1 segundo após parar de digitar
+			}
+			
+			async function enviarParaBackend(dados) {
+				if(!CURRENT_BO_ID) return;
+				
+				// Mostrar indicador de salvamento
+				const badge = document.getElementById('bo-status-badge');
+				if(badge) {
+					badge.textContent = 'SALVANDO...';
+					badge.classList.remove('hidden', 'bg-amber-100', 'text-amber-700', 'bg-green-100', 'text-green-700');
+					badge.classList.add('bg-blue-100', 'text-blue-700');
+				}
+				
+				const formData = new FormData();
+				
+				// Mapear dados do formulário para o backend
+				const mapping = {
+					'solicitante': dados['solicitante'],
+					'telefone_solicitante': dados['telefone-solicitante'],
+					'rua': dados['rua'],
+					'numero': dados['numero'],
+					'bairro': dados['bairro'],
+					'cidade': dados['cidade'],
+					'uf': dados['uf'],
+					'referencia': dados['referencia'],
+					'km_inicio': dados['km-inicio'],
+					'km_final': dados['km-final'],
+					'horario_inicial': dados['horario-inicial'],
+					'horario_final': dados['horario-final'],
+					'duracao': dados['horario-total'],
+					'viatura': dados['viatura'],
+					'motorista': dados['motorista'],
+					'encarregado': dados['encarregado'],
+					'cecom': dados['cecom'],
+					'auxiliar1': dados['auxiliar1'],
+					'auxiliar2': dados['auxiliar2'],
+					'cod_natureza': dados['cod-natureza'],
+					'natureza': dados['natureza'],
+					'codigo_ocorrencia': dados['codigo-ocorrencia']
+				};
+				
+				Object.entries(mapping).forEach(([key, value]) => {
+					if(value !== undefined && value !== null && value !== '') {
+						formData.append(key, value);
+					}
+				});
+				
+				try {
+					const resp = await fetch(`/bogcmi/${CURRENT_BO_ID}/salvar/`, {
+						method: 'POST',
+						headers: {'X-CSRFToken': getCsrf()},
+						body: formData
+					});
+					
+					if(resp.ok) {
+						const data = await resp.json();
+						console.log('Auto-save realizado:', data);
+						window._unsavedChanges = false;
+						
+						// Mostrar sucesso
+						if(badge) {
+							badge.textContent = 'SALVO ✓';
+							badge.classList.remove('bg-blue-100', 'text-blue-700');
+							badge.classList.add('bg-green-100', 'text-green-700');
+							setTimeout(() => {
+								badge.textContent = 'EM EDIÇÃO';
+								badge.classList.remove('bg-green-100', 'text-green-700');
+								badge.classList.add('bg-amber-100', 'text-amber-700');
+							}, 2000);
+						}
+					} else {
+						throw new Error('Falha ao salvar');
+					}
+				} catch(e) {
+					console.warn('Erro no auto-save:', e);
+					// Mostrar erro
+					if(badge) {
+						badge.textContent = 'ERRO AO SALVAR';
+						badge.classList.remove('bg-blue-100', 'text-blue-700');
+						badge.classList.add('bg-red-100', 'text-red-700');
+						setTimeout(() => {
+							badge.textContent = 'EM EDIÇÃO';
+							badge.classList.remove('bg-red-100', 'text-red-700');
+							badge.classList.add('bg-amber-100', 'text-amber-700');
+						}, 3000);
+					}
+				}
+			}
+
+			function aplicarDados(dados){
+				try{
+					const form = document.getElementById(FORM_ID); if(!form || !dados) return;
+					Object.keys(dados).forEach(k=>{
+						if(k === 'codigo-bogcm') return;
+						const el = document.getElementById(k) || document.querySelector(`[name="${k}"]`);
+						if(!el) return;
+						if(el.type==='checkbox') el.checked = !!dados[k]; else if(k!=='km_utilizada' && k!=='duracao') el.value = dados[k];
+					});
+					calcularKmUtilizada(); calcularHorarioTotal();
+				}catch(e){ console.warn('Falha ao aplicar dados da abertura', e); }
+			}
+
+			function setAberturaMode(mode){
+				const form = document.getElementById(FORM_ID); if(!form) return;
+				const btnEditar = document.getElementById('btn-editar-abertura');
+				const btnSalvar = document.getElementById('btn-salvar-abertura');
+				const btnCancelar = document.getElementById('btn-cancelar-abertura');
+				const fields = form.querySelectorAll('input, select, textarea');
+				if(mode==='edit'){
+					fields.forEach(el=>{
+						if(['codigo-bogcm','km-utilizada','horario-total'].includes(el.id)) { el.setAttribute('disabled','disabled'); return; }
+						el.removeAttribute('disabled');
+					});
+					btnEditar.classList.add('hidden');
+					btnSalvar.classList.remove('hidden');
+					btnCancelar.classList.remove('hidden');
+				}else{
+					fields.forEach(el=>{ el.setAttribute('disabled','disabled'); });
+					btnEditar.classList.remove('hidden');
+					btnSalvar.classList.add('hidden');
+					btnCancelar.classList.add('hidden');
+				}
+			}
+			function limparStorageAbertura(){
+				Object.keys(localStorage).forEach(k=>{ if(k.startsWith('bogcmi-form-v2:'+location.pathname)) localStorage.removeItem(k); });
+				localStorage.removeItem(LEGACY_KEY);
+			}
+			function resetarFormularioAbertura(silent=false){
+				const form = document.getElementById(FORM_ID); if(!form) return;
+				// Limpa campos exceto código BO real se existir
+				form.querySelectorAll('input, select, textarea').forEach(el=>{
+					if(el.id === 'codigo-bogcm') return; // mantém número se edição
+					if(el.type === 'checkbox' || el.type === 'radio') el.checked = false; else el.value = '';
+				});
+				// Reaplica defaults básicos
+				const uf = form.querySelector('#uf'); if(uf) uf.value='SP';
+				const cid = form.querySelector('#cidade'); if(cid) cid.value='Ibiúna';
+				limparStorageAbertura();
+				if(!silent) criarToast('Formulário de abertura resetado.', 'info');
+			}
+			function restaurar(){
+				try{
+					// Se NÃO existe bo.id (criação) ou query ?novo=1 => sempre começar limpo
+					const isCriacao = !('{{ bo.id|default:"" }}');
+					const params = new URLSearchParams(location.search);
+					const urlNovo = params.get('novo')==='1';
+					const fromTalao = !!params.get('talao');
+					// Se veio de talão, NÃO resetar: manter pré-preenchidos do backend e apenas limpar storage
+					if(isCriacao || (urlNovo && !fromTalao)){
+						limparStorageAbertura();
+						// Também reseta os campos visuais para garantir formulário limpo já na abertura
+						resetarFormularioAbertura(true);
+						return; // não restaura nada
+					}
+					const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY);
+					if(!raw) return;
+					const parsed = JSON.parse(raw); const dados = parsed.dados || parsed;
+					Object.keys(dados).forEach(k=>{
+						if(k === 'codigo-bogcm') return;
+						const el = document.getElementById(k) || document.querySelector(`[name="${k}"]`);
+						if(!el) return;
+						if(el.type==='checkbox') el.checked = !!dados[k]; else if(k!=='km_utilizada' && k!=='duracao') el.value = dados[k];
+					});
+					const numEl = document.getElementById('codigo-bogcm');
+					if(numEl){ numEl.value = '{{ bo.numero }}'; }
+					calcularKmUtilizada(); calcularHorarioTotal();
+				}catch(e){ console.warn('Não foi possível restaurar abertura', e); }
+			}
+			function instalarEventos(){
+				const form = document.getElementById(FORM_ID); if(!form) return;
+				form.addEventListener('input', ()=>salvar());
+				form.addEventListener('change', ()=>salvar());
+				['km-inicio','km-final'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', ()=>{calcularKmUtilizada(); salvar();}); });
+				['horario-inicial','horario-final'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', ()=>{calcularHorarioTotal(); salvar();}); });
+				// Atualiza natureza a partir do select de código
+				const codigoSel = document.getElementById('codigo-ocorrencia');
+				if(codigoSel){
+					codigoSel.addEventListener('change', function(){
+						const opt = this.selectedOptions[0];
+						if(opt && opt.dataset.sigla){
+							const sigla = opt.dataset.sigla;
+							const desc = opt.dataset.descricao;
+							const siglaInput = document.getElementById('cod-natureza');
+							const naturezaInput = document.getElementById('natureza');
+							if(siglaInput) siglaInput.value = sigla;
+							if(naturezaInput) naturezaInput.value = `${sigla} - ${desc}`;
+							salvar();
+						}
+					});
+				}
+				window.addEventListener('beforeunload', ()=>salvar(true));
+				setTimeout(()=>salvar(true), 1000); // snapshot inicial
+			}
+			document.addEventListener('DOMContentLoaded', function(){
+				restaurar();
+				instalarEventos();
+				// Modo visualização por padrão
+				setAberturaMode('view');
+				// Controles de edição
+				const btnEditar = document.getElementById('btn-editar-abertura');
+				const btnSalvar = document.getElementById('btn-salvar-abertura');
+				const btnCancelar = document.getElementById('btn-cancelar-abertura');
+				btnEditar && btnEditar.addEventListener('click', ()=>{
+					aberturaSnapshot = coletar();
+					setAberturaMode('edit');
+				});
+				btnSalvar && btnSalvar.addEventListener('click', ()=>{
+					salvar(true);
+					window._unsavedChanges = false;
+					setAberturaMode('view');
+					try{ criarToast('Abertura salva.', 'success'); }catch(e){}
+				});
+				btnCancelar && btnCancelar.addEventListener('click', ()=>{
+					if(aberturaSnapshot){ aplicarDados(aberturaSnapshot); salvar(true); }
+					setAberturaMode('view');
+					try{ criarToast('Edição cancelada.', 'info'); }catch(e){}
+				});
+			});
+			// Expor helpers se outros scripts precisarem
+			window._bogcmiAbertura = {salvar: ()=>salvar(true), coletar, restaurar, aplicar: aplicarDados};
+
+			// Badge status inicial (apenas edição aqui; offline pendente será atualizado em outro script)
+			const badge = document.getElementById('bo-status-badge');
+			if(badge){
+				badge.textContent = 'EM EDIÇÃO';
+				badge.classList.remove('hidden');
+			}
+		})();
+		</script>
+
+		<div id="tab-apreensao" class="tab-content hidden">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800">Apreensão</h3>
+			<p class="text-slate-600 mb-4">Gerencie objetos apreendidos durante a ocorrência.</p>
+            <a href="{% url 'bogcmi:apreensao_form' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-indigo-600 text-white font-bold block w-full sm:w-fit text-center">Adicionar Apreensão</a>
+            <a href="{% url 'bogcmi:apreensao_lista' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-slate-600 text-white font-bold block w-full sm:w-fit text-center">Ver Lista de Apreensões</a>
+		</div>
+
+		<div id="tab-veiculo-envolvido" class="tab-content hidden">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800">Veículo Envolvido</h3>
+			<p class="text-slate-600 mb-4">Gerencie veículos envolvidos na ocorrência.</p>
+            <a href="{% url 'bogcmi:veiculo_form' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-green-600 text-white font-bold block w-full sm:w-fit text-center">Adicionar Veículo</a>
+            <a href="{% url 'bogcmi:veiculo_lista' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-blue-600 text-white font-bold block w-full sm:w-fit text-center">Lista de Veículos</a>
+		</div>
+
+
+
+		<div id="tab-equipes-apoio" class="tab-content hidden">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800">Equipes de Apoio</h3>
+			<p class="text-slate-600 mb-4">Gerencie equipes que prestaram apoio na ocorrência.</p>
+            <a href="{% url 'bogcmi:equipe_form' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-indigo-600 text-white font-bold block w-full sm:w-fit text-center">Adicionar Equipe de Apoio</a>
+            <a href="{% url 'bogcmi:equipe_lista' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-slate-600 text-white font-bold block w-full sm:w-fit text-center">Ver Lista de Equipes</a>
+		</div>
+
+		<div id="tab-historico" class="tab-content hidden">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800">Histórico GCM</h3>
+			<div class="flex flex-col items-center">
+				<!-- Toolbar: fixa no topo da área do histórico no mobile para ficar sempre visível -->
+				<div class="flex flex-wrap gap-2 md:gap-3 mb-2 text-sm font-semibold text-indigo-700 items-center w-full justify-center sticky top-0 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 z-20 px-2 py-2 rounded">
+					<span class="hidden sm:inline text-slate-500">Apoio IA:</span>
+					<a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer" class="px-3 py-1 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 transition">Gemini</a>
+					<a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="px-3 py-1 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 transition">ChatGPT</a>
+					<button type="button" id="btn-lt-check-bo" class="px-3 py-1 rounded border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium transition" title="Verificar ortografia e gramática com LanguageTool (pt-BR)">LanguageTool</button>
+				</div>
+				<button id="btn-adicionar-editar-historico" class="px-4 py-2 mb-3 rounded bg-indigo-600 text-white font-bold w-full sm:w-auto">Adicionar/Editar</button>
+				<textarea id="campo-historico" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50 hidden" rows="20" placeholder="Digite o histórico aqui..."></textarea>
+				<div class="mt-2 flex items-center gap-3 flex-wrap w-full">
+					<button type="button" id="btn-voice-bo" class="px-4 py-2 text-sm md:text-base rounded-lg border-2 border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold transition" title="Ditado por voz (pt-BR)">🎤 Ditado</button>
+					<button type="button" id="btn-voice-insert-bo" class="px-4 py-2 text-sm md:text-base rounded-lg border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold transition disabled:opacity-50" disabled>Inserir Prévia</button>
+				</div>
+				<div id="voice-preview-bo" class="hidden mt-1 text-[12px] text-slate-600 w-full">
+					<span class="text-slate-400">Prévia:</span>
+					<span id="voice-preview-text-bo"></span>
+				</div>
+				<!-- LanguageTool resultados (BO) -->
+				<div id="lt-panel-bo" class="hidden mt-2 w-full border rounded bg-emerald-50/50">
+					<div class="flex items-center justify-between px-3 py-2 border-b">
+						<div class="text-sm text-emerald-800"><strong id="lt-count-bo">0</strong> sugestão(ões) de correção</div>
+						<div class="flex items-center gap-2">
+							<button type="button" id="lt-apply-all-bo" class="text-xs px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50" disabled>Aplicar todas</button>
+							<button type="button" id="lt-close-bo" class="text-xs px-2 py-1 rounded border">Fechar</button>
+						</div>
+					</div>
+					<div id="lt-issues-bo" class="max-h-60 overflow-auto divide-y"></div>
+					<div class="px-3 py-2 text-[11px] text-slate-500 border-t">As sugestões são fornecidas por LanguageTool (pt-BR). Revise antes de aplicar.</div>
+				</div>
+				<div id="botoes-historico" class="hidden flex gap-4 mt-4">
+					<button id="btn-salvar-historico" class="px-4 py-2 rounded bg-green-600 text-white font-bold">Salvar</button>
+					<button id="btn-cancelar-historico" class="px-4 py-2 rounded bg-gray-500 text-white font-bold">Cancelar</button>
+				</div>
+				<div id="historico-salvo" class="mt-4 w-full bg-gray-100 border border-gray-300 rounded-lg p-4">
+					<h4 class="text-lg font-semibold text-gray-700 mb-2">Histórico Salvo:</h4>
+					<p id="texto-historico-salvo" class="text-gray-600"></p>
+				</div>
+			</div>
+		</div>
+
+		<div id="tab-anexos" class="tab-content hidden">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800">Anexos</h3>
+			<p class="text-slate-600 mb-4">Gerencie os anexos relacionados à ocorrência.</p>
+            <a href="{% url 'bogcmi:anexo_form' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-indigo-600 text-white font-bold block w-full sm:w-fit text-center">Adicionar Anexo</a>
+            <a href="{% url 'bogcmi:anexo_lista' %}{% if bo %}?bo={{ bo.pk }}{% endif %}" class="px-4 py-2 mb-4 rounded bg-slate-600 text-white font-bold block w-full sm:w-fit text-center">Lista de Anexos</a>
+		</div>
+
+		
+		<div id="tab-finalizacao" class="tab-content hidden">
+			<h3 class="text-xl font-semibold mb-2 text-indigo-800 flex items-center justify-between">
+				<span>Finalização</span>
+				<div class="flex items-center gap-2">
+					<button type="button" id="btn-editar-finalizacao" class="px-3 py-1.5 text-xs font-semibold rounded border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition">Editar</button>
+					<button type="button" id="btn-salvar-finalizacao" class="hidden px-3 py-1.5 text-xs font-semibold rounded border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">Salvar</button>
+					<button type="button" id="btn-cancelar-finalizacao" class="hidden px-3 py-1.5 text-xs font-semibold rounded border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+				</div>
+			</h3>
+			<div class="hidden mb-4 flex flex-wrap gap-2 items-center p-2 bg-indigo-50 border border-indigo-200 rounded">
+				<span class="text-xs font-semibold text-indigo-700">Modo Offline Experimental</span>
+				<button type="button" id="btn-offline-save" class="px-3 py-1 text-xs rounded bg-indigo-600 text-white">Salvar Local</button>
+				<button type="button" id="btn-offline-sync" class="px-3 py-1 text-xs rounded bg-green-600 text-white">Sincronizar Agora</button>
+				<span id="offline-status" class="text-xs text-slate-600"></span>
+			</div>
+			<form id="form-finalizacao" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">Número B.O.P.C (Delegacia)</label>
+					<input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" name="numero_bopc" id="numero-bopc" value="{% if bo %}{{ bo.numero_bopc }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">Número T.C.O. (Delegacia)</label>
+					<input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" name="numero_tco" id="numero-tco" value="{% if bo %}{{ bo.numero_tco }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">Autoridade Policial (Delegado)</label>
+					<input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" name="autoridade_policial" id="autoridade-policial" value="{% if bo %}{{ bo.autoridade_policial }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">Escrivão (Delegacia)</label>
+					<input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" name="escrivao" id="escrivao" value="{% if bo %}{{ bo.escrivao }}{% endif %}">
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">Uso de Algemas?</label>
+					<select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white" name="algemas" id="algemas">
+						<option value="">Selecione...</option>
+						<option value="Sim" {% if bo and bo.algemas == 'Sim' %}selected{% endif %}>Sim</option>
+						<option value="Não" {% if bo and bo.algemas == 'Não' %}selected{% endif %}>Não</option>
+					</select>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">(*) De Grande Vulto?</label>
+					<select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white" name="grande_vulto" id="grande-vulto">
+						<option value="">Selecione...</option>
+						<option value="Sim" {% if bo and bo.grande_vulto == 'Sim' %}selected{% endif %}>Sim</option>
+						<option value="Não" {% if bo and bo.grande_vulto == 'Não' %}selected{% endif %}>Não</option>
+					</select>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">Ocorrência finalizada em:</label>
+					<select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white" name="finalizada_em" id="finalizada-em">
+						<option value="">Selecione...</option>
+						<option value="Delegacia" {% if bo and bo.local_finalizacao == 'Delegacia' %}selected{% endif %}>Delegacia</option>
+						<option value="No local" {% if bo and bo.local_finalizacao == 'No local' %}selected{% endif %}>No local</option>
+						<option value="Na Sede GCM" {% if bo and bo.local_finalizacao == 'Na Sede GCM' %}selected{% endif %}>Na Sede GCM</option>
+						<option value="Hospital Municipal" {% if bo and bo.local_finalizacao == 'Hospital Municipal' %}selected{% endif %}>Hospital Municipal</option>
+						<option value="Outros" {% if bo and bo.local_finalizacao == 'Outros' %}selected{% endif %}>Outros</option>
+					</select>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-slate-700 mb-1">Flagrante</label>
+					<select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white" name="flagrante" id="flagrante">
+						<option value="">Selecione...</option>
+						<option value="Sim" {% if bo and bo.flagrante == 'Sim' %}selected{% endif %}>Sim</option>
+						<option value="Não" {% if bo and bo.flagrante == 'Não' %}selected{% endif %}>Não</option>
+					</select>
+				</div>
+				<div class="col-span-1 md:col-span-3 mt-8 flex justify-center">
+					{% if usuario_e_encarregado %}
+					<button type="button" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition-colors duration-200" id="btn-finalizar-bo">
+						Finalizar
+					</button>
+					{% else %}
+					<button type="button" disabled class="px-8 py-3 bg-gray-400 text-gray-200 font-bold rounded-lg shadow-lg cursor-not-allowed" title="Apenas o Encarregado pode finalizar o BO">
+						Finalizar
+					</button>
+					{% endif %}
+				</div>
+			</form>
+		</div>
+		
+	</div>
+</div>
+
+		<script>
+		// --- OFFLINE QUEUE EXPERIMENTAL ---
+		(function(){
+			const LS_KEY_QUEUE = 'bogcmi-offline-bos-v1';
+			const statusEl = document.getElementById('offline-status');
+			const btnSave = document.getElementById('btn-offline-save');
+			const btnSync = document.getElementById('btn-offline-sync');
+			let syncingAuto = false; // guarda estado de sincronização automática
+			function loadQueue(){
+				try { return JSON.parse(localStorage.getItem(LS_KEY_QUEUE)||'[]'); } catch(e){ return []; }
+			}
+			function saveQueue(q){ localStorage.setItem(LS_KEY_QUEUE, JSON.stringify(q)); }
+			function uuidv4(){
+				return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+					const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16);
+				});
+			}
+			function coletarDados(){
+				const abertura = window._bogcmiAbertura ? window._bogcmiAbertura.coletar() : {};
+				const finalForm = document.getElementById('form-finalizacao');
+				const fin = {};
+				if(finalForm){ finalForm.querySelectorAll('input,select,textarea').forEach(el=>{ fin[el.name||el.id]=el.value; }); }
+				// Merge simples
+				const dados = Object.assign({}, abertura, fin);
+				// Campos esperados pelo backend
+				return {
+					natureza: dados['natureza']||'',
+					cod_natureza: dados['cod_natureza']||'',
+					solicitante: dados['solicitante']||'',
+					bairro: dados['bairro']||'',
+					cidade: dados['cidade']||'',
+					uf: dados['uf']||'SP',
+					numero_endereco: dados['numero']||'',
+					rua: dados['rua']||'',
+					referencia: dados['referencia']||'',
+					km_inicio: dados['km_inicio']||dados['km-inicio']||'',
+					km_final: dados['km_final']||dados['km-final']||'',
+					horario_inicial: dados['horario_inicial']||dados['horario-inicial']||'',
+					horario_final: dados['horario_final']||dados['horario-final']||'',
+					duracao: dados['duracao']||'',
+					numero_bopc: dados['numero_bopc']||'',
+					numero_tco: dados['numero_tco']||'',
+					autoridade_policial: dados['autoridade_policial']||'',
+					escrivao: dados['escrivao']||'',
+					algemas: dados['algemas']||'',
+					grande_vulto: dados['grande_vulto']||'',
+					local_finalizacao: dados['finalizada_em']||'',
+					flagrante: dados['flagrante']||'',
+					providencias: dados['historico']||dados['providencias']||'',
+					viatura_id: dados['viatura']||null,
+					motorista_id: dados['motorista']||null,
+					auxiliar1_id: dados['auxiliar1']||null,
+					auxiliar2_id: dados['auxiliar2']||null,
+					cecom_id: dados['cecom']||null,
+					status: 'EDICAO'
+				};
+			}
+					// Autosave rápido para deslocamento/tempo -> envia para backend se online.
+					async function postSalvarParcial(payload, showFeedback = false){
+						if(!navigator.onLine) return; // só online
+						if(!window._boId) return;
+						const formData = new FormData();
+						Object.entries(payload).forEach(([k,v])=>{ if(v!==undefined && v!==null) formData.append(k, v); });
+						try {
+							const resp = await fetch(`/bogcmi/${window._boId}/salvar/`, {method:'POST', headers:{'X-CSRFToken':getCsrf()}, body: formData});
+							if(resp.ok && showFeedback) {
+								updateStatus('Alterações salvas automaticamente', 'text-green-600');
+								setTimeout(() => updateStatus('', ''), 2000);
+							}
+						} catch(e) {
+							console.error('Erro ao salvar:', e);
+						}
+					}
+					['km-inicio','km-final','horario-inicial','horario-final'].forEach(id=>{
+						const el=document.getElementById(id); if(!el) return; el.addEventListener('change', ()=>{
+							const dados = coletarDados();
+							postSalvarParcial({
+								km_inicio: dados.km_inicio,
+								km_final: dados.km_final,
+								horario_inicial: dados.horario_inicial,
+								horario_final: dados.horario_final,
+								duracao: dados.duracao
+							});
+						});
+					});
+					// Autosave para GCMs Envolvidos (viatura, motorista, encarregado, cecom, auxiliares)
+					['viatura','motorista','encarregado','cecom','auxiliar1','auxiliar2'].forEach(id=>{
+						const el=document.getElementById(id); if(!el) return; el.addEventListener('change', ()=>{
+							const dados = coletarDados();
+							postSalvarParcial({
+								viatura_id: dados.viatura_id,
+								motorista_id: dados.motorista_id,
+								encarregado_id: document.getElementById('encarregado').value || null,
+								cecom_id: dados.cecom_id,
+								auxiliar1_id: dados.auxiliar1_id,
+								auxiliar2_id: dados.auxiliar2_id
+							}, true); // true = mostrar feedback
+						});
+					});
+							});
+						});
+					});
+			function updateStatus(msg, cls){ if(statusEl){ statusEl.textContent = msg; statusEl.className='text-xs '+(cls||'text-slate-600'); } }
+			btnSave && btnSave.addEventListener('click', function(){
+				const queue = loadQueue();
+				const dados = coletarDados();
+				// Se já existe bo_id (BO criado online), usar isso para evitar duplicado
+				const boId = window._boId || null;
+				// Reutiliza client_uuid se o BO já tem (servidor) senão gera para item novo
+				let cUUID = window._boClientUUID && window._boClientUUID.length ? window._boClientUUID : null;
+				if(!cUUID) cUUID = uuidv4();
+				// Evitar inserir item duplicado para mesmo bo_id em edição: substitui entrada existente
+				let replaced = false;
+				if(boId){
+					for(let i=0;i<queue.length;i++){
+						if(queue[i].bo_id && String(queue[i].bo_id) === String(boId)){
+							queue[i] = { bo_id: boId, client_uuid: cUUID, dados, created_at: Date.now() };
+							replaced = true; break;
+						}
+					}
+				}
+				if(!replaced){
+					queue.push({ bo_id: boId, client_uuid: cUUID, dados, created_at: Date.now() });
+				}
+				saveQueue(queue);
+				updateStatus('BO offline armazenado ('+queue.length+' pendente[s])'+(replaced?' (atualizado)':''), 'text-amber-600');
+				atualizarBadge(queue);
+			});
+			async function sync(){
+				let queue = loadQueue(); if(!queue.length){ updateStatus('Nenhum BO offline pendente.', 'text-green-600'); return; }
+				updateStatus('Sincronizando '+queue.length+' BO(s)...', 'text-indigo-600');
+				try {
+					const resp = await fetch("{% url 'bogcmi:sync_offline_bos' %}", {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()}, body: JSON.stringify({bos: queue})});
+					if(!resp.ok){ throw new Error('HTTP '+resp.status); }
+					const data = await resp.json();
+					// Atualiza client_uuid global se algum item corresponder ao BO atual
+					if(Array.isArray(data.results)){
+						data.results.forEach(r=>{
+							if(window._boId && r.bo_id && String(r.bo_id)===String(window._boId)){
+								window._boClientUUID = r.client_uuid;
+							}
+						});
+					}
+					// Remove apenas itens sincronizados com sucesso
+					const syncedKeys = new Set((data.results||[]).map(r=> (r.bo_id?('id:'+r.bo_id):('c:'+r.client_uuid)) ));
+					queue = queue.filter(it=>{
+						const key = it.bo_id?('id:'+it.bo_id):('c:'+it.client_uuid);
+						return !syncedKeys.has(key);
+					});
+					saveQueue(queue);
+					updateStatus('Sincronizado: '+(data.count||0)+' BO(s). Restantes: '+queue.length, queue.length?'text-amber-600':'text-green-600');
+					atualizarBadge(queue);
+					console.log('Sync result', data);
+				} catch(e){ console.error(e); updateStatus('Falha na sincronização: '+e.message, 'text-red-600'); }
+			}
+			function atualizarBadge(queue){
+				const badge = document.getElementById('bo-status-badge');
+				if(!badge) return;
+				const boId = window._boId ? String(window._boId) : null;
+				let pendenteAtual = false;
+				if(boId){
+					for(const it of (queue||[])){
+						if(it.bo_id && String(it.bo_id)===boId){ pendenteAtual = true; break; }
+					}
+				}else if(window._boClientUUID){
+					pendenteAtual = (queue||[]).some(it=> it.client_uuid === window._boClientUUID);
+				}
+				if(pendenteAtual){
+					badge.textContent = 'OFFLINE PENDENTE';
+					badge.className = 'hidden md:block text-[10px] font-semibold ml-auto md:ml-0 md:mt-1 px-2 py-0.5 rounded bg-amber-600 text-white';
+				}else{
+					badge.textContent = 'EM EDIÇÃO';
+					badge.className = 'hidden md:block text-[10px] font-semibold ml-auto md:ml-0 md:mt-1 px-2 py-0.5 rounded bg-indigo-100 text-indigo-700';
+				}
+				badge.classList.remove('hidden');
+			}
+			// Atualiza badge ao carregar
+			atualizarBadge(loadQueue());
+			function getCsrf(){ const m=document.cookie.match(/csrftoken=([^;]+)/); return m?m[1]:''; }
+			btnSync && btnSync.addEventListener('click', sync);
+			window.addEventListener('online', async ()=>{
+				const queue = loadQueue();
+				if(!queue.length){
+					updateStatus('Conexão restaurada. Nenhum item offline pendente.', 'text-green-700');
+					atualizarBadge(queue);
+					return;
+				}
+				updateStatus('Conexão restaurada. '+queue.length+' item(ns) offline pendente(s).', 'text-amber-700');
+				atualizarBadge(queue);
+				// Confirmação do usuário antes de sincronizar automaticamente
+				try {
+					if(syncingAuto) return; // já em progresso
+					const ok = window.confirm('Encontrados '+queue.length+' BO(s) offline pendentes. Sincronizar agora?');
+					if(!ok) return;
+					syncingAuto = true;
+					await sync();
+				} catch(e){ console.warn('Falha sync automática', e); }
+				finally { syncingAuto = false; }
+			});
+			window.addEventListener('offline', ()=>{ updateStatus('Sem conexão. Operando offline.', 'text-amber-700'); });
+			if(!navigator.onLine){ updateStatus('Sem conexão. Você pode salvar offline.', 'text-amber-700'); }
+		})();
+		</script>
+
+<!-- Script funcional de navegação de abas -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando navegação de abas');
+    
+    // Função para ativar uma aba
+    function setActiveTab(tabName) {
+        console.log('Ativando aba:', tabName);
+        
+        // Esconder todas as abas
+        document.querySelectorAll('.tab-content').forEach(function(tab) {
+            tab.classList.add('hidden');
+        });
+        
+        // Remover destaque de todos os botões
+        document.querySelectorAll('.nav-btn').forEach(function(btn) {
+            btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'font-bold');
+        });
+        
+        // Mostrar a aba ativa
+        const activeTab = document.getElementById('tab-' + tabName);
+        if (activeTab) {
+            activeTab.classList.remove('hidden');
+        }
+        
+        // Destacar o botão ativo
+        const activeBtn = document.querySelector('.nav-btn[data-tab="' + tabName + '"]');
+        if (activeBtn) {
+            activeBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'font-bold');
+        }
+        
+        // Salvar no localStorage
+        localStorage.setItem('bogcmi-aba-ativa', tabName);
+    }
+    
+    // Adicionar eventos de clique nos botões
+    const buttons = document.querySelectorAll('.nav-btn');
+    console.log('Botões encontrados:', buttons.length);
+    
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabName = btn.getAttribute('data-tab');
+            console.log('Clicou na aba:', tabName);
+            setActiveTab(tabName);
+        });
+    });
+    
+	// Heurística de restauração de aba:
+	// Guardamos {aba, pathname, ts_ativada, duracao_perm} na última mudança.
+	// Só restauramos se for mesma rota e se duracao_perm >= 5000ms; caso contrário começa em 'abertura'.
+	try {
+		const RAW_KEY = 'bogcmi-aba-ultima';
+		const now = Date.now();
+		const saved = localStorage.getItem(RAW_KEY);
+		let restored = false;
+		if(saved){
+			const obj = JSON.parse(saved);
+			if(obj && obj.pathname === location.pathname && obj.aba && obj.duracao_perm >= 5000){
+				setActiveTab(obj.aba);
+				restored = true;
+			}
+		}
+		if(!restored){ setActiveTab('abertura'); }
+		// Intercepta setActiveTab para registrar duração
+		const originalSet = setActiveTab;
+		let lastSwitch = Date.now();
+		window.setActiveTab = function(tab){
+			const before = lastSwitch; const now2 = Date.now();
+			// Atualiza registro da aba anterior
+			try {
+				let meta = JSON.parse(localStorage.getItem(RAW_KEY)||'{}');
+				if(meta && meta.aba){
+					meta.duracao_perm = (meta.duracao_perm||0) + (now2 - before);
+					localStorage.setItem(RAW_KEY, JSON.stringify(meta));
+				}
+			} catch(e){}
+			originalSet(tab);
+			lastSwitch = Date.now();
+			// Armazena nova aba com reset de duração
+			try {
+				localStorage.setItem(RAW_KEY, JSON.stringify({aba: tab, pathname: location.pathname, ts_ativada: lastSwitch, duracao_perm: 0}));
+			}catch(e){}
+		};
+	} catch(e){ setActiveTab('abertura'); }
+});
+</script>
+
+<style>
+/* Força bordas arredondadas em todos os campos do formulário */
+.tab-content select,
+.tab-content input[type="text"],
+.tab-content input[type="date"],
+.tab-content input[type="time"],
+.tab-content input[type="number"] {
+    border-radius: 0.5rem !important;
+    border: 1px solid #d1d5db !important;
+    padding: 0.5rem 0.75rem !important;
+    width: 100% !important;
+    background-color: white !important;
+    transition: all 0.2s ease !important;
+}
+
+.tab-content input[readonly] {
+    background-color: #f9fafb !important;
+}
+
+.tab-content select:focus,
+.tab-content input:focus {
+    outline: none !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Estilo para os botões de navegação */
+.nav-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
+.nav-btn:hover {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+.nav-btn.bg-indigo-100 {
+    background-color: #e0e7ff !important;
+    color: #3730a3 !important;
+    font-weight: 700 !important;
+}
+
+/* Ajustes apenas para mobile: fonte menor, padding reduzido e centralização */
+@media (max-width: 767px) {
+	.nav-btn {
+		font-size: 12px;
+		padding: 0.4rem 0.5rem;
+		text-align: center;
+	}
+}
+
+/* Controle específico para campos em modo edição */
+.tab-content select[disabled],
+.tab-content input[disabled] {
+    background-color: #f9fafb !important;
+    color: #6b7280 !important;
+    cursor: not-allowed !important;
+    opacity: 0.8 !important;
+    border-color: #e5e7eb !important;
+}
+
+.tab-content select:not([disabled]),
+.tab-content input:not([disabled]):not([readonly]) {
+    background-color: white !important;
+    color: #1f2937 !important;
+    cursor: auto !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Força estilo específico para selects habilitados - PADRONIZAÇÃO COMPLETA */
+.tab-content select:not([disabled]) {
+    background-color: white !important;
+    border: 1px solid #d1d5db !important;
+    color: #1f2937 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* Remove qualquer interferência de classes cinza */
+.tab-content select.bg-gray-100,
+.tab-content select.bg-gray-200 {
+    background-color: white !important;
+}
+
+/* Garante que selects com js-choices funcionem normalmente */
+.tab-content select.js-choices:not([disabled]) {
+    background-color: white !important;
+    color: #1f2937 !important;
+    opacity: 1 !important;
+}
+
+/* CSS específico para Choices.js */
+.choices {
+    margin-bottom: 0 !important;
+}
+
+.choices__inner {
+    background-color: white !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 0.75rem !important;
+    min-height: 42px !important;
+}
+
+.choices.is-disabled .choices__inner {
+    background-color: #f9fafb !important;
+    color: #6b7280 !important;
+    cursor: not-allowed !important;
+    opacity: 0.8 !important;
+}
+
+.choices:not(.is-disabled) .choices__inner {
+    background-color: white !important;
+    color: #1f2937 !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+}
+
+.choices__inner:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Força reset para selects problemáticos */
+.choices__inner.bg-gray-100,
+.choices__inner.bg-gray-200 {
+    background-color: white !important;
+}
+
+/* Removido o estilo que escondia o salvar da abertura; agora usamos modo de edição com salvar/cancelar */
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnAdicionarEditar = document.getElementById('btn-adicionar-editar-historico');
+        const campoHistorico = document.getElementById('campo-historico');
+        const botoesHistorico = document.getElementById('botoes-historico');
+        const textoHistoricoSalvo = document.getElementById('texto-historico-salvo');
+		// LanguageTool (BO)
+		const btnLtCheckBo = document.getElementById('btn-lt-check-bo');
+		const ltPanelBo = document.getElementById('lt-panel-bo');
+		const ltIssuesBo = document.getElementById('lt-issues-bo');
+		const ltApplyAllBo = document.getElementById('lt-apply-all-bo');
+		const ltCloseBo = document.getElementById('lt-close-bo');
+		const ltCountBo = document.getElementById('lt-count-bo');
+		let ltMatchesBo = [];
+
+        btnAdicionarEditar.addEventListener('click', function() {
+            campoHistorico.classList.remove('hidden');
+            botoesHistorico.classList.remove('hidden');
+            btnAdicionarEditar.style.display = 'none';
+        });
+
+		const HIST_KEY = 'historico-gcm:' + (window._boId || 'global');
+
+		document.getElementById('btn-cancelar-historico').addEventListener('click', function() {
+			campoHistorico.value = localStorage.getItem(HIST_KEY) || '';
+            campoHistorico.classList.add('hidden');
+            botoesHistorico.classList.add('hidden');
+            btnAdicionarEditar.style.display = 'block';
+        });
+
+        document.getElementById('btn-salvar-historico').addEventListener('click', function() {
+			localStorage.setItem(HIST_KEY, campoHistorico.value);
+            textoHistoricoSalvo.textContent = campoHistorico.value;
+            campoHistorico.classList.add('hidden');
+            botoesHistorico.classList.add('hidden');
+            btnAdicionarEditar.style.display = 'block';
+			criarToast('Histórico salvo', 'success');
+        });
+
+        campoHistorico.addEventListener('input', function() {
+			localStorage.setItem(HIST_KEY, campoHistorico.value);
+			window._unsavedChanges = true;
+        });
+		textoHistoricoSalvo.textContent = localStorage.getItem(HIST_KEY) || 'Nenhum histórico salvo ainda.';
+		campoHistorico.value = localStorage.getItem(HIST_KEY) || '';
+
+		// ==== LanguageTool Helpers (BO) ====
+		function escapeHtmlBo(str){
+			return (str||'').replace(/[&<>\"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
+		}
+		function renderLtIssuesBo(matches){
+			ltIssuesBo.innerHTML = '';
+			if(!matches || matches.length===0){
+				ltPanelBo.classList.add('hidden');
+				ltApplyAllBo.disabled = true;
+				ltCountBo.textContent = '0';
+				return;
+			}
+			ltPanelBo.classList.remove('hidden');
+			ltApplyAllBo.disabled = false;
+			ltCountBo.textContent = String(matches.length);
+			const frag = document.createDocumentFragment();
+			const full = campoHistorico.value || '';
+			matches.forEach((m, idx)=>{
+				const sug = (m.replacements && m.replacements[0] && m.replacements[0].value) || null;
+				const row = document.createElement('div');
+				row.className = 'px-3 py-2 flex items-start gap-3';
+				const sample = full.substr(m.offset, m.length);
+				row.innerHTML = `
+				  <div class="flex-1">
+					<div class="text-[12px] text-slate-700 mb-1">${escapeHtmlBo(m.message||'')}</div>
+					<div class="text-[12px]"><span class="px-1 rounded bg-rose-100 text-rose-800">${escapeHtmlBo(sample)}</span>
+					${sug ? `→ <span class=\"px-1 rounded bg-emerald-100 text-emerald-800\">${escapeHtmlBo(sug)}</span>` : ''}
+					</div>
+					<div class="text-[11px] text-slate-500 mt-1">Regra: ${(m.rule && (m.rule.id || m.rule.description)) || '-'}</div>
+				  </div>
+				  <div class="flex items-center gap-2">
+					${sug ? `<button data-idx="${idx}" class="lt-apply-bo text-xs px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700">Aplicar</button>` : ''}
+				  </div>`;
+				frag.appendChild(row);
+			});
+			ltIssuesBo.appendChild(frag);
+			ltIssuesBo.querySelectorAll('.lt-apply-bo').forEach(btn=>{
+				btn.addEventListener('click', (e)=>{
+					const i = parseInt(e.currentTarget.getAttribute('data-idx'));
+					applyLtOneBo(i);
+				});
+			});
+		}
+		function applyLtAllBo(){
+			if(!ltMatchesBo || ltMatchesBo.length===0) return;
+			let text = campoHistorico.value || '';
+			const applicable = ltMatchesBo.filter(m=>m.replacements && m.replacements[0]).sort((a,b)=> b.offset - a.offset);
+			applicable.forEach(m=>{
+				const rep = m.replacements[0].value;
+				text = text.slice(0, m.offset) + rep + text.slice(m.offset + m.length);
+			});
+			campoHistorico.value = text;
+			// Reexecuta para novas sugestões
+			runLtBo();
+		}
+		function applyLtOneBo(index){
+			const m = ltMatchesBo[index];
+			if(!m || !m.replacements || !m.replacements[0]) return;
+			let text = campoHistorico.value || '';
+			if(m.offset < 0 || m.offset > text.length){ return runLtBo(); }
+			const rep = m.replacements[0].value;
+			campoHistorico.value = text.slice(0, m.offset) + rep + text.slice(m.offset + m.length);
+			runLtBo();
+		}
+		async function runLtBo(){
+			// Garante que o editor esteja visível
+			if(campoHistorico.classList.contains('hidden')){
+				const btn = document.getElementById('btn-adicionar-editar-historico');
+				if(btn){ btn.click(); }
+			}
+			const text = campoHistorico.value || '';
+			if(!text.trim()){
+				ltMatchesBo = [];
+				renderLtIssuesBo([]);
+				return;
+			}
+			try {
+				const params = new URLSearchParams();
+				params.append('language', 'pt-BR');
+				params.append('text', text);
+				const resp = await fetch('https://api.languagetool.org/v2/check', {
+					method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString()
+				});
+				const data = await resp.json();
+				ltMatchesBo = data.matches || [];
+				renderLtIssuesBo(ltMatchesBo);
+			} catch(err){
+				console.error('LanguageTool (BO) error:', err);
+				ltPanelBo.classList.remove('hidden');
+				ltIssuesBo.innerHTML = '<div class="px-3 py-2 text-rose-700">Falha ao verificar. Verifique sua conexão.</div>';
+				ltApplyAllBo.disabled = true;
+				ltCountBo.textContent = '0';
+			}
+		}
+		if(btnLtCheckBo) btnLtCheckBo.addEventListener('click', runLtBo);
+		if(ltApplyAllBo) ltApplyAllBo.addEventListener('click', applyLtAllBo);
+		if(ltCloseBo) ltCloseBo.addEventListener('click', ()=> ltPanelBo.classList.add('hidden'));
+
+		// Aviso de alterações não salvas (qualquer input na abertura já marca unsaved via eventos lá; reforço aqui)
+		window.addEventListener('beforeunload', function(e){
+			if(window._unsavedChanges){
+				e.preventDefault();
+				e.returnValue = '';
+			}
+		});
+    });
+</script>
+
+<!-- Ditado por voz (Histórico BO) -->
+<script>
+// Reutilizável: instala ditado por voz em um textarea com botões e elementos de status/preview
+function setupDictation(opts){
+	const btn = document.getElementById(opts.btnId);
+	const insertBtn = document.getElementById(opts.insertBtnId);
+	const previewWrap = document.getElementById(opts.previewWrapId);
+	const previewText = document.getElementById(opts.previewTextId);
+	const textarea = document.getElementById(opts.textareaId);
+	const ensureVisible = opts.ensureVisible || (function(){});
+	if(!btn || !textarea) return;
+
+	const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+	const Cap = window.Capacitor || null;
+	const isCapNative = !!(Cap && (typeof Cap.isNativePlatform === 'function' ? Cap.isNativePlatform() : Cap.isNativePlatform));
+	const capPlugin = Cap && Cap.Plugins ? Cap.Plugins.SpeechRecognition : null;
+
+	let listening = false;
+	let recognition = null;
+	let capListeners = [];
+	let usingCap = false;
+	let engine = null; // 'cap' | 'web' | null
+	let starting = false;
+	let stopping = false;
+	let partialBuffer = '';
+		// Controle manual e reinício automático
+		let userWantsListening = false;
+		let restartTimer = null;
+		let restartDelayMs = 300;
+
+	function setPreview(text){ if(previewText){ previewText.textContent = text || ''; } if(previewWrap){ previewWrap.classList.toggle('hidden', !(text && text.trim().length)); } if(insertBtn){ insertBtn.disabled = !(text && text.trim().length); } }
+	function setListening(on){
+		listening = on;
+		if(on){
+			btn.textContent = '⏹️ Parar';
+			btn.classList.remove('bg-sky-50');
+			btn.classList.add('bg-rose-50','border-rose-200','text-rose-700','hover:bg-rose-100');
+			if(previewWrap) previewWrap.classList.remove('hidden');
+		} else {
+			btn.textContent = '🎤 Ditado';
+			btn.classList.remove('bg-rose-50','border-rose-200','text-rose-700','hover:bg-rose-100');
+			btn.classList.add('bg-sky-50');
+			setPreview('');
+		}
+	}
+	function flushPartial(){ if(!userWantsListening){ partialBuffer=''; setPreview(''); return; } if(partialBuffer && partialBuffer.trim()){ setPreview(partialBuffer.trim()); } }
+
+	async function startCapacitor(){
+		if(!capPlugin) throw new Error('Capacitor Speech plugin não disponível');
+		try{ if(capPlugin.requestPermissions) await capPlugin.requestPermissions(); else if(capPlugin.requestPermission) await capPlugin.requestPermission(); }catch(e){}
+		const res = capPlugin.checkPermissions ? await capPlugin.checkPermissions() : (capPlugin.checkPermission ? await capPlugin.checkPermission() : {granted:true});
+		const ok = res && (res.speechRecognition==='granted' || res.state==='granted' || res.granted===true);
+		if(!ok) throw new Error('Permissão de microfone negada');
+		// listeners
+		if(capPlugin.addListener){
+			const l1 = capPlugin.addListener('partialResults', (data)=>{
+				if(!userWantsListening){ try{ capPlugin.stop && capPlugin.stop(); }catch(_){} return; }
+				const t = data && data.matches && data.matches[0];
+				if(t){ ensureVisible(); partialBuffer = String(t); setPreview(partialBuffer); }
+			});
+			capListeners.push(l1);
+			const l2 = capPlugin.addListener('listeningState', (data)=>{
+				if(data && data.status==='stopped'){
+					if(userWantsListening){ ensureVisible(); flushPartial(); }
+					setListening(false); engine=null; usingCap=false;
+					if (userWantsListening && !stopping) scheduleRestart('cap-stopped');
+				} else if(data && data.status==='started'){
+					partialBuffer=''; setListening(true); engine='cap'; usingCap=true;
+					restartDelayMs = 300;
+				}
+			});
+			capListeners.push(l2);
+		}
+		if(capPlugin.start) await capPlugin.start({ language:'pt-BR', partialResults:true, popup:false, maxResults:1 });
+		usingCap=true; engine='cap'; setListening(true);
+		restartDelayMs = 300;
+	}
+	async function stopCapacitor(){ try{ if(capPlugin && capPlugin.stop) await capPlugin.stop(); }catch(e){}
+		try{ capListeners.forEach(l=>l && l.remove && l.remove()); }catch(e){}
+		capListeners=[]; usingCap=false; engine=null; ensureVisible(); flushPartial(); setListening(false);
+	}
+	function initWeb(){
+		const SR = SpeechRecognition; if(!SR) return null; const rec = new SR();
+		rec.lang='pt-BR'; rec.interimResults=true; rec.continuous=true; let webInterim='';
+		rec.addEventListener('start', ()=>{
+			// se usuário cancelou durante start, interrompe imediatamente
+			if(!userWantsListening){ try{ rec.stop(); }catch(_){} try{ if(typeof rec.abort==='function') rec.abort(); }catch(_){} return; }
+			ensureVisible(); setListening(true); engine='web';
+		});
+		rec.addEventListener('end', ()=>{ if(userWantsListening && webInterim && webInterim.trim()){ const w = webInterim.trim(); setPreview(w); webInterim=''; } setListening(false); engine=null; if (userWantsListening && !stopping) scheduleRestart('web-end'); });
+		rec.addEventListener('error', (e)=>{ console.error('Speech error', e); setListening(false); if (userWantsListening && !stopping) scheduleRestart('web-error'); });
+		rec.addEventListener('result', (event)=>{
+			let interim=''; let finalChunk='';
+			for(let i=event.resultIndex;i<event.results.length;i++){ const r=event.results[i]; if(r.isFinal) finalChunk += r[0].transcript; else interim += r[0].transcript; }
+			if(!userWantsListening) return; // Não escreve nada após Parar
+			webInterim = interim || '';
+			if(interim){ ensureVisible(); setPreview(interim.trim()); }
+			if(finalChunk){ const f = finalChunk.trim(); ensureVisible(); setPreview(f); webInterim=''; }
+		});
+		return rec;
+	}
+	const recognitionInst = initWeb();
+
+		async function start(){ if(starting || listening) return; starting=true; try{
+		if(isCapNative && capPlugin){ await startCapacitor(); }
+		else if(recognitionInst){
+			try {
+				if (!window.isSecureContext && !/^localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
+					// Em contexto web inseguro, Web Speech não funciona; no app Capacitor usa nativo
+					alert('Navegador bloqueou microfone: use HTTPS ou localhost.');
+					return;
+				}
+			} catch(_){ }
+			try{ recognitionInst.start(); }catch(e){}
+		}
+		else if(capPlugin){ await startCapacitor(); }
+		else { alert('Ditado não suportado neste dispositivo.'); }
+	} finally { starting=false; } }
+	async function stop(){ if(stopping) return; stopping=true; try{
+		// Força parada independente do estado
+		try{ if(capPlugin && typeof capPlugin.stop==='function') await capPlugin.stop(); }catch(_){ }
+		try{ if(recognitionInst){ try{ recognitionInst.stop(); }catch(_){} try{ if(typeof recognitionInst.abort==='function') recognitionInst.abort(); }catch(_){} } }catch(_){ }
+		try{ capListeners.forEach(l=>l && l.remove && l.remove()); }catch(_){}
+		capListeners=[]; usingCap=false; engine=null; partialBuffer=''; setPreview('');
+		setListening(false);
+	} finally { stopping=false; } }
+		// (removido handler antigo para evitar dupla inscrição de clique)
+		async function forceStopAll(){
+			try{ userWantsListening=false; }catch(_){ }
+			try{ if(restartTimer){ clearTimeout(restartTimer); restartTimer=null; } }catch(_){ }
+			try{ if(capPlugin && typeof capPlugin.stop==='function') await capPlugin.stop(); }catch(_){ }
+			try{ if(capPlugin && typeof capPlugin.removeAllListeners==='function') await capPlugin.removeAllListeners(); }catch(_){ }
+			try{ if(recognitionInst){ try{ recognitionInst.stop(); }catch(_){ } try{ if(typeof recognitionInst.abort==='function') recognitionInst.abort(); }catch(_){ } } }catch(_){ }
+			try{ capListeners.forEach(l=>l && l.remove && l.remove()); }catch(_){ }
+	try{ capListeners.forEach(l=>l && l.remove && l.remove()); }catch(_){ }
+	try{ if(capPlugin && typeof capPlugin.removeAllListeners==='function') capPlugin.removeAllListeners(); }catch(_){ }
+			capListeners=[]; usingCap=false; engine=null; partialBuffer='';
+			setListening(false);
+		}
+		// Re-wires button to the force stop for reliability
+		btn.addEventListener('click', async ()=>{
+			if(!userWantsListening){
+				userWantsListening=true;
+				if(restartTimer){ clearTimeout(restartTimer); restartTimer=null; }
+				await start();
+			} else {
+				// Força atualização imediata do botão/estado ao parar
+				userWantsListening = false;
+				setPreview('');
+				setListening(false);
+				try{ forceStopAll(); }catch(_){ }
+			}
+		});
+		if(insertBtn){ insertBtn.addEventListener('click', ()=>{
+			const pv = (previewText && previewText.textContent) ? previewText.textContent.trim() : '';
+			if(!pv) return;
+			// Insere com separador de linha se necessário
+			let base = textarea.value || '';
+			if(base && !/\n\s*$/.test(base)) base = base.replace(/\s*$/, '') + "\n";
+			textarea.value = base + pv + ' ';
+			setPreview('');
+			try{ textarea.focus(); const end = textarea.value.length; textarea.setSelectionRange(end,end); textarea.scrollTop = textarea.scrollHeight; }catch(_){ }
+		}); }
+	if(recognitionInst){ recognitionInst.addEventListener('error', async (e)=>{
+		const code = (e && (e.error||e.message)) || ''; const recover = ['not-allowed','service-not-allowed','audio-capture','network'].includes(String(code));
+		if(isCapNative && capPlugin && recover){ try{ await startCapacitor(); }catch(_){ } }
+	}); }
+		function scheduleRestart(reason){ if(!userWantsListening) return; if(restartTimer) clearTimeout(restartTimer); restartTimer = setTimeout(async ()=>{ restartTimer=null; if(!userWantsListening || listening || starting) return; try{ await start(); restartDelayMs = Math.min(restartDelayMs+200, 1500); }catch(_){ } }, restartDelayMs); }
+}
+
+// Instala ditado no HISTÓRICO do BO (torna textarea visível automaticamente quando necessário)
+document.addEventListener('DOMContentLoaded', function(){
+	setupDictation({
+		btnId: 'btn-voice-bo',
+		insertBtnId: 'btn-voice-insert-bo',
+		previewWrapId: 'voice-preview-bo',
+		previewTextId: 'voice-preview-text-bo',
+		textareaId: 'campo-historico',
+		ensureVisible: function(){
+			const area = document.getElementById('campo-historico');
+			if(area && area.classList.contains('hidden')){
+				const btn = document.getElementById('btn-adicionar-editar-historico');
+				if(btn) btn.click();
+			}
+		}
+	});
+});
+</script>
+
+<script>
+// Toast simples
+function criarToast(msg, tipo='success') {
+	let wrap = document.getElementById('toast-wrap');
+	if(!wrap){
+		wrap = document.createElement('div');
+		wrap.id = 'toast-wrap';
+		wrap.style.position='fixed';wrap.style.top='12px';wrap.style.right='12px';wrap.style.zIndex='9999';
+		document.body.appendChild(wrap);
+	}
+	const el = document.createElement('div');
+	const colors = {success:'#16a34a', error:'#dc2626', info:'#2563eb'};
+	el.style.background = colors[tipo]||'#334155';
+	el.style.color='#fff'; el.style.padding='10px 14px'; el.style.marginTop='8px'; el.style.borderRadius='6px'; el.style.boxShadow='0 2px 6px rgba(0,0,0,.25)'; el.style.fontSize='14px'; el.style.fontWeight='600'; el.style.fontFamily='system-ui, sans-serif';
+	el.textContent = msg;
+	wrap.appendChild(el);
+	setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(), 400); }, 4000);
+}
+// Autosave para o formulário de finalização
+function salvarFinalizacaoAuto() {
+    const form = document.getElementById('form-finalizacao');
+    const data = {};
+    form.querySelectorAll('input, select').forEach(function(input) {
+        data[input.name] = input.value;
+    });
+    localStorage.setItem('bogcmi-finalizacao', JSON.stringify(data));
+	try { window._unsavedChanges = true; } catch(e){}
+}
+
+function carregarFinalizacaoAuto() {
+    const saved = localStorage.getItem('bogcmi-finalizacao');
+    if (saved) {
+        const data = JSON.parse(saved);
+        Object.keys(data).forEach(function(key) {
+            const input = document.querySelector('#form-finalizacao [name="' + key + '"]');
+            if (input) input.value = data[key];
+        });
+    }
+}
+
+// Eventos para autosave
+['numero-bopc','numero-tco','autoridade-policial','escrivao','algemas','grande-vulto','finalizada-em','flagrante'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', salvarFinalizacaoAuto);
+    document.getElementById(id).addEventListener('input', salvarFinalizacaoAuto);
+});
+carregarFinalizacaoAuto();
+
+// Lógica do botão Finalizar BO
+ var btnFinal = document.getElementById('btn-finalizar-bo');
+ if (btnFinal) btnFinal.onclick = function() {
+    const form = document.getElementById('form-finalizacao');
+    const formData = new FormData(form);
+    // Inclui também os dados salvos da aba Abertura e o Histórico
+    try {
+        const aberturaRaw = localStorage.getItem('bogcmi-form-data');
+        if (aberturaRaw) {
+            const abertura = JSON.parse(aberturaRaw);
+			Object.keys(abertura).forEach(function(key){
+				if (abertura[key] === undefined || abertura[key] === null) return;
+				// Anexa o valor original
+				formData.append(key, abertura[key]);
+				// Normaliza chaves esperadas pelo backend
+				if (key === 'codigo-ocorrencia' && !formData.has('codigo_ocorrencia')) {
+					formData.append('codigo_ocorrencia', abertura[key]);
+				}
+				if (key === 'cod-natureza' && !formData.has('cod_natureza')) {
+					formData.append('cod_natureza', abertura[key]);
+				}
+			});
+        }
+	const historico = localStorage.getItem('historico-gcm:' + (window._boId || 'global'));
+        if (historico) formData.append('historico', historico);
+        // inclui o id do BO atual (edição ou novo)
+        if (window._boId) formData.append('bo_id', window._boId);
+    } catch(e) { /* ignora erros de parse */ }
+	// Fallbacks: se ainda não temos os campos obrigatórios, obtém do DOM
+	try {
+		// Código de ocorrência (id) ou sigla (cod_natureza)
+		if (!formData.has('codigo_ocorrencia') && !formData.has('cod_natureza')) {
+			const codSiglaEl = document.getElementById('cod-natureza');
+			const codSelEl = document.getElementById('codigo-ocorrencia');
+			const siglaVal = codSiglaEl ? (codSiglaEl.value || '').trim() : '';
+			if (siglaVal) {
+				formData.append('cod_natureza', siglaVal);
+			} else if (codSelEl && codSelEl.value) {
+				formData.append('codigo_ocorrencia', codSelEl.value);
+				// Também tenta enviar natureza se disponível
+				const opt = codSelEl.selectedOptions && codSelEl.selectedOptions[0];
+				if (opt && opt.dataset && opt.dataset.sigla && opt.dataset.descricao && !formData.has('natureza')) {
+					formData.append('natureza', opt.dataset.sigla + ' - ' + opt.dataset.descricao);
+				}
+			}
+		}
+		// Rua e cidade
+		if (!formData.has('rua')) {
+			const ruaEl = document.getElementById('rua');
+			if (ruaEl && ruaEl.value) formData.append('rua', ruaEl.value);
+		}
+		if (!formData.has('cidade')) {
+			const cidEl = document.getElementById('cidade');
+			if (cidEl && cidEl.value) formData.append('cidade', cidEl.value);
+		}
+	} catch(e) { /* silencioso */ }
+    fetch('/bogcmi/finalizar-bo/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+	.then(data => {
+		if (data.success) {
+			// Limpa storages relativos a este BO
+			try {
+				Object.keys(localStorage).forEach(k=>{ if(k.startsWith('bogcmi-form-v2:'+location.pathname)) localStorage.removeItem(k); });
+				localStorage.removeItem('bogcmi-form-data');
+				localStorage.removeItem('bogcmi-finalizacao');
+				// remove histórico específico deste BO e o global
+				localStorage.removeItem('historico-gcm:' + (window._boId || 'global'));
+				localStorage.removeItem('historico-gcm');
+			} catch(e) {}
+			criarToast('BO finalizado com sucesso!', 'success');
+			window._unsavedChanges = false;
+			setTimeout(()=>{ window.location.href = '/bogcmi/'; }, 800);
+		} else {
+			criarToast('Erro ao finalizar: ' + (data.error || 'Desconhecido'), 'error');
+		}
+	})
+	.catch(() => {
+		criarToast('Falha de comunicação com o servidor', 'error');
+	});
+ };
+
+// --- MODO EDIÇÃO PARA FINALIZAÇÃO ---
+document.addEventListener('DOMContentLoaded', function(){
+	const formFin = document.getElementById('form-finalizacao');
+	if(!formFin) return;
+	const btnEdit = document.getElementById('btn-editar-finalizacao');
+	const btnSave = document.getElementById('btn-salvar-finalizacao');
+	const btnCancel = document.getElementById('btn-cancelar-finalizacao');
+	const btnFinalizeHidden = document.getElementById('btn-finalizar-bo');
+	let finSnapshot = null;
+
+	function setFinalizacaoMode(mode){
+		const fields = formFin.querySelectorAll('input, select, textarea');
+		if(mode==='edit'){
+			fields.forEach(el=>{ el.removeAttribute('disabled'); });
+			btnEdit.classList.add('hidden');
+			btnSave.classList.remove('hidden');
+			btnCancel.classList.remove('hidden');
+		} else {
+			fields.forEach(el=>{ el.setAttribute('disabled','disabled'); });
+			btnEdit.classList.remove('hidden');
+			btnSave.classList.add('hidden');
+			btnCancel.classList.add('hidden');
+		}
+	}
+	function coletarFinalizacao(){
+		const data = {};
+		formFin.querySelectorAll('input, select, textarea').forEach(el=>{
+			const key = el.name || el.id; if(!key) return; data[key] = (el.type==='checkbox')?el.checked:el.value;
+		});
+		return data;
+	}
+	function aplicarFinalizacao(dados){
+		if(!dados) return;
+		formFin.querySelectorAll('input, select, textarea').forEach(el=>{
+			const key = el.name || el.id; if(!key || !(key in dados)) return;
+			if(el.type==='checkbox') el.checked = !!dados[key]; else el.value = dados[key];
+		});
+	}
+
+	// inicia em visualização
+	setFinalizacaoMode('view');
+
+	btnEdit && btnEdit.addEventListener('click', function(){
+		finSnapshot = coletarFinalizacao();
+		setFinalizacaoMode('edit');
+	});
+	btnSave && btnSave.addEventListener('click', async function(){
+		// Apenas salvar (sem finalizar) e travar os campos (modo view)
+		try{
+			const data = coletarFinalizacao();
+			// Atualiza storage local da finalização
+			try { localStorage.setItem('bogcmi-finalizacao', JSON.stringify(data)); } catch(e){}
+			// Monta payload para o endpoint de salvar parcial
+			const formData = new FormData();
+			const mapping = {
+				numero_bopc: data['numero_bopc'],
+				numero_tco: data['numero_tco'],
+				autoridade_policial: data['autoridade_policial'],
+				escrivao: data['escrivao'],
+				algemas: data['algemas'],
+				grande_vulto: data['grande_vulto'],
+				finalizada_em: data['finalizada_em'], // backend aceita finalizada_em -> local_finalizacao
+				flagrante: data['flagrante']
+			};
+			Object.entries(mapping).forEach(([k,v])=>{ if(v!==undefined && v!==null) formData.append(k, v); });
+			// Envia também duração se já existir calculada
+			const dur = document.getElementById('horario-total');
+			if(dur && dur.value) formData.append('duracao', dur.value);
+			// Helper CSRF
+			function getCsrf(){ const m=document.cookie.match(/csrftoken=([^;]+)/); return m?m[1]:''; }
+			if(window._boId){
+				const resp = await fetch(`/bogcmi/${window._boId}/salvar/`, { method:'POST', headers:{'X-CSRFToken': getCsrf()}, body: formData });
+				if(!resp.ok){ throw new Error('Falha ao salvar'); }
+				await resp.json();
+			}
+			// Marca como salvo e fecha edição
+			window._unsavedChanges = false;
+			setFinalizacaoMode('view');
+			try{ criarToast('Finalização salva.', 'success'); }catch(e){}
+		}catch(e){
+			try{ criarToast('Erro ao salvar finalização', 'error'); }catch(_){ }
+		}
+	});
+	btnCancel && btnCancel.addEventListener('click', function(){
+		if(finSnapshot){ aplicarFinalizacao(finSnapshot); salvarFinalizacaoAuto(); }
+		setFinalizacaoMode('view');
+		try{ criarToast('Edição cancelada.', 'info'); }catch(e){}
+	});
+});
+
+// (Código legacy de autosave removido – persistência v2 já cobre a aba Abertura)
+</script>
+{% endblock %}
+

@@ -1,0 +1,15 @@
+{% extends "_layout/base.html" %}
+{% block title %}Excluir Item{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-bold mb-4">Excluir Item</h1>
+  <p class="mb-4">Tem certeza que deseja excluir <strong>{{ bem.nome }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-danger">Excluir</button>
+      <a href="{% url 'core:almoxarifado:cautelas' %}" class="btn">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

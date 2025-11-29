@@ -1,0 +1,109 @@
+{% extends '_layout/base.html' %}
+{% block title %}Ofício Interno #{{ obj.id }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="flex items-center justify-between gap-3 mb-3">
+    <h1 class="text-xl font-semibold text-slate-800">Ofício #{{ obj.id }}</h1>
+    <div class="flex items-center gap-2">
+      {% if pode_excluir %}
+      <form method="post" action="{% url 'core:oficio_interno_excluir' obj.id %}" onsubmit="return confirm('Excluir o ofício #{{ obj.id }}?');">
+        {% csrf_token %}
+        <button type="submit" class="btn bg-red-600 hover:bg-red-700 text-white">Excluir</button>
+      </form>
+      {% endif %}
+      <a href="{% url 'core:oficio_interno' %}" class="btn">Voltar</a>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg border p-4 space-y-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+      <div>
+        <div class="text-slate-500">Criado por</div>
+        <div class="font-medium">{{ obj.criador.get_full_name|default:obj.criador.username }}</div>
+      </div>
+      <div>
+        <div class="text-slate-500">Criado em</div>
+        <div class="font-medium">{{ obj.created_at|date:'d/m/Y H:i' }}</div>
+      </div>
+      <div>
+        <div class="text-slate-500">Supervisor</div>
+        <div class="font-medium">
+          {% if obj.supervisor %}
+            {{ obj.supervisor.get_full_name|default:obj.supervisor.username }}
+          {% else %}
+            —
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div class="text-slate-500">Responsável atual</div>
+        <div class="font-medium">
+          {% if obj.responsavel_atual %}
+            {{ obj.responsavel_atual.get_full_name|default:obj.responsavel_atual.username }}
+          {% else %}
+            —
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div class="text-slate-500">Tipo</div>
+        <div class="font-medium">{{ obj.get_tipo_display }}</div>
+      </div>
+      <div>
+        <div class="text-slate-500">Status</div>
+        <div class="font-medium">{{ obj.get_status_display }}</div>
+      </div>
+    </div>
+
+    <div class="pt-3">
+      <div class="text-slate-500 text-sm">Texto</div>
+      <div class="whitespace-pre-wrap leading-relaxed">{{ obj.texto }}</div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="md:col-span-2 bg-white rounded-lg border p-4">
+      <h2 class="font-semibold mb-2">Histórico</h2>
+      <div class="space-y-2 text-sm">
+        {% for a in acoes %}
+        <div class="border rounded p-2">
+          <div class="flex items-center justify-between">
+            <div class="font-medium">{{ a.get_acao_display }}</div>
+            <div class="text-xs text-slate-500">{{ a.created_at|date:'d/m/Y H:i' }}</div>
+          </div>
+          <div class="text-slate-700">Por: {{ a.autor.get_full_name|default:a.autor.username|default:'—' }}</div>
+          {% if a.observacao %}
+          <div class="mt-1 text-slate-700 whitespace-pre-wrap">{{ a.observacao }}</div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-slate-500">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg border p-4">
+      <h2 class="font-semibold mb-2">Decisão</h2>
+      {% if acao_form %}
+      <form method="post" action="{% url 'core:oficio_interno_acao' obj.id %}" class="space-y-2">
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm font-medium">Ação</label>
+          {{ acao_form.acao }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Observação</label>
+          {{ acao_form.observacao }}
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="submit" class="btn btn-primary">Confirmar</button>
+          <a href="{% url 'core:oficio_interno' %}" class="btn">Cancelar</a>
+        </div>
+      </form>
+      {% else %}
+        <p class="text-sm text-slate-600">Sem ações disponíveis para seu usuário neste status.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

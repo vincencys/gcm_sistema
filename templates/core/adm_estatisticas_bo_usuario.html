@@ -1,0 +1,128 @@
+{% extends '_layout/base.html' %}
+{% block title %}Estatísticas BO por Usuário{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <div class="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Estatísticas · BO por Usuário</h1>
+      <p class="text-slate-600 text-sm">Selecione um usuário para ver os BOs do período. Abas: Dia, Mês, Semestre, Ano.</p>
+      <div class="mt-2 flex flex-wrap gap-2">
+        <a href="{% url 'core:estatisticas' %}" class="btn btn-outline">← Estatísticas</a>
+        <a href="{% url 'core:estatisticas_bo' %}" class="btn btn-outline">BO (Geral)</a>
+      </div>
+    </div>
+    <form method="get" class="bg-white border rounded-xl shadow-sm p-3 flex flex-wrap items-end gap-3">
+      <input type="hidden" name="tab" value="{{ tab }}" />
+      <div class="w-56">
+        <label class="block text-xs text-slate-500 mb-1">Usuário</label>
+        <select name="user" class="input w-full js-choices">
+          <option value="">-- Selecionar --</option>
+          {% for opt in user_options %}
+            <option value="{{ opt.id }}" {% if opt.id == uid %}selected{% endif %}>{{ opt.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Flagrante</label>
+        <select name="flag" class="input">
+          <option value="" {% if not flag %}selected{% endif %}>Todos</option>
+          <option value="sim" {% if flag == 'sim' %}selected{% endif %}>Flagrante</option>
+            <option value="nao" {% if flag == 'nao' %}selected{% endif %}>Não flagrante</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">De</label>
+        <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Até</label>
+        <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input" />
+      </div>
+      <button class="btn btn-primary" type="submit">Filtrar</button>
+    </form>
+  </div>
+
+  <!-- Abas -->
+  <div class="flex gap-2 mb-4">
+    {% for key,label in abas %}
+      <a href="?tab={{ key }}&user={{ uid }}" class="px-3 py-1.5 rounded-md border text-sm {% if tab == key %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if uid %}
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Total BOs</div><div class="text-2xl font-semibold">{{ total }}</div></div>
+      <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Abertos</div><div class="text-2xl font-semibold">{{ abertos }}</div></div>
+      <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Finalizados</div><div class="text-2xl font-semibold">{{ finalizados }}</div></div>
+      <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Offline</div><div class="text-2xl font-semibold">{{ offline }}</div></div>
+      <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Flagrantes</div><div class="text-2xl font-semibold">{{ flagrantes }}</div></div>
+    </div>
+    {% if flag %}
+      <div class="mb-4">
+        <span class="inline-flex items-center gap-2 text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1 rounded-full">
+          Filtro Flagrante: <strong>{{ flag|upper }}</strong>
+        </span>
+      </div>
+    {% endif %}
+
+    <div class="bg-white rounded-xl border shadow-sm">
+        <div class="p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h2 class="font-semibold">BOs do Usuário{% if user_nome %}: {{ user_nome }}{% endif %}</h2>
+          {% if uid %}
+            <a href="{% url 'core:estatisticas_bo_usuario_graficos' %}?tab={{ tab }}&user={{ uid }}&flag={{ flag }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}" class="btn btn-outline btn-sm">Ver Gráficos →</a>
+            <a href="?tab={{ tab }}&user={{ uid }}&flag={{ flag }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv" class="btn btn-outline btn-sm">CSV Lista</a>
+          {% endif %}
+        </div>
+        <span class="text-xs text-slate-500">Período: {{ de|date:'d/m/Y' }} a {{ ate|date:'d/m/Y' }}</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-slate-500">
+              <th class="py-2 px-3">Número</th>
+              <th class="py-2 px-3">Emissão</th>
+              <th class="py-2 px-3">Status</th>
+              <th class="py-2 px-3">Código</th>
+              <th class="py-2 px-3">Natureza</th>
+              <th class="py-2 px-3">Viatura</th>
+              <th class="py-2 px-3">Offline</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            {% for b in bos %}
+              <tr>
+                <td class="py-2 px-3 font-medium">{{ b.numero }}</td>
+                <td class="py-2 px-3">{{ b.emissao|date:'d/m/Y H:i' }}</td>
+                <td class="py-2 px-3">{{ b.status }}</td>
+                <td class="py-2 px-3">{{ b.cod_natureza|default:'—' }}</td>
+                <td class="py-2 px-3">{{ b.natureza|default:'(sem descrição)' }}</td>
+                <td class="py-2 px-3">{{ b.viatura.prefixo|default:b.viatura_id }}</td>
+                <td class="py-2 px-3">{% if b.offline %}<span class="text-rose-600 font-semibold">SIM</span>{% else %}NÃO{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td class="py-4 px-3 text-slate-500" colspan="7">Sem registros nesse período para o usuário.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if paginator.num_pages > 1 %}
+        <div class="p-4 flex flex-wrap gap-2 items-center text-xs">
+          {% if page_obj.has_previous %}
+            <a class="btn btn-outline btn-sm" href="?tab={{ tab }}&user={{ uid }}&flag={{ flag }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&page={{ page_obj.previous_page_number }}">← Anterior</a>
+          {% endif %}
+          <span>Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a class="btn btn-outline btn-sm" href="?tab={{ tab }}&user={{ uid }}&flag={{ flag }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&page={{ page_obj.next_page_number }}">Próxima →</a>
+          {% endif %}
+        </div>
+      {% endif %}
+      {% if bos|length >= 500 %}
+        <div class="p-3 text-xs text-slate-500 border-t">Exibindo primeiros 500 BOs (limite). Refinar período para ver mais.</div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="bg-white border rounded-xl p-6 text-center text-slate-600">Selecione um usuário para exibir as estatísticas.</div>
+  {% endif %}
+</div>
+{% endblock %}

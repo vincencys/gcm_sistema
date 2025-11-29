@@ -1,0 +1,87 @@
+{% extends 'common/documentos_base.html' %}
+
+{% block extra_nav %}
+<div class="mb-4 bg-white rounded-lg shadow-sm border border-slate-200 p-3">
+    <div class="flex flex-wrap gap-2">
+        
+        <a href="{% url 'common:documentos_assinados' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if filtro_tipo == 'todos' %}border-slate-500 bg-slate-50{% else %}border-slate-200 hover:border-slate-400 hover:bg-slate-50{% endif %} transition-all">
+            <span class="text-xl">📋</span>
+            <span class="text-sm font-medium text-slate-700">Todos</span>
+            <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-slate-700 text-white text-xs font-bold rounded-full">{{ assin_counts.ronda|add:assin_counts.bogcm|add:assin_counts.livro }}</span>
+        </a>
+
+        <a href="{% url 'common:documentos_assinados_ronda' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if filtro_tipo == 'ronda' %}border-blue-500 bg-blue-50{% else %}border-blue-200 hover:border-blue-400 hover:bg-blue-50{% endif %} transition-all">
+            <span class="text-xl">📝</span>
+            <span class="text-sm font-medium text-blue-700">Ronda</span>
+            {% if assin_counts.ronda > 0 %}
+                <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-blue-600 text-white text-xs font-bold rounded-full">{{ assin_counts.ronda }}</span>
+            {% endif %}
+        </a>
+
+        <a href="{% url 'common:documentos_assinados_bogcm' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if filtro_tipo == 'bogcm' %}border-green-500 bg-green-50{% else %}border-green-200 hover:border-green-400 hover:bg-green-50{% endif %} transition-all">
+            <span class="text-xl">📰</span>
+            <span class="text-sm font-medium text-green-700">BOGCM</span>
+            {% if assin_counts.bogcm > 0 %}
+                <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-green-600 text-white text-xs font-bold rounded-full">{{ assin_counts.bogcm }}</span>
+            {% endif %}
+        </a>
+
+        <a href="{% url 'common:documentos_assinados_livro' %}" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 {% if filtro_tipo == 'livro' %}border-indigo-500 bg-indigo-50{% else %}border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50{% endif %} transition-all">
+            <span class="text-xl">📖</span>
+            <span class="text-sm font-medium text-indigo-700">Livro CECOM</span>
+            {% if assin_counts.livro > 0 %}
+                <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full">{{ assin_counts.livro }}</span>
+            {% endif %}
+        </a>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+  {% if filtro_tipo == 'todos' %}
+    {% with titulo='Todos - Documentos Assinados' %}{{ block.super }}{% endwith %}
+  {% elif filtro_tipo == 'ronda' %}
+    {% with titulo='Relatório de Ronda - Assinados' %}{{ block.super }}{% endwith %}
+  {% elif filtro_tipo == 'bogcm' %}
+    {% with titulo='BOGCM - Assinados' %}{{ block.super }}{% endwith %}
+  {% elif filtro_tipo == 'livro' %}
+    {% with titulo='Livro CECOM - Assinados' %}{{ block.super }}{% endwith %}
+  {% else %}
+    {% with titulo='Documentos Assinados' %}{{ block.super }}{% endwith %}
+  {% endif %}
+{% endblock %}
+{% block linha_acoes %}
+  <div class="flex gap-2 items-center">
+    {% if d.arquivo_assinado %}
+      <a class="js-view-file text-blue-600 underline text-xs" data-href="{{ d.arquivo_assinado.url }}" href="{{ d.arquivo_assinado.url }}" target="_blank">Ver Assinado</a>
+      <a class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px]" href="{{ d.arquivo_assinado.url }}" download>Baixar</a>
+    {% else %}
+      <a class="js-view-file text-blue-600 underline text-xs" data-href="{{ d.arquivo.url }}" href="{{ d.arquivo.url }}" target="_blank">Ver Original</a>
+      <a class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px]" href="{{ d.arquivo.url }}" download>Baixar</a>
+    {% endif %}
+    {% if request.user.username == 'moises' %}
+      <form method="post" action="{% url 'common:excluir_documento' d.id %}" onsubmit="return confirm('Excluir definitivamente este documento assinado? Arquivos serão removidos.');">
+        {% csrf_token %}
+        <button class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px]">Excluir</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
+{% block linha_acoes_mobile %}
+  <div class="flex gap-2 items-center">
+    {% if d.arquivo_assinado %}
+      <a class="js-view-file text-blue-600 underline text-xs" data-href="{{ d.arquivo_assinado.url }}" href="{{ d.arquivo_assinado.url }}" target="_blank">Ver Assinado</a>
+      <a class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px]" href="{{ d.arquivo_assinado.url }}" download>Baixar</a>
+    {% else %}
+      <a class="js-view-file text-blue-600 underline text-xs" data-href="{{ d.arquivo.url }}" href="{{ d.arquivo.url }}" target="_blank">Ver Original</a>
+      <a class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px]" href="{{ d.arquivo.url }}" download>Baixar</a>
+    {% endif %}
+    {% if request.user.username == 'moises' %}
+      <form method="post" action="{% url 'common:excluir_documento' d.id %}" onsubmit="return confirm('Excluir definitivamente este documento assinado? Arquivos serão removidos.');">
+        {% csrf_token %}
+        <button class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px]">Excluir</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}

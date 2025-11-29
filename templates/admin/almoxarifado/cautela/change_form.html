@@ -1,0 +1,17 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  {% if original %}
+    {% if original.status == 'PENDENTE' %}
+      <li><a class="historylink" href="{% url 'admin:almoxarifado_cautela_aprovar' original.pk %}">Aprovar</a></li>
+    {% endif %}
+    {% if original.status == 'APROVADA' %}
+      <li><a class="historylink" href="{% url 'admin:almoxarifado_cautela_entregar' original.pk %}">Entregar</a></li>
+    {% endif %}
+    {% if original.status == 'ABERTA' %}
+      <li><a class="historylink" href="{% url 'admin:almoxarifado_cautela_devolver' original.pk %}">Devolver</a></li>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Tema base do aplicativo baseado em MaterialComponents -->
+    <style name="Theme.PanicApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Paleta -->
+        <item name="colorPrimary">@color/panic_primary</item>
+        <item name="colorOnPrimary">@color/panic_on_primary</item>
+        <item name="colorSurface">@color/panic_surface</item>
+        <item name="colorOnSurface">@color/panic_on_surface</item>
+        <item name="colorOutline">@color/panic_outline</item>
+        <item name="android:statusBarColor">@color/panic_primary</item>
+    </style>
+
+    <!-- Estilo padrão para TextInputLayout outlined com mais contraste -->
+    <style name="Widget.Panic.TextInputLayout.Outlined" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundMode">outline</item>
+        <item name="boxBackgroundColor">@color/panic_surface</item>
+        <item name="hintTextColor">@color/panic_hint</item>
+        <item name="boxStrokeColor">@color/panic_outline</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+    </style>
+
+</resources>

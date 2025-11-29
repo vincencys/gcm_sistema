@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Finalização{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Finalizar Ocorrência</h1>
+    <form id="finalizacao-form" method="post">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="ocorrencia_finalizada_em" class="block text-sm font-medium text-gray-700">Ocorrência finalizada em:</label>
+                <select id="ocorrencia_finalizada_em" name="ocorrencia_finalizada_em" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <option value="">Selecione...</option>
+                    <option value="Patio Municipal">Pátio Municipal</option>
+                    <option value="Policia Militar">Polícia Militar</option>
+                    <option value="Finalizado no Local">Finalizado no Local</option>
+                    <option value="Delegacia de Policia Civil">Delegacia de Polícia Civil</option>
+                    <option value="Hospital Municipal">Hospital Municipal</option>
+                    <option value="Outros">Outros</option>
+                    <option value="Sede Guarda Civil Municipal de Ibiúna">Sede Guarda Civil Municipal de Ibiúna</option>
+                </select>
+            </div>
+            <div>
+                <label for="flagrante" class="block text-sm font-medium text-gray-700">Flagrante</label>
+                <input type="text" id="flagrante" name="flagrante" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="bo_delegacia" class="block text-sm font-medium text-gray-700">B.O. (Delegacia)</label>
+                <input type="text" id="bo_delegacia" name="bo_delegacia" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="tco_delegacia" class="block text-sm font-medium text-gray-700">T.C.O. (Delegacia)</label>
+                <input type="text" id="tco_delegacia" name="tco_delegacia" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="autoridade_delegacia" class="block text-sm font-medium text-gray-700">Autoridade (Delegacia)</label>
+                <input type="text" id="autoridade_delegacia" name="autoridade_delegacia" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="uso_algemas" class="block text-sm font-medium text-gray-700">Uso de Algemas?</label>
+                <select id="uso_algemas" name="uso_algemas" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <option value="Não">Não</option>
+                    <option value="Sim">Sim</option>
+                </select>
+            </div>
+            <div>
+                <label for="grande_vulto" class="block text-sm font-medium text-gray-700">De Grande Vulto?</label>
+                <select id="grande_vulto" name="grande_vulto" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <option value="Não">Não</option>
+                    <option value="Sim">Sim</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex justify-end mt-4">
+            <button type="button" id="btn-finalizar-bo" class="px-4 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-700">Finalizar BO</button>
+        </div>
+    </form>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('finalizacao-form');
+        const inputs = form.querySelectorAll('input, select');
+
+        // Autosave logic
+        inputs.forEach(input => {
+            input.addEventListener('change', () => {
+                const formData = new FormData(form);
+                fetch('/autosave/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+            });
+        });
+
+        // Finalizar BO logic
+        document.getElementById('btn-finalizar-bo').addEventListener('click', () => {
+            fetch('/finalizar-bo/', {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = '/bogcmi/';
+                } else {
+                    alert('Erro ao finalizar BO.');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visualizar Auto (Som)</title>
+  <link rel="stylesheet" href="{% static 'build/tailwind.css' %}">
+  <style>
+    @page { size: A4 portrait; margin: 14mm 12mm 16mm 12mm; }
+    @media print {
+      body { background: #fff !important; }
+      .no-print { display: none !important; }
+      main { box-shadow: none !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50">
+  <main class="max-w-5xl mx-auto p-4 sm:p-6">
+    {% include 'core/documento_auto_som.html' %}
+    <div class="mt-6 no-print">
+      <div class="grid grid-cols-1 sm:flex sm:flex-wrap gap-3">
+        <a href="{% url 'core:fisc_auto_som' %}" class="w-full sm:w-auto text-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm">Voltar à lista</a>
+        <a href="{% url 'core:fisc_auto_som_baixar_pdf' a.pk %}" download class="w-full sm:w-auto text-center px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-sm">Baixar PDF</a>
+        <button onclick="window.print()" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm" title="Imprimir ou salvar em PDF">Imprimir / PDF Navegador</button>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

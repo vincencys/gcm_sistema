@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load cecom_extras %}
+{% block title %}Talões Arquivados{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <h1 class="text-xl font-semibold mb-4">Talões Arquivados</h1>
+  <form method="get" class="mb-3 flex gap-3 items-center flex-wrap">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por #, viatura, status, data, km, ocorrência, BOGCM, local" class="border px-3 py-2 rounded w-96" />
+    <button class="bg-blue-600 text-white px-4 py-2 rounded">Buscar</button>
+    <label class="inline-flex items-center gap-2 text-sm">
+      <input type="checkbox" name="meus" value="1" {% if meus %}checked{% endif %} class="rounded border-slate-300">
+      Mostrar meus talões
+    </label>
+    {% if q %}
+      <a href="?" class="text-sm text-slate-600 underline">Limpar</a>
+    {% endif %}
+  </form>
+  {# Mobile: cards empilhados #}
+  <div class="md:hidden p-1 space-y-3">
+    {% for t in taloes %}
+      <div class="border rounded-xl bg-white p-3 shadow-sm">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-xs text-slate-500">Talão <b>#{{ t.talao_numero|default:forloop.counter }}</b></div>
+            <div class="mt-1 font-semibold">VTR {{ t.viatura.prefixo|default:"-" }}</div>
+          </div>
+          <div>
+            {% if t.status == 'FECHADO' %}
+              <span class="px-2 py-1 rounded border border-rose-600 bg-rose-50 text-rose-700 text-xs font-semibold shadow-sm">FECHADO</span>
+            {% else %}
+              <span class="px-2 py-1 rounded border border-slate-400 bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm">{{ t.status }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-2 space-y-1 text-sm">
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Iniciado</span><span>{% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Finalizado</span><span>{% if t.encerrado_em %}{{ t.encerrado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">KM</span><span>Ini {{ t.km_inicial|default:"-" }}{% if t.km_final %} · Fim {{ t.km_final }}{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Ocorrência</span><span class="text-right max-w-[60%] break-words">{{ t.codigo_ocorrencia|default:"-" }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Nº BOGCM</span><span>
+            {% with bo=t.bos.last %}
+              {% if bo and bo.numero %}
+                <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO #{{ bo.numero }}">{{ bo.numero }}</a>
+              {% elif bo %}
+                <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO (sem número definido)">#{{ bo.pk }}</a>
+              {% else %}-{% endif %}
+            {% endwith %}
+          </span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Local</span><span class="text-right max-w-[60%] break-words">{{ t.local_display }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Equipe / Integrantes</span>
+            <span class="text-right max-w-[60%] break-words">
+              {% with bo=t.bos.last enc=t.encarregado mot=t.motorista a1=t.auxiliar1 a2=t.auxiliar2 integ=integrantes_map|dict_get:t.viatura_id %}
+                {% if plantao_equipe %}<span class="text-slate-600">Equipe {{ plantao_equipe }} — </span>{% endif %}
+                {% if integ %}
+                  {{ integ }}
+                {% elif enc or mot or a1 or a2 %}
+                  {% if enc %}ENC: {{ enc.get_full_name|default:enc.username }}{% endif %}
+                  {% if mot %}{% if enc %} · {% endif %}MOT: {{ mot.get_full_name|default:mot.username }}{% endif %}
+                  {% if a1 %}{% if enc or mot %} · {% endif %}AUX1: {{ a1.get_full_name|default:a1.username }}{% endif %}
+                  {% if a2 %}{% if enc or mot or a1 %} · {% endif %}AUX2: {{ a2.get_full_name|default:a2.username }}{% endif %}
+                {% elif t.equipe_texto %}
+                  {{ t.equipe_texto }}
+                {% elif bo %}
+                  {% if bo.encarregado %}ENC: {{ bo.encarregado.get_full_name|default:bo.encarregado.username }}{% endif %}
+                  {% if bo.motorista %}{% if bo.encarregado %} · {% endif %}MOT: {{ bo.motorista.get_full_name|default:bo.motorista.username }}{% endif %}
+                  {% if bo.auxiliar1 %}{% if bo.encarregado or bo.motorista %} · {% endif %}AUX1: {{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}{% endif %}
+                  {% if bo.auxiliar2 %}{% if bo.encarregado or bo.motorista or bo.auxiliar1 %} · {% endif %}AUX2: {{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}{% endif %}
+                {% else %}-{% endif %}
+              {% endwith %}
+            </span>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500">Nenhum talão arquivado encontrado.</div>
+    {% endfor %}
+  </div>
+
+  {# Desktop: tabela #}
+  <div class="hidden md:block overflow-x-auto bg-white border rounded-xl shadow-sm">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 border-b sticky top-0 z-10">
+        <tr class="text-left">
+          <th class="p-2 border">#</th>
+          <th class="p-2 border">Viatura</th>
+          <th class="p-2 border">Equipe / Integrantes</th>
+          <th class="p-2 border">Status</th>
+          <th class="p-2 border">Iniciado/Finalizado</th>
+          <th class="p-2 border">KM</th>
+          <th class="p-2 border">Ocorrência</th>
+          <th class="p-2 border">Nº BOGCM</th>
+          <th class="p-2 border">Local</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in taloes %}
+          <tr class="align-middle hover:bg-slate-50/50">
+            <td class="p-2 border">#{{ t.talao_numero|default:forloop.counter }}</td>
+            <td class="p-2 border">{{ t.viatura.prefixo|default:"-" }}</td>
+            <td class="p-2 border">
+              {% with bo=t.bos.last enc=t.encarregado mot=t.motorista a1=t.auxiliar1 a2=t.auxiliar2 integ=integrantes_map|dict_get:t.viatura_id %}
+                {% if plantao_equipe %}<div class="text-slate-700 mb-0.5"><span class="inline-block px-2 py-0.5 bg-slate-100 rounded">Equipe {{ plantao_equipe }}</span></div>{% endif %}
+                {% if integ %}
+                  {{ integ }}
+                {% elif enc or mot or a1 or a2 %}
+                  <div class="space-x-1 space-y-0.5">
+                    {% if enc %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">ENC: {{ enc.get_full_name|default:enc.username }}</span>{% endif %}
+                    {% if mot %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">MOT: {{ mot.get_full_name|default:mot.username }}</span>{% endif %}
+                    {% if a1 %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">AUX1: {{ a1.get_full_name|default:a1.username }}</span>{% endif %}
+                    {% if a2 %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">AUX2: {{ a2.get_full_name|default:a2.username }}</span>{% endif %}
+                  </div>
+                {% elif t.equipe_texto %}
+                  {{ t.equipe_texto }}
+                {% elif bo %}
+                  <div class="space-x-1 space-y-0.5">
+                    {% if bo.encarregado %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">ENC: {{ bo.encarregado.get_full_name|default:bo.encarregado.username }}</span>{% endif %}
+                    {% if bo.motorista %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">MOT: {{ bo.motorista.get_full_name|default:bo.motorista.username }}</span>{% endif %}
+                    {% if bo.auxiliar1 %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">AUX1: {{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}</span>{% endif %}
+                    {% if bo.auxiliar2 %}<span class="inline-block px-2 py-0.5 bg-slate-100 rounded">AUX2: {{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}</span>{% endif %}
+                  </div>
+                {% else %}-{% endif %}
+              {% endwith %}
+            </td>
+            <td class="p-2 border">
+              {% if t.status == 'FECHADO' %}
+                <span class="px-2 py-1 rounded border border-rose-600 bg-rose-50 text-rose-700 font-semibold shadow-sm">FECHADO</span>
+              {% else %}
+                <span class="px-2 py-1 rounded border border-slate-400 bg-slate-50 text-slate-700 font-semibold shadow-sm">{{ t.status }}</span>
+              {% endif %}
+            </td>
+            <td class="p-2 border">
+              <div>
+                <span class="text-slate-500">Ini</span>
+                <span class="ml-1">{% if t.iniciado_em %}{{ t.iniciado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</span>
+              </div>
+              <div>
+                <span class="text-slate-500">Fim</span>
+                <span class="ml-1">{% if t.encerrado_em %}{{ t.encerrado_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</span>
+              </div>
+            </td>
+            <td class="p-2 border">Ini {{ t.km_inicial|default:"-" }} / {{ t.km_final|default:"-" }}</td>
+            <td class="p-2 border">{{ t.codigo_ocorrencia|default:"-" }}</td>
+            <td class="p-2 border">
+              {% with bo=t.bos.last %}
+                {% if bo and bo.numero %}
+                  <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO #{{ bo.numero }}">{{ bo.numero }}</a>
+                {% elif bo %}
+                  <a class="text-blue-600 underline" href="{% url 'bogcmi:editar' bo.pk %}" title="Abrir BO (sem número definido)">#{{ bo.pk }}</a>
+                {% else %}-{% endif %}
+              {% endwith %}
+            </td>
+            <td class="p-2 border">{{ t.local_display }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="p-3 text-center text-slate-500" colspan="8">Nenhum talão arquivado encontrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj %}
+    <div class="py-3">
+      <div class="flex items-center gap-2 justify-center flex-wrap">
+        {% if page_obj.has_previous %}
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page=1{% if q %}&q={{ q|urlencode }}{% endif %}{% if meus %}&meus=1{% endif %}">&laquo;</a>
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if meus %}&meus=1{% endif %}">&lsaquo;</a>
+        {% else %}
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&laquo;</span>
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&lsaquo;</span>
+        {% endif %}
+        <span class="px-3 py-1 border rounded bg-slate-50 select-none">
+          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if meus %}&meus=1{% endif %}">&rsaquo;</a>
+          <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.paginator.num_pages }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if meus %}&meus=1{% endif %}">&raquo;</a>
+        {% else %}
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&rsaquo;</span>
+          <span class="px-3 py-1 border rounded opacity-40 select-none">&raquo;</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

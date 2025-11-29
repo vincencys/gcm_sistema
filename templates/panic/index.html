@@ -1,0 +1,43 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<h1 class='text-2xl font-semibold mb-6'>Botão do Pânico</h1>
+<div class="max-w-md mx-auto bg-white rounded shadow p-6 flex flex-col items-center">
+	<p class="mb-4 text-center text-lg">Se estiver em perigo, acione imediatamente:</p>
+	<input type="text" id="token-panico" class="mb-3 w-full border rounded px-2 py-1" placeholder="Token de segurança" autocomplete="off">
+	<button id="btn-panico" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded text-xl flex items-center gap-2">
+		🚨 Acionar Pânico
+	</button>
+	<div id="panico-feedback" class="mt-4 text-center text-base"></div>
+</div>
+<script>
+document.getElementById('btn-panico').onclick = async function() {
+	const token = document.getElementById('token-panico').value.trim();
+	const feedback = document.getElementById('panico-feedback');
+	if (!token) {
+		feedback.textContent = 'Informe o token de segurança.';
+		feedback.className = 'mt-4 text-center text-base text-red-700';
+		return;
+	}
+	feedback.textContent = 'Enviando...';
+	feedback.className = 'mt-4 text-center text-base text-gray-700';
+	try {
+		const resp = await fetch('/panic/public/disparo/', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ token })
+		});
+		const data = await resp.json();
+		if (resp.ok) {
+			feedback.textContent = 'Pânico acionado com sucesso! Aguarde atendimento.';
+			feedback.className = 'mt-4 text-center text-base text-green-700';
+		} else {
+			feedback.textContent = data.detail || 'Falha ao acionar pânico.';
+			feedback.className = 'mt-4 text-center text-base text-red-700';
+		}
+	} catch (e) {
+		feedback.textContent = 'Erro de conexão. Tente novamente.';
+		feedback.className = 'mt-4 text-center text-base text-red-700';
+	}
+};
+</script>
+{% endblock %}

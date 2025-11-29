@@ -1,0 +1,15 @@
+{% extends "_layout/base.html" %}
+{% block title %}Aprovar Cautela #{{ c.id }}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-bold mb-3">Aprovar Cautela #{{ c.id }}</h1>
+  <p class="mb-4">Tem certeza que deseja aprovar esta solicitação? Esta ação aplicará as validações de política e calibre.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex gap-2">
+      <button class="btn btn-primary" type="submit">Aprovar</button>
+      <a class="btn" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

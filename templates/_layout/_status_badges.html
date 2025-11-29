@@ -1,0 +1,12 @@
+{% if status == 'EDICAO' %}
+  <span class="px-2 py-1 rounded bg-yellow-100 text-yellow-800">Em edição</span>
+{% elif status == 'FINALIZADO' %}
+  <span class="px-2 py-1 rounded bg-green-100 text-green-800">Finalizado</span>
+{% elif status == 'DESPACHO_CMT' %}
+  <span class="px-2 py-1 rounded bg-purple-100 text-purple-800">Despacho CMT</span>
+{% elif status == 'ARQUIVADO' %}
+  <span class="px-2 py-1 rounded bg-gray-200 text-gray-800">Arquivado</span>
+{% else %}
+  <span class="px-2 py-1 rounded bg-slate-100 text-slate-800">{{ status }}</span>
+{% endif %}
+

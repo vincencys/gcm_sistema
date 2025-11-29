@@ -1,0 +1,23 @@
+
+{% extends "_layout/base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Ocorrência — Talão #{{ talao.pk }} (VTR {{ talao.viatura.prefixo }})</h1>
+
+<form method="post" class="grid md:grid-cols-2 gap-4">
+  {% csrf_token %}
+  <div>
+    <label class="block text-sm mb-1">Código de ocorrência</label>
+    {{ form.codigo_ocorrencia }}
+    <p class="text-xs text-slate-500 mt-1">Selecione na lista. (Pesquisa rápida no navegador: digite a sigla ou nome.)</p>
+  </div>
+  <div>
+    <label class="block text-sm mb-1">Local / Bairro</label>
+    {{ form.local_bairro }}
+  </div>
+
+  <div class="md:col-span-2 mt-2">
+    <button class="btn">Salvar</button>
+    <a class="btn" href="{% url 'taloes:detalhe' talao.pk %}">Voltar</a>
+  </div>
+</form>
+{% endblock %}

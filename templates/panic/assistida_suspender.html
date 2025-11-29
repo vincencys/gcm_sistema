@@ -1,0 +1,19 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-2xl font-semibold mb-4">Suspender Assistida</h1>
+  <div class="bg-white border rounded p-4 mb-4">
+    <p><strong>Nome:</strong> {{ assistida.nome }}</p>
+    <p><strong>CPF:</strong> {{ assistida.cpf }}</p>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <label class="block mb-2">Motivo da suspensão (obrigatório):</label>
+    <textarea name="observacao" class="border rounded w-full px-2 py-1" rows="3" required></textarea>
+    <div class="mt-4 flex space-x-2">
+      <button type="submit" class="btn bg-gray-600 text-white">Confirmar Suspensão</button>
+      <a href="{% url 'panic:assistidas_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Configurar 2FA (TOTP)</h1>
+<p class="mb-3 text-slate-700">Escaneie o QR Code abaixo no seu app autenticador (Google Authenticator, Authy, etc.) e em seguida valide o código.</p>
+<div class="bg-white border rounded p-4 max-w-md">
+  <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code 2FA" class="mx-auto mb-3 w-56 h-56 object-contain border rounded" />
+  <div class="text-xs text-slate-500 mb-2">Se precisar, use o segredo manual: <code class="bg-slate-100 px-1 py-0.5 rounded">{{ secret }}</code></div>
+  <a href="{% url 'users:twofa_validar' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow text-sm inline-block">Validar Código</a>
+</div>
+{% endblock %}

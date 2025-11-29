@@ -1,0 +1,14 @@
+
+{% extends "_layout/base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Finalizar Talão #{{ talao.pk }}</h1>
+<form method="post" class="space-y-3">
+  {% csrf_token %}
+  <div>
+    <label class="block text-sm">KM final</label>
+    {{ form.km_final }}
+  </div>
+  <button class="btn btn-danger">Finalizar</button>
+  <a class="btn" href="{% url 'taloes:detalhe' talao.pk %}">Cancelar</a>
+</form>
+{% endblock %}

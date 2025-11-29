@@ -1,0 +1,142 @@
+{% extends '_layout/base.html' %}
+{% block title %}Gráficos BO por Usuário{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Gráficos · BO por Usuário{% if user_nome %} — {{ user_nome }}{% endif %}</h1>
+      <p class="text-slate-600 text-sm">Série diária, distribuição por status e códigos mais usados.</p>
+      <div class="mt-2 flex flex-wrap gap-2">
+        <a href="{% url 'core:estatisticas_bo_usuario' %}?tab={{ tab }}&user={{ uid }}&flag={{ flag }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}" class="btn btn-outline">← Voltar BO por Usuário</a>
+        <a href="{% url 'core:estatisticas_bo' %}" class="btn btn-outline">Estatísticas Gerais</a>
+        {% if uid %}
+          <a href="{% url 'core:estatisticas_bo_usuario_graficos_pdf' %}?tab={{ tab }}&user={{ uid }}&flag={{ flag }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}" class="btn btn-outline">Exportar PDF</a>
+        {% endif %}
+        {% if flag %}
+          <span class="inline-flex items-center gap-1 text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-1 rounded">Flagrante: {{ flag|upper }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <form method="get" class="bg-white border rounded-xl shadow-sm p-3 flex flex-wrap items-end gap-3">
+      <input type="hidden" name="tab" value="{{ tab }}" />
+      <input type="hidden" name="user" value="{{ uid }}" />
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Flagrante</label>
+        <select name="flag" class="input">
+          <option value="" {% if not flag %}selected{% endif %}>Todos</option>
+          <option value="sim" {% if flag == 'sim' %}selected{% endif %}>Flagrante</option>
+          <option value="nao" {% if flag == 'nao' %}selected{% endif %}>Não flagrante</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">De</label>
+        <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Até</label>
+        <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input" />
+      </div>
+      <button class="btn btn-primary" type="submit">Aplicar</button>
+    </form>
+  </div>
+
+  <!-- Abas -->
+  <div class="flex gap-2 mb-6">
+    {% for key,label in abas %}
+      <a href="?tab={{ key }}&user={{ uid }}&flag={{ flag }}" class="px-3 py-1.5 rounded-md border text-sm {% if tab == key %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if uid %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="bg-white rounded-xl border shadow-sm p-4 lg:col-span-2">
+        <h2 class="font-semibold mb-3">Série por Dia</h2>
+        <canvas id="chartSerie"></canvas>
+      </div>
+      <div class="bg-white rounded-xl border shadow-sm p-4">
+        <h2 class="font-semibold mb-3">Por Status</h2>
+        <canvas id="chartStatus"></canvas>
+        <div class="mt-4 divide-y">
+          {% for s in por_status %}
+            <div class="flex items-center justify-between py-1 text-sm">
+              <span>{{ s.status }}</span><span class="font-semibold">{{ s.qtd }}</span>
+            </div>
+          {% empty %}
+            <div class="text-slate-500 text-sm">Sem registros.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <div class="bg-white rounded-xl border shadow-sm p-4">
+        <h2 class="font-semibold mb-3">Flagrante vs Não</h2>
+        <canvas id="chartFlag"></canvas>
+      </div>
+      <div class="bg-white rounded-xl border shadow-sm p-4 lg:col-span-2">
+        <h2 class="font-semibold mb-3">Top Códigos</h2>
+        <canvas id="chartCodigos"></canvas>
+        <div class="mt-4 divide-y">
+          {% for r in ranking_codigos %}
+            <div class="flex items-center justify-between py-2 text-sm">
+              <span>{{ r.cod_natureza|default:'—' }} — {{ r.natureza|default:'(sem descrição)' }}</span>
+              <span class="font-semibold">{{ r.qtd }}</span>
+            </div>
+          {% empty %}
+            <div class="text-slate-500 text-sm">Sem registros.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="bg-white border rounded-xl p-6 text-center text-slate-600">Nenhum usuário selecionado.</div>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  const serie = {{ serie_por_dia|default:'[]'|safe }};
+  const labels = serie.map(x => new Date(x.dia).toLocaleDateString('pt-BR'));
+  const data = serie.map(x => x.qtd);
+  const ctxSerie = document.getElementById('chartSerie');
+  if(ctxSerie){
+    const dataset = {label:'BOs',data,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.2)',tension:.25};
+    new Chart(ctxSerie,{
+      type:'line',
+      data:{labels,datasets:[dataset]},
+      options:{
+        scales:{y:{beginAtZero:true,ticks:{precision:0}}},
+        plugins:{
+          tooltip:{
+            callbacks:{
+              label: (ctx)=>{
+                const idx = ctx.dataIndex;
+                const vals = ctx.dataset.data;
+                let sum = 0; for(let i=0;i<=idx;i++){ sum += Number(vals[i]||0); }
+                const cur = Number(vals[idx]||0);
+                return `Qtd: ${cur} · Acumulado: ${sum}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const stLabels = {{ chart_status_labels|default:'[]'|safe }};
+  const stValues = {{ chart_status_values|default:'[]'|safe }};
+  const ctxStatus = document.getElementById('chartStatus');
+  if(ctxStatus){ new Chart(ctxStatus,{type:'pie',data:{labels:stLabels,datasets:[{data:stValues,backgroundColor:['#0ea5e9','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4']}]},options:{plugins:{legend:{position:'bottom'}}}}); }
+
+  const codLabels = {{ chart_cod_labels|default:'[]'|safe }};
+  const codValues = {{ chart_cod_values|default:'[]'|safe }};
+  const ctxCod = document.getElementById('chartCodigos');
+  if(ctxCod){ new Chart(ctxCod,{type:'bar',data:{labels:codLabels,datasets:[{data:codValues,label:'Qtd',backgroundColor:'#10b981'}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}}); }
+  const flagLabels = {{ chart_flag_labels|default:'[]'|safe }};
+  const flagValues = {{ chart_flag_values|default:'[]'|safe }};
+  const ctxFlag = document.getElementById('chartFlag');
+  if(ctxFlag){ new Chart(ctxFlag,{type:'pie',data:{labels:flagLabels,datasets:[{data:flagValues,backgroundColor:['#34d399','#f87171']}]},options:{plugins:{legend:{position:'bottom'}}}}); }
+})();
+</script>
+{% endblock %}

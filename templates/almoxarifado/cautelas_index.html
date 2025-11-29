@@ -1,0 +1,437 @@
+{% extends "_layout/base.html" %}
+{% load almox_tags %}
+{% block title %}Almoxarifado - Cautelas{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header principal -->
+  <div class="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink:0;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l8.21 4.11a2 2 0 001.78 0L21 7m0 0v10a2 2 0 01-1.11 1.79l-6.5 3.06a2 2 0 01-1.78 0l-6.5-3.06A2 2 0 013 17V7" />
+        </svg>
+        Cautelas
+      </h1>
+      <p class="text-xs text-slate-600 mt-1 max-w-xl">Visualização e gerenciamento de armamentos e munições.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm" href="{% url 'core:almoxarifado' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        Almoxarifado
+      </a>
+      <a class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm shadow-sm" href="{% url 'core:almoxarifado:cautelas_lista' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 5h14M7 11h14M7 17h14M3 5h.01M3 11h.01M3 17h.01" /></svg>
+        Solicitações & Operações
+      </a>
+    </div>
+  </div>
+
+  <!-- 1) Armamento de Suporte -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 8.5V17a2 2 0 01-1.11 1.79l-6.5 3.06a2 2 0 01-1.78 0l-6.5-3.06A2 2 0 013 17V8.5a2 2 0 011.16-1.82l7-3.11a2 2 0 011.68 0l7 3.11A2 2 0 0121 8.5z" /></svg>
+        <h2 class="text-sm font-semibold text-slate-800">Armamento de Suporte</h2>
+      </div>
+      {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+      <a class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-slate-300 hover:bg-slate-50 text-xs" href="{% url 'core:almoxarifado:cautelas_armamento_suporte_novo' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" /></svg>
+        Adicionar
+      </a>
+      {% endif %}
+    </div>
+    <div class="p-4">
+    {# Mobile: cards verticais #}
+    <div class="md:hidden space-y-3">
+      {% for b in suporte_armas %}
+        <div class="bg-white border rounded-xl p-3 shadow-sm">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1">
+              <div class="font-semibold text-sm">{{ b.nome }}</div>
+              <div class="text-xs text-slate-500">{{ b.get_subtipo_armamento_display|default:b.get_tipo_display }}</div>
+            </div>
+            <div class="shrink-0">
+              {% if arm_cautelados and b.id in arm_cautelados %}
+                <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-amber-100 text-amber-800">Cautelado</span>
+              {% elif arm_reservados and b.id in arm_reservados %}
+                <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-sky-100 text-sky-800">Reservado</span>
+              {% else %}
+                <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Livre</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="text-sm space-y-1">
+            <div class="flex justify-between"><span class="text-slate-500">Nº série:</span><span>{{ b.numero_serie|default:"-" }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Calibre:</span><span>{{ b.calibre|default:"-" }}</span></div>
+            {% if b.observacoes %}<div class="flex justify-between"><span class="text-slate-500">Obs:</span><span class="text-xs text-right">{{ b.observacoes }}</span></div>{% endif %}
+            {% if arm_cautelados and b.id in arm_cautelados %}
+              {% with u=arm_cautelados|dict_get:b.id %}
+                {% if u %}
+                  {% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}
+                    <div class="text-xs text-slate-600 mt-1">{{ mat }} - {{ nome|upper }}</div>
+                  {% endwith %}
+                {% endif %}
+              {% endwith %}
+            {% elif arm_reservados and b.id in arm_reservados %}
+              {% with u=arm_reservados|dict_get:b.id %}
+                {% if u %}
+                  {% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}
+                    <div class="text-xs text-slate-600 mt-1">{{ mat }} - {{ nome|upper }}</div>
+                  {% endwith %}
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+          </div>
+          {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+            <div class="mt-3">
+              <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="text-red-600 text-xs font-medium" onclick="return confirm('Excluir este item?');">Excluir</a>
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-slate-500 py-8 text-sm">Nenhum armamento de suporte.</div>
+      {% endfor %}
+    </div>
+
+    {# Desktop: tabela #}
+    <div class="hidden md:block overflow-x-auto rounded-xl border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b">
+          <tr class="text-left">
+            <th class="p-2 border">Tipo</th>
+            <th class="p-2 border">Marca / Modelo</th>
+            <th class="p-2 border">Nº de série</th>
+            <th class="p-2 border">Calibre</th>
+            <th class="p-2 border">Observações</th>
+            <th class="p-2 border">Situação</th>
+            <th class="p-2 border">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in suporte_armas %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ b.get_subtipo_armamento_display|default:b.get_tipo_display }}</td>
+              <td class="p-2 border">{{ b.nome }}</td>
+              <td class="p-2 border">{{ b.numero_serie|default:"-" }}</td>
+              <td class="p-2 border">{{ b.calibre|default:"-" }}</td>
+              <td class="p-2 border">{{ b.observacoes|default:"-" }}</td>
+              <td class="p-2 border">
+                {% if arm_cautelados and b.id in arm_cautelados %}
+                  {% with u=arm_cautelados|dict_get:b.id %}
+                    {% if u %}
+                      {% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}
+                        <span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">Cautelado</span>
+                        <span class="text-slate-700 ml-1">{{ mat }} - {{ nome|upper }}</span>
+                      {% endwith %}
+                    {% else %}
+                      <span class="text-slate-500">Cautelado</span>
+                    {% endif %}
+                  {% endwith %}
+                {% elif arm_reservados and b.id in arm_reservados %}
+                  {% with u=arm_reservados|dict_get:b.id %}
+                    {% if u %}
+                      {% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}
+                        <span class="inline-flex items-center gap-1 text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-0.5">Reservado</span>
+                        <span class="text-slate-700 ml-1">{{ mat }} - {{ nome|upper }}</span>
+                      {% endwith %}
+                    {% else %}
+                      <span class="text-slate-500">Reservado</span>
+                    {% endif %}
+                  {% endwith %}
+                {% else %}
+                  <span class="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-0.5">Livre</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border">
+                {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                  <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="link text-red-600" onclick="return confirm('Excluir este item?');">Excluir</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="7">Nenhum armamento de suporte.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2) Munições do Armamento de Suporte -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 2h10v4H7V2zm0 6h10v14H7V8zm2 2v10h6V10H9z" /></svg>
+        <h2 class="text-sm font-semibold text-slate-800">Munições do Armamento de Suporte</h2>
+      </div>
+      {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+      <a class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-slate-300 hover:bg-slate-50 text-xs" href="{% url 'core:almoxarifado:cautelas_municao_suporte_novo' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" /></svg>
+        Adicionar
+      </a>
+      {% endif %}
+    </div>
+    <div class="p-4">
+    {# Mobile: cards verticais #}
+    <div class="md:hidden space-y-3">
+      {% for b in suporte_municoes %}
+        <div class="bg-white border rounded-xl p-3 shadow-sm">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1">
+              <div class="font-semibold text-sm">{{ b.nome }}</div>
+              <div class="text-xs text-slate-500">Munição de Suporte</div>
+            </div>
+            <div class="shrink-0 text-sm font-semibold text-blue-600">Qtd: {{ b.quantidade|default:"-" }}</div>
+          </div>
+          <div class="text-sm space-y-1">
+            <div class="flex justify-between"><span class="text-slate-500">Calibre:</span><span>{{ b.calibre|default:"-" }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Lote:</span><span>{{ b.lote|default:"-" }}</span></div>
+            {% if b.observacoes %}<div class="flex justify-between"><span class="text-slate-500">Obs:</span><span class="text-xs text-right">{{ b.observacoes }}</span></div>{% endif %}
+          </div>
+          {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+            <div class="mt-3">
+              <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="text-red-600 text-xs font-medium" onclick="return confirm('Excluir este item?');">Excluir</a>
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-slate-500 py-8 text-sm">Nenhuma munição de suporte.</div>
+      {% endfor %}
+    </div>
+
+    {# Desktop: tabela #}
+    <div class="hidden md:block overflow-x-auto rounded-xl border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b">
+          <tr class="text-left">
+            <th class="p-2 border">Descrição</th>
+            <th class="p-2 border">Calibre</th>
+            <th class="p-2 border">Lote</th>
+            <th class="p-2 border">Observações</th>
+            <th class="p-2 border">Qtd</th>
+            <th class="p-2 border">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in suporte_municoes %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ b.nome }}</td>
+              <td class="p-2 border">{{ b.calibre|default:"-" }}</td>
+              <td class="p-2 border">{{ b.lote|default:"-" }}</td>
+              <td class="p-2 border">{{ b.observacoes|default:"-" }}</td>
+              <td class="p-2 border">{{ b.quantidade|default:"-" }}</td>
+              <td class="p-2 border">
+                {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                  <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="link text-red-600" onclick="return confirm('Excluir este item?');">Excluir</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="6">Nenhuma munição de suporte.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3) Armamento Fixo dos Agentes -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l6.5 2.89A2 2 0 0120 6.85V12a10 10 0 01-6.34 9.28l-1.24.49a1 1 0 01-.84 0l-1.24-.49A10 10 0 014 12V6.85a2 2 0 011.08-1.87L12 2z" /></svg>
+        <h2 class="text-sm font-semibold text-slate-800">Armamento Fixo dos Agentes</h2>
+      </div>
+      <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+        <form method="get" class="hidden md:flex items-center gap-2">
+          <input type="text" name="ag_fixo" value="{{ ag_fixo|default:'' }}" placeholder="Matrícula ou nome"
+                 class="input border border-slate-300 text-sm" />
+          <button class="btn btn-primary text-sm px-3 py-2" type="submit">Buscar</button>
+          {% if ag_fixo %}
+            <a class="btn btn-outline text-sm px-3 py-2" href="{% url 'core:almoxarifado:cautelas' %}">Limpar</a>
+          {% endif %}
+        </form>
+        {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+        <a class="btn btn-outline flex items-center justify-center gap-2 text-xs md:text-sm px-3 py-2 w-full md:w-auto" href="{% url 'core:almoxarifado:cautelas_armamento_fixo_novo' %}">
+          <svg width="16" height="16" class="md:w-[18px] md:h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6Z"/></svg>
+          <span>Adicionar</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="p-4">
+    {# Mobile: cards verticais #}
+    <div class="md:hidden space-y-3">
+      {% for b in fixo_armas %}
+        <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-emerald-600">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1">
+              <div class="font-semibold text-sm">{{ b.nome }}</div>
+              <div class="text-xs text-slate-500">{{ b.get_subtipo_armamento_display|default:b.get_tipo_display }}</div>
+            </div>
+          </div>
+          <div class="text-sm space-y-1">
+            {% if b.dono %}
+              {% with mat=b.dono.perfil.matricula|default:b.dono.username nome=b.dono.get_full_name|default:b.dono.get_username %}
+                <div class="flex justify-between"><span class="text-slate-500">Agente:</span><span class="text-xs text-right">{{ mat }} - {{ nome|upper }}</span></div>
+              {% endwith %}
+            {% endif %}
+            <div class="flex justify-between"><span class="text-slate-500">Nº série:</span><span>{{ b.numero_serie|default:"-" }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Calibre:</span><span>{{ b.calibre|default:"-" }}</span></div>
+            {% if b.observacoes %}<div class="flex justify-between"><span class="text-slate-500">Obs:</span><span class="text-xs text-right">{{ b.observacoes }}</span></div>{% endif %}
+          </div>
+          {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+            <div class="mt-3">
+              <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="text-red-600 text-xs font-medium" onclick="return confirm('Excluir este item?');">Excluir</a>
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-slate-500 py-8 text-sm">Nenhum armamento fixo cadastrado.</div>
+      {% endfor %}
+    </div>
+
+    {# Desktop: tabela #}
+    <div class="hidden md:block overflow-x-auto rounded-xl border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b">
+          <tr class="text-left">
+            <th class="p-2 border">Tipo</th>
+            <th class="p-2 border">Marca / Modelo</th>
+            <th class="p-2 border">Agente</th>
+            <th class="p-2 border">Nº de série</th>
+            <th class="p-2 border">Calibre</th>
+            <th class="p-2 border">Observações</th>
+            <th class="p-2 border">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in fixo_armas %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ b.get_subtipo_armamento_display|default:b.get_tipo_display }}</td>
+              <td class="p-2 border">{{ b.nome }}</td>
+              <td class="p-2 border">
+                {% if b.dono %}
+                  {% with mat=b.dono.perfil.matricula|default:b.dono.username nome=b.dono.get_full_name|default:b.dono.get_username %}
+                  {{ mat }} - {{ nome|upper }}
+                  {% endwith %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border">{{ b.numero_serie|default:"-" }}</td>
+              <td class="p-2 border">{{ b.calibre|default:"-" }}</td>
+              <td class="p-2 border">{{ b.observacoes|default:"-" }}</td>
+              <td class="p-2 border">
+                {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                  <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="link text-red-600" onclick="return confirm('Excluir este item?');">Excluir</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="7">Nenhum armamento fixo cadastrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    </div>
+  </div>
+
+  <!-- 4) Munições do Armamento Fixo -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-fuchsia-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 4h14v4H5V4zm0 6h14v10H5V10zm2 2v6h10v-6H7z" /></svg>
+        <h2 class="text-sm font-semibold text-slate-800">Munições do Armamento Fixo</h2>
+      </div>
+      <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+        <form method="get" class="hidden md:flex items-center gap-2">
+          <input type="text" name="ag_fixo_mun" value="{{ ag_fixo_mun|default:'' }}" placeholder="Matrícula ou nome"
+                 class="input border border-slate-300 text-sm" />
+          <button class="btn btn-primary text-sm px-3 py-2" type="submit">Buscar</button>
+          {% if ag_fixo_mun %}
+            <a class="btn btn-outline text-sm px-3 py-2" href="{% url 'core:almoxarifado:cautelas' %}">Limpar</a>
+          {% endif %}
+        </form>
+        {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+        <a class="btn btn-outline flex items-center justify-center gap-2 text-xs md:text-sm px-3 py-2 w-full md:w-auto" href="{% url 'core:almoxarifado:cautelas_municao_fixo_novo' %}">
+          <svg width="16" height="16" class="md:w-[18px] md:h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6Z"/></svg>
+          <span>Adicionar</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="p-4">
+    {# Mobile: cards verticais #}
+    <div class="md:hidden space-y-3">
+      {% for b in fixo_municoes %}
+        <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-fuchsia-600">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1">
+              <div class="font-semibold text-sm">{{ b.nome }}</div>
+              <div class="text-xs text-slate-500">Munição Fixo</div>
+            </div>
+            <div class="shrink-0 text-sm font-semibold text-fuchsia-600">Qtd: {{ b.quantidade|default:"-" }}</div>
+          </div>
+          <div class="text-sm space-y-1">
+            {% if b.dono %}
+              {% with mat=b.dono.perfil.matricula|default:b.dono.username nome=b.dono.get_full_name|default:b.dono.get_username %}
+                <div class="flex justify-between"><span class="text-slate-500">Agente:</span><span class="text-xs text-right">{{ mat }} - {{ nome|upper }}</span></div>
+              {% endwith %}
+            {% endif %}
+            <div class="flex justify-between"><span class="text-slate-500">Calibre:</span><span>{{ b.calibre|default:"-" }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Lote:</span><span>{{ b.lote|default:"-" }}</span></div>
+            {% if b.observacoes %}<div class="flex justify-between"><span class="text-slate-500">Obs:</span><span class="text-xs text-right">{{ b.observacoes }}</span></div>{% endif %}
+          </div>
+          {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+            <div class="mt-3">
+              <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="text-red-600 text-xs font-medium" onclick="return confirm('Excluir este item?');">Excluir</a>
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-slate-500 py-8 text-sm">Nenhuma munição do armamento fixo.</div>
+      {% endfor %}
+    </div>
+
+    {# Desktop: tabela #}
+    <div class="hidden md:block overflow-x-auto rounded-xl border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 border-b">
+          <tr class="text-left">
+            <th class="p-2 border">Descrição</th>
+            <th class="p-2 border">Calibre</th>
+            <th class="p-2 border">Lote</th>
+            <th class="p-2 border">Observações</th>
+            <th class="p-2 border">Agente</th>
+            <th class="p-2 border">Qtd</th>
+            <th class="p-2 border">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in fixo_municoes %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ b.nome }}</td>
+              <td class="p-2 border">{{ b.calibre|default:"-" }}</td>
+              <td class="p-2 border">{{ b.lote|default:"-" }}</td>
+              <td class="p-2 border">{{ b.observacoes|default:"-" }}</td>
+              <td class="p-2 border">
+                {% if b.dono %}
+                  {% with mat=b.dono.perfil.matricula|default:b.dono.username nome=b.dono.get_full_name|default:b.dono.get_username %}
+                  {{ mat }} - {{ nome|upper }}
+                  {% endwith %}
+                {% else %}-{% endif %}
+              </td>
+              <td class="p-2 border">{{ b.quantidade|default:"-" }}</td>
+              <td class="p-2 border">
+                {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                  <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="link text-red-600" onclick="return confirm('Excluir este item?');">Excluir</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="7">Nenhuma munição do armamento fixo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

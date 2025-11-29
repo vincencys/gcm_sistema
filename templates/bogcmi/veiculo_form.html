@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ veiculo|yesno:"Editar,Adicionar" }} Veículo Envolvido{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto p-6">
+    <!-- Cabeçalho -->
+    <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+        <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-car mr-2 text-blue-600"></i>
+            {{ veiculo|yesno:"Editar,Adicionar" }} Veículo Envolvido
+        </h1>
+        <div class="flex gap-2 items-center">
+            {% if request.GET.bo %}
+            <a href="{% url 'bogcmi:veiculo_form_offline' %}?bo={{ request.GET.bo }}" target="_blank" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                <i class="fas fa-download mr-1"></i>Form Offline
+            </a>
+            {% endif %}
+            <a href="{% url 'bogcmi:veiculo_lista' %}" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <form method="post" class="bg-white rounded-xl shadow-lg p-6 space-y-6">
+        {% csrf_token %}
+        
+        <!-- Seção: Dados do Veículo -->
+    <div class="border-l-4 border-blue-500 pl-4 mobile-no-border">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                Dados do Veículo
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="text-red-500">*</span> Marca
+                    </label>
+                    {{ form.marca }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="text-red-500">*</span> Modelo
+                    </label>
+                    {{ form.modelo }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Placa</label>
+                    {{ form.placa }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Renavam</label>
+                    {{ form.renavam }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nº Chassi</label>
+                    {{ form.numero_chassi }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nº do Motor</label>
+                    {{ form.numero_motor }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Placa Cidade</label>
+                    {{ form.placa_cidade }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Placa Estado</label>
+                    {{ form.placa_estado }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cor</label>
+                    {{ form.cor }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ano de Modelo</label>
+                    {{ form.ano_modelo }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ano de Fabricação</label>
+                    {{ form.ano_fabricacao }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Condições do Acidente -->
+    <div class="border-l-4 border-orange-500 pl-4 mobile-no-border">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-exclamation-triangle mr-2 text-orange-500"></i>
+                Condições do Acidente
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Semáforo</label>
+                    {{ form.semaforo }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Pista</label>
+                    {{ form.tipo_pista }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Acidente</label>
+                    {{ form.tipo_acidente }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tempo</label>
+                    {{ form.tempo }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Iluminação</label>
+                    {{ form.iluminacao }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Dados do Proprietário -->
+    <div class="border-l-4 border-green-500 pl-4 mobile-no-border">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-user mr-2 text-green-500"></i>
+                Dados do Proprietário
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Proprietário</label>
+                    {{ form.proprietario }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">CPF</label>
+                    {{ form.cpf }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">CNPJ</label>
+                    {{ form.cnpj }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">CNH</label>
+                    {{ form.cnh }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+                    {{ form.categoria_cnh }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Validade CNH</label>
+                    {{ form.validade_cnh }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Situação do Veículo -->
+    <div class="border-l-4 border-purple-500 pl-4 mobile-no-border">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-clipboard-check mr-2 text-purple-500"></i>
+                Situação do Veículo
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Situação do Veículo</label>
+                    {{ form.situacao_veiculo }}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Observação da Situação</label>
+                    {{ form.observacao_situacao }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Remoção de Veículo -->
+        <div class="border-l-4 border-amber-500 pl-4 mobile-no-border">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-truck mr-2 text-amber-500"></i>
+                Remoção de Veículo
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">n° das AIT's relacionadas</label>
+                    {{ form.apreensao_ait }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">n° do CRR</label>
+                    {{ form.apreensao_crr }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Responsável pelo Guincho</label>
+                    {{ form.apreensao_responsavel_guincho }}
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Destino</label>
+                    {{ form.apreensao_destino }}
+                </div>
+            </div>
+        </div>
+
+                <!-- Seção: Avaliação de Danos -->
+                <div class="border-l-4 border-red-500 pl-4 mobile-no-border">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-tools mr-2 text-red-500"></i>
+                        Avaliação Superficial dos Danos
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Automóvel -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h3 class="text-lg font-medium text-gray-700 mb-3 text-center"><i class="fas fa-car mr-2"></i>Automóvel</h3>
+                                              <div class="relative mx-auto select-none group mirror-car" id="container-carro" style="width:100%;max-width:430px;aspect-ratio: 4/2.3;">
+                                                <img src="{% static 'img/user_car.png' %}" onerror="this.onerror=null;this.src='{{ STATIC_URL }}img/car_top.svg';" alt="Carro" class="w-full h-full object-contain pointer-events-none" draggable="false">
+                                <!-- Hotspots carro -->
+                                <!-- Estrutura: data-parte label textual humanizada -->
+                                                <!-- Hotspots ajustados para a imagem fornecida -->
+                                                <!-- Linha dianteira -->
+                                                <div class="hotspot-box" title="Para-choque Dianteiro" data-parte="parachoque-dianteiro" style="left:95%;top:50%">Parachoque Dianteiro</div>
+                                                <div class="hotspot-box" title="Farol Dianteiro Esquerdo" data-parte="farol-dianteiro-esquerdo" style="left:95%;top:75%">Farol Esquerdo</div>
+                                                <div class="hotspot-box" title="Farol Dianteiro Direito" data-parte="farol-dianteiro-direito" style="left:95%;top:25%">Farol Direito</div>
+                                                <div class="hotspot-box" title="Capô" data-parte="capo" style="left:80%;top:50%">Capô</div>
+                                                <!-- Portas lado esquerdo -->
+                                                <div class="hotspot-box" title="Porta Dianteira Esquerda" data-parte="porta-dianteira-esquerda" style="left:50%;top:80%">Porta D Esq</div>
+                                                <div class="hotspot-box" title="Porta Traseira Esquerda" data-parte="porta-traseira-esquerda" style="left:31%;top:80%">Porta T Esq</div>
+                                                <!-- Portas lado direito -->
+                                                <div class="hotspot-box" title="Porta Dianteira Direita" data-parte="porta-dianteira-direita" style="left:50%;top:20%">Porta D Dir</div>
+                                                <div class="hotspot-box" title="Porta Traseira Direita" data-parte="porta-traseira-direita" style="left:31%;top:20%">Porta T Dir</div>
+                                                <!-- Traseira -->
+                                                 <div class="hotspot-box" title="Teto" data-parte="Teto" style="left:40%;top:50%">Teto</div>
+                                                <div class="hotspot-box" title="Porta-malas" data-parte="porta-malas" style="left:20%;top:50%">Porta Mala</div>
+                                                <div class="hotspot-box" title="Lanterna Traseira Esquerda" data-parte="lanterna-traseira-esquerda" style="left:03%;top:75%">Lanterna E</div>
+                                                <div class="hotspot-box" title="Lanterna Traseira Direita" data-parte="lanterna-traseira-direita" style="left:03%;top:25%">Lanterna D</div>
+                                                <div class="hotspot-box" title="Para-choque Traseiro" data-parte="parachoque-traseiro" style="left:3%;top:50%">Parachoque Traseiro</div>
+                                                <!-- Rodas -->
+                                                <div class="hotspot-box" title="Roda Dianteira Esquerda" data-parte="roda-dianteira-esquerda" style="left:80%;top:80%">Roda DE</div>
+                                                <div class="hotspot-box" title="Roda Dianteira Direita" data-parte="roda-dianteira-direita" style="left:80%;top:20%">Roda DD</div>
+                                                <div class="hotspot-box" title="Roda Traseira Esquerda" data-parte="roda-traseira-esquerda" style="left:16%;top:80%">Roda TE</div>
+                                                <div class="hotspot-box" title="Roda Traseira Direita" data-parte="roda-traseira-direita" style="left:16%;top:20%">Roda TD</div>
+                            </div>
+                        </div>
+                        <!-- Motocicleta -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h3 class="text-lg font-medium text-gray-700 mb-3 text-center"><i class="fas fa-motorcycle mr-2"></i>Motocicleta (CG)</h3>
+                                            <div class="relative mx-auto select-none" id="container-moto" style="width:100%;max-width:430px;aspect-ratio: 16/7;">
+                                                <img src="{% static 'img/user_moto.png' %}" onerror="this.onerror=null;this.src='{{ STATIC_URL }}img/moto_cg.svg';" alt="Moto" class="w-full h-full object-contain pointer-events-none" draggable="false">
+                                <!-- Hotspots moto -->
+                                                <!-- Hotspots alinhados à imagem da moto fornecida -->
+                                                <div class="hotspot-box" title="Roda Dianteira" data-parte="roda-dianteira" style="left:19%;top:68%">Roda D</div>
+                                                <div class="hotspot-box" title="Roda Traseira" data-parte="roda-traseira" style="left:70%;top:68%">Roda T</div>
+                                                <div class="hotspot-box" title="Guidão" data-parte="guidao" style="left:27%;top:21%">Guidão</div>
+                                                <div class="hotspot-box" title="Farol" data-parte="farol" style="left:30%;top:33%">Farol</div>
+                                                <div class="hotspot-box" title="Tanque" data-parte="tanque" style="left:44%;top:37%">Tanque</div>
+                                                <div class="hotspot-box" title="Assento" data-parte="assento" style="left:58%;top:32%">Assento</div>
+                                                <div class="hotspot-box" title="Motor" data-parte="motor" style="left:52%;top:54%">Motor</div>
+                                                <div class="hotspot-box" title="Escapamento" data-parte="escapamento" style="left:77%;top:54%">Escap.</div>
+                                                <div class="hotspot-box" title="Rabeta" data-parte="rabeta" style="left:83%;top:32%">Rabeta</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Lista de danos selecionados -->
+                    <div class="mt-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-lg font-medium text-gray-700">Danos Identificados:</h4>
+                            <div class="space-x-2">
+                                <button type="button" id="btn-limpar-danos" class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded">Limpar</button>
+                            </div>
+                        </div>
+                        <div id="danos-lista" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 min-h-[52px] text-sm flex flex-wrap"></div>
+                        <p class="text-gray-500 italic mt-1 text-sm" id="sem-danos">Clique nos quadrados sobre a imagem para marcar danos</p>
+                        <input type="hidden" name="danos_identificados" id="danos-input">
+                    </div>
+                </div>
+
+        <!-- Botões de ação -->
+        <div class="flex justify-end space-x-4 pt-6 border-t">
+            <a href="{% url 'bogcmi:veiculo_lista' %}" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                <i class="fas fa-times mr-2"></i>Cancelar
+            </a>
+            <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-save mr-2"></i>Salvar
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const danosSet = new Set();
+    const danosLista = document.getElementById('danos-lista');
+    const semDanos = document.getElementById('sem-danos');
+    const danosInput = document.getElementById('danos-input');
+    const btnLimpar = document.getElementById('btn-limpar-danos');
+    const isEdicao = '{{ veiculo.id|default:"" }}' !== '';
+    const storageKey = isEdicao ? 'danos_temp_{{ veiculo.id }}' : null;
+
+    // Carregar existentes (edição)
+    const existentesStr = "{{ veiculo.danos_identificados|default:''|escapejs }}";
+    const existentes = existentesStr ? existentesStr.split(',').filter(Boolean) : [];
+    existentes.forEach(d=>danosSet.add(d));
+
+    // Hotspots
+    document.querySelectorAll('.hotspot-box').forEach(hs => {
+        const parte = hs.dataset.parte;
+        if (danosSet.has(parte)) hs.classList.add('ativo');
+        hs.addEventListener('click', () => toggleParte(parte, hs));
+        hs.addEventListener('keydown', (e) => { if(e.key==='Enter' || e.key===' ') { e.preventDefault(); toggleParte(parte, hs);} });
+    });
+
+    function toggleParte(parte, el){
+        if(danosSet.has(parte)){
+            danosSet.delete(parte);
+            el.classList.remove('ativo');
+        } else {
+            danosSet.add(parte);
+            el.classList.add('ativo');
+        }
+        atualizarLista();
+    }
+
+    function atualizarLista(){
+        const arr = Array.from(danosSet);
+        if(!arr.length){
+            danosLista.innerHTML = '';
+            semDanos.style.display = 'block';
+        } else {
+            semDanos.style.display = 'none';
+            danosLista.innerHTML = arr.map(p => `<span class="tag-dano">${formatar(p)}</span>`).join('');
+        }
+        danosInput.value = arr.join(',');
+        if(isEdicao && storageKey){
+            localStorage.setItem(storageKey, danosInput.value);
+        }
+    }
+
+    function formatar(p){
+        return p.replace(/-/g,' ').replace(/\b([a-z])/g, m=>m.toUpperCase());
+    }
+
+    btnLimpar.addEventListener('click', ()=>{
+        danosSet.clear();
+        document.querySelectorAll('.hotspot-box.ativo').forEach(h=>h.classList.remove('ativo'));
+        atualizarLista();
+    });
+
+    // Restauração apenas em edição (nunca quando é novo veículo)
+    if(isEdicao && !existentes.length && storageKey){
+        const temp = localStorage.getItem(storageKey);
+        if(temp){
+            temp.split(',').filter(Boolean).forEach(p=>danosSet.add(p));
+            document.querySelectorAll('.hotspot-box').forEach(h=>{ if(danosSet.has(h.dataset.parte)) h.classList.add('ativo'); });
+        }
+    } else if(!isEdicao) {
+        // Garantir limpeza de possíveis chaves antigas genéricas
+        Object.keys(localStorage).forEach(k=>{ if(k.startsWith('danos_temp')) localStorage.removeItem(k); });
+    }
+    atualizarLista();
+});
+</script>
+
+<!-- Máscaras e validações de CPF/CNPJ/Placa -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const form = document.querySelector('form');
+    const cpf = document.querySelector('input[name="cpf"]');
+    const cnpj = document.querySelector('input[name="cnpj"]');
+    const placa = document.querySelector('input[name="placa"]');
+    if(!form) return;
+    const onlyDigits = v => (v||'').replace(/\D+/g,'');
+    const onlyAlphaNum = v => (v||'').replace(/[^A-Za-z0-9]/g,'');
+    // Máscaras
+    const maskCPF = v => {
+        const d = onlyDigits(v).slice(0,11);
+        const p1 = d.substring(0,3), p2 = d.substring(3,6), p3 = d.substring(6,9), p4 = d.substring(9,11);
+        let out=''; if(p1) out+=p1; if(p2) out+=(out?'.':'')+p2; if(p3) out+=(out?'.':'')+p3; if(p4) out+=(out?'-':'')+p4; return out;
+    };
+    const maskCNPJ = v => {
+        const d = onlyDigits(v).slice(0,14);
+        const p1=d.substring(0,2), p2=d.substring(2,5), p3=d.substring(5,8), p4=d.substring(8,12), p5=d.substring(12,14);
+        let out=''; if(p1) out+=p1; if(p2) out+=(out?'.':'')+p2; if(p3) out+=(out?'.':'')+p3; if(p4) out+=(out?'/':'')+p4; if(p5) out+=(out?'-':'')+p5; return out;
+    };
+    const maskPlaca = v => {
+        const raw = onlyAlphaNum(v).toUpperCase().slice(0,7);
+        if(raw.length===7 && /^[A-Z]{3}\d{4}$/.test(raw)) return raw.slice(0,3)+'-'+raw.slice(3);
+        return raw; // Mercosul mantem sem hífen
+    };
+    // Validadores
+    function cpfValid(v){
+        const d = onlyDigits(v); if(d.length!==11 || /(\d)\1{10}/.test(d)) return false; const n=d.split('').map(x=>+x);
+        let s=0; for(let i=0;i<9;i++) s+=n[i]*(10-i); let r=(s*10)%11; if(r===10) r=0; if(n[9]!==r) return false;
+        s=0; for(let i=0;i<10;i++) s+=n[i]*(11-i); r=(s*10)%11; if(r===10) r=0; return n[10]===r;
+    }
+    function cnpjValid(v){
+        const d = onlyDigits(v); if(d.length!==14 || /(\d)\1{13}/.test(d)) return false; const n=d.split('').map(x=>+x);
+        const dv=(arr,pesos)=>{let s=0; for(let i=0;i<pesos.length;i++) s+=arr[i]*pesos[i]; const r=s%11; return r<2?0:11-r;};
+        const dv1=dv(n,[5,4,3,2,9,8,7,6,5,4,3,2]); if(n[12]!==dv1) return false;
+        const dv2=dv(n,[6,5,4,3,2,9,8,7,6,5,4,3,2]); return n[13]===dv2;
+    }
+    function placaValid(v){
+        const p=(v||'').trim().toUpperCase();
+        return /^[A-Z]{3}-\d{4}$/.test(p) || /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(p);
+    }
+    function setNote(inputEl, ok){
+        if(!inputEl) return;
+        let note = inputEl.parentElement.querySelector('.field-note');
+        if(!note){ note = document.createElement('div'); note.className='field-note mt-1 text-xs'; inputEl.parentElement.appendChild(note); }
+        if(!(inputEl.value||'').trim()){ note.textContent=''; note.classList.remove('text-rose-700','text-emerald-700'); inputEl.classList.remove('border-rose-500'); return; }
+        if(ok){ note.textContent='Válido'; note.classList.add('text-emerald-700'); note.classList.remove('text-rose-700'); inputEl.classList.remove('border-rose-500'); }
+        else { note.textContent='Inválido'; note.classList.add('text-rose-700'); note.classList.remove('text-emerald-700'); inputEl.classList.add('border-rose-500'); }
+    }
+    if(cpf){ cpf.addEventListener('input', ()=> cpf.value = maskCPF(cpf.value)); const v=()=>setNote(cpf, !cpf.value.trim() || cpfValid(cpf.value)); cpf.addEventListener('blur', v); cpf.addEventListener('change', v); }
+    if(cnpj){ cnpj.addEventListener('input', ()=> cnpj.value = maskCNPJ(cnpj.value)); const v=()=>setNote(cnpj, !cnpj.value.trim() || cnpjValid(cnpj.value)); cnpj.addEventListener('blur', v); cnpj.addEventListener('change', v); }
+    if(placa){ placa.addEventListener('input', ()=> placa.value = maskPlaca(placa.value)); const v=()=>setNote(placa, !placa.value.trim() || placaValid(placa.value)); placa.addEventListener('blur', v); placa.addEventListener('change', v); }
+    form.addEventListener('submit', function(e){
+        if(cpf && cpf.value.trim() && !cpfValid(cpf.value)){ e.preventDefault(); setNote(cpf,false); alert('CPF inválido.'); return; }
+        if(cnpj && cnpj.value.trim() && !cnpjValid(cnpj.value)){ e.preventDefault(); setNote(cnpj,false); alert('CNPJ inválido.'); return; }
+        if(placa && placa.value.trim() && !placaValid(placa.value)){ e.preventDefault(); setNote(placa,false); alert('Placa inválida. Formatos aceitos: AAA-9999 ou ABC1D23.'); return; }
+    });
+});
+</script>
+
+<style>
+/* Estilos para os campos do formulário */
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    border-color: #3b82f6;
+}
+
+select {
+    background-color: white;
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* Hotspots caixas */
+.hotspot-box {
+    position:absolute;
+    transform:translate(-50%,-50%);
+    background:rgba(255,255,255,0.85);
+    backdrop-filter:blur(2px);
+    border:1px solid #1f2937; /* gray-800 */
+    color:#111827;
+    font-size:9px;
+    font-weight:600;
+    padding:2px 4px;
+    border-radius:4px;
+    cursor:pointer;
+    line-height:1.05;
+    user-select:none;
+    box-shadow:0 1px 3px rgba(0,0,0,.35);
+    transition:all .18s;
+    max-width:58px;
+    text-align:center;
+}
+.hotspot-box:hover,.hotspot-box:focus{background:#fff;outline:none;}
+.hotspot-box.ativo{background:#dc2626;color:#fff;border-color:#7f1d1d;box-shadow:0 0 0 2px rgba(220,38,38,.35);} 
+.tag-dano { background:#fee2e2; color:#7f1d1d; padding:4px 8px; border-radius:999px; margin:2px; display:inline-block; font-size:12px; }
+.tag-dano:hover { background:#fecaca; }
+.hotspot-box:focus-visible { box-shadow:0 0 0 3px #3b82f6; }
+@media (max-width:640px){ .hotspot-box{font-size:8px;padding:2px 3px;} }
+</style>
+</style>
+<style>
+/* Ajuste de espelhamento do carro para corrigir inversão esquerda/direita */
+.mirror-car { transform: scaleX(-1); }
+.mirror-car img { width:100%; height:100%; object-fit:contain; }
+.mirror-car .hotspot-box { transform: translate(-50%, -50%) scaleX(-1); }
+/* Mobile-only: remover bordas/padding coloridos para caber melhor */
+@media (max-width: 640px){
+    .mobile-no-border{ border-left: 0 !important; padding-left: 0 !important; }
+    /* Aumentar um pouco as áreas de dano no mobile */
+    #container-carro{ max-width: 100%; min-height: 210px; }
+    #container-moto{ max-width: 100%; min-height: 210px; }
+}
+</style>
+{% endblock %}

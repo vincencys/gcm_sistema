@@ -1,0 +1,41 @@
+{% extends "_layout/base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Meus Talões</h1>
+  <div class="flex gap-2">
+    <a class="btn" href="{% url 'taloes:historico' %}">Histórico</a>
+  </div>
+</div>
+
+<div class="tabs mb-3">
+  <a href="?">Todos</a>
+  <a href="?status=ABERTO" {% if request.GET.status == 'ABERTO' %}class="active"{% endif %}>Abertos</a>
+  <a href="?status=FECHADO" {% if request.GET.status == 'FECHADO' %}class="active"{% endif %}>Finalizados</a>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+  {% for t in taloes %}
+  <a href="{% url 'taloes:detalhe' t.pk %}" class="block border rounded p-4 hover:bg-slate-50">
+    <div class="flex items-center justify-between">
+      <div class="font-semibold">Talão #{{ t.pk }}</div>
+      <div class="badge {% if t.status == 'ABERTO' %}badge-success{% else %}badge{% endif %}">{{ t.status }}</div>
+    </div>
+    <div class="text-sm mt-1">VTR: {{ t.viatura.prefixo }}</div>
+    <div class="text-sm text-slate-600">Início: {{ t.iniciado_em|date:"d/m/Y H:i" }}</div>
+    <div class="text-sm text-slate-600">
+      KM: {{ t.km_inicial }}{% if t.km_final %} → {{ t.km_final }}{% endif %}
+    </div>
+    {% if t.codigo_ocorrencia %}
+      <div class="text-sm mt-1">
+        Código: <span class="font-medium">{{ t.codigo_ocorrencia.sigla }}</span> — {{ t.codigo_ocorrencia.descricao }}
+        {% if t.local_bairro %}<span class="text-slate-500">({{ t.local_bairro }})</span>{% endif %}
+      </div>
+    {% endif %}
+  </a>
+  {% empty %}
+  <p>Nenhum talão.</p>
+  {% endfor %}
+</div>
+{% endblock %}

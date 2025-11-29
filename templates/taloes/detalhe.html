@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Talão #{{ t.pk }}{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-2">Talão #{{ t.pk }}</h1>
+
+<ul class="mb-3 text-sm">
+  <li>Viatura: {{ t.viatura.prefixo|default:"-" }}</li>
+  <li>Status: {{ t.status }}</li>
+  <li>Iniciado: {{ t.iniciado_em|date:"d/m/Y H:i" }}</li>
+  <li>KM: {{ t.km_str }}</li>
+  <li>Ocorrência: {% if t.codigo_ocorrencia %}{{ t.codigo_ocorrencia }}{% else %}-{% endif %}</li>
+  <li>Local: {{ t.local_bairro|default:"-" }} {{ t.local_rua|default:"" }}</li>
+</ul>
+
+<p class="mb-4">
+  <a class="link" href="{% url 'taloes:editar_ocorrencia' pk=t.pk %}">Editar ocorrência/local</a>
+</p>
+
+{% if form_finalizar %}
+<form method="post">
+  {% csrf_token %}
+  {{ form_finalizar.as_p }}
+  <button class="btn">Finalizar</button>
+</form>
+{% endif %}
+{% endblock %}

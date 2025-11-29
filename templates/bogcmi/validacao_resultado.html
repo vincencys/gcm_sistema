@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Validação de Documento BO</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;padding:30px;color:#0f172a}
+  .caixa{max-width:640px;margin:0 auto;background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:24px;box-shadow:0 4px 10px rgba(0,0,0,.07);}
+  h1{font-size:20px;margin:0 0 12px;font-weight:600}
+  .ok{color:#15803d}
+  .erro{color:#b91c1c}
+  .detalhes{font-size:14px;margin-top:16px;line-height:1.4}
+  .badge{display:inline-block;background:#0f172a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;margin-left:6px}
+  .motivo{margin-top:10px;font-size:13px;color:#b91c1c}
+  .assin{margin-top:24px;font-size:12px;color:#475569}
+  .info{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;margin-top:12px}
+  .label{color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .value{font-weight:600}
+  .mono{font-family:ui-monospace,Consolas,Menlo,monospace;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;max-width:100%;word-break:break-all;overflow-wrap:anywhere}
+  @media (max-width: 480px){ .info{grid-template-columns:1fr} .label{margin-top:6px} }
+</style>
+</head>
+<body>
+<div class="caixa">
+  <h1>Validação do BO <span class="badge">{{ bo.numero }}</span></h1>
+  {% if ok %}
+    <p class="ok"><strong>Documento VÁLIDO</strong></p>
+  {% else %}
+    <p class="erro"><strong>Documento NÃO VALIDADO</strong></p>
+    {% if motivo %}<p class="motivo">{{ motivo }}</p>{% endif %}
+  {% endif %}
+  <div class="detalhes info">
+    <div class="label">Status</div><div class="value">{{ bo.status }}</div>
+    <div class="label">Finalizado em</div><div class="value">{{ bo.finalizado_em|date:'d/m/Y H:i' }}</div>
+    <div class="label">Encarregado</div><div class="value">{% if bo.encarregado %}{{ bo.encarregado.get_full_name|default:bo.encarregado.username }}{% else %}-{% endif %}</div>
+    <div class="label">Token</div><div class="value mono">{{ bo.validacao_token }}</div>
+    <div class="label">Hash</div><div class="value mono">{{ bo.validacao_hash }}</div>
+  </div>
+  <div class="assin">Sistema GCM - Página de Verificação</div>
+</div>
+</body>
+</html>

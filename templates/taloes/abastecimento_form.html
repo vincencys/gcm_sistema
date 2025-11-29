@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Novo Abastecimento{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto p-3">
+  <div class="mb-2">
+    <a href="{% url 'taloes:lista' %}" class="inline-flex items-center h-9 px-3 border rounded hover:bg-slate-50">
+      ← Voltar
+    </a>
+  </div>
+  <h1 class="text-xl font-semibold mb-4">Novo Abastecimento</h1>
+
+  <form id="form-abastecimento" method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+
+    <div class="space-y-1">
+      <label class="block text-sm font-medium text-slate-700">Nº da Requisição</label>
+      {{ form.requisicao_numero }}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="space-y-1">
+        <label class="block text-sm font-medium text-slate-700">Tipo de combustível</label>
+        {{ form.tipo_combustivel }}
+      </div>
+      <div class="space-y-1">
+        <label class="block text-sm font-medium text-slate-700">Litros</label>
+        {{ form.litros }}
+      </div>
+    </div>
+
+    <div class="space-y-1">
+      <label class="block text-sm font-medium text-slate-700">Recibo do Posto (foto ou PDF)</label>
+      {{ form.recibo_do_posto }}
+      <p class="text-xs text-slate-500">Aceita imagem ou PDF. Em celulares, você pode usar a câmera.</p>
+    </div>
+
+    <div class="flex gap-2 justify-end">
+      <a href="{% url 'taloes:lista' %}" class="inline-flex items-center h-9 px-3 border rounded hover:bg-slate-50">Cancelar</a>
+      <button class="inline-flex items-center h-9 px-3 rounded text-white bg-blue-600 hover:bg-blue-700">Salvar</button>
+    </div>
+  </form>
+
+  {% if abastecimentos %}
+    <h2 class="text-lg font-semibold mt-6 mb-2">Registros deste Talão</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm border">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="p-2 border">Data/Hora</th>
+            <th class="p-2 border">Requisição</th>
+            <th class="p-2 border">Combustível</th>
+            <th class="p-2 border text-right">Litros</th>
+            <th class="p-2 border">Recibo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ab in abastecimentos %}
+            <tr class="align-middle">
+              <td class="p-2 border">{{ ab.criado_em|date:"d/m/Y H:i" }}</td>
+              <td class="p-2 border">{{ ab.requisicao_numero|default:"—" }}</td>
+              <td class="p-2 border">{{ ab.get_tipo_combustivel_display }}</td>
+              <td class="p-2 border text-right">{{ ab.litros }}</td>
+              <td class="p-2 border">
+                {% if ab.recibo_do_posto %}
+                  <a href="{{ ab.recibo_do_posto.url }}" target="_blank" class="text-blue-600 underline">Abrir</a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

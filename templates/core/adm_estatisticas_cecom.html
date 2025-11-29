@@ -1,0 +1,140 @@
+{% extends "_layout/base.html" %}
+{% block title %}Estatísticas - CECOM · Despachos{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-6">
+    <div class="flex items-center justify-between gap-4 mb-3">
+      <div>
+        <h1 class="text-2xl font-bold">Estatísticas · Despachos do CECOM</h1>
+        <p class="text-slate-600 text-sm">Totais por status no período e tempos médios.</p>
+      </div>
+      <div>
+        <a class="btn btn-outline" href="{% url 'core:estatisticas' %}">← Voltar Estatísticas</a>
+      </div>
+    </div>
+    <div class="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-3">
+      <form method="get" class="flex flex-wrap items-end gap-3">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Operador (Despachado por)</label>
+          <select name="op" class="input min-w-[260px] js-choices">
+            <option value="">— Todos —</option>
+            {% for u in user_options %}
+              <option value="{{ u.id }}" {% if u.id == op %}selected{% endif %}>{{ u.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Tipo de Ocorrência</label>
+          <select name="cod" class="input min-w-[240px] js-choices">
+            <option value="">— Todas —</option>
+            {% for c in codigo_options %}
+              <option value="{{ c.sigla }}" {% if c.sigla == cod %}selected{% endif %}>{{ c.sigla }} — {{ c.descricao }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">De</label>
+          <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Até</label>
+          <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input" />
+        </div>
+        <button class="btn btn-primary" type="submit">Filtrar</button>
+        <div class="grow"></div>
+        <div class="flex flex-wrap gap-2">
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_cecom_graficos' %}?tab=dia&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&op={{ op }}&cod={{ cod }}">Gráfico (Geral · Dia)</a>
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_cecom_graficos' %}?tab=mes&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&op={{ op }}&cod={{ cod }}">Gráfico (Geral · Mês)</a>
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_cecom_graficos' %}?tab=semestre&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&op={{ op }}&cod={{ cod }}">Gráfico (Geral · Semestre)</a>
+          <a class="btn btn-outline" href="{% url 'core:estatisticas_cecom_graficos' %}?tab=ano&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&op={{ op }}&cod={{ cod }}">Gráfico (Geral · Ano)</a>
+          <a class="btn btn-success" href="?de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&op={{ op }}&cod={{ cod }}&export=csv">Baixar CSV (Período/Filtro)</a>
+          <a class="btn btn-primary" href="?de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&op={{ op }}&cod={{ cod }}&export=pdf">Baixar PDF (Apresentação)</a>
+        </div>
+      </form>
+      <form method="get" action="{% url 'core:estatisticas_cecom_graficos' %}" class="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="tab" value="mes" />
+        <input type="hidden" name="de" value="{{ de|date:'Y-m-d' }}" />
+        <input type="hidden" name="ate" value="{{ ate|date:'Y-m-d' }}" />
+        <label class="text-xs text-slate-500">Selecione Operador para gráfico por usuário…</label>
+        <select name="op" class="input min-w-[260px] js-choices">
+          {% for u in user_options %}
+            <option value="{{ u.id }}">{{ u.label }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-outline" type="submit">Abrir Gráfico do Operador</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Total Despachos</div><div class="text-2xl font-semibold">{{ total }}</div></div>
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Pendentes</div><div class="text-2xl font-semibold">{{ pendentes }}</div></div>
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Aceitos/Andamento</div><div class="text-2xl font-semibold">{{ aceitos }}</div></div>
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Recusados</div><div class="text-2xl font-semibold">{{ recusados }}</div></div>
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Finalizados</div><div class="text-2xl font-semibold">{{ finalizados }}</div></div>
+    <div class="bg-white border rounded p-4 shadow-sm"><div class="text-slate-500 text-sm">Tempo Médio Resp.</div><div class="text-xl font-semibold">{{ media_resposta|default:'—' }}</div></div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+    <div class="bg-white rounded-xl border shadow-sm p-4">
+      <h2 class="font-semibold mb-3">Por Status</h2>
+      <div class="divide-y">
+        {% for row in por_status %}
+          <div class="flex items-center justify-between py-2">
+            <div class="text-slate-700">{{ row.status }}</div>
+            <div class="font-semibold">{{ row.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border shadow-sm p-4">
+      <h2 class="font-semibold mb-3">Tempos Médios</h2>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="text-slate-700">Resposta (despacho → resposta)</div>
+          <div class="font-semibold">{{ media_resposta|default:'—' }}</div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="text-slate-700">Finalização (despacho → finalizado)</div>
+          <div class="font-semibold">{{ media_finalizacao|default:'—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+    <div class="bg-white rounded-xl border shadow-sm p-4">
+      <h2 class="font-semibold mb-3">Ranking · Códigos de Ocorrência</h2>
+      <div class="divide-y">
+        {% for r in ranking_codigos %}
+          <div class="flex items-center justify-between py-2">
+            <div class="text-slate-700">{{ r.cod_natureza|default:'—' }} — {{ r.natureza|default:'(sem descrição)' }}</div>
+            <div class="font-semibold">{{ r.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border shadow-sm p-4">
+      <h2 class="font-semibold mb-3">Ranking · Operadores (Total Despachos)</h2>
+      <div class="divide-y">
+        {% for r in ranking_operadores %}
+          <div class="flex items-center justify-between py-2">
+            <div class="text-slate-700">
+              {% with fn=r.despachado_por__first_name ln=r.despachado_por__last_name un=r.despachado_por__username %}
+                {{ fn }} {{ ln }}{% if not fn and not ln %}{{ un }}{% endif %}
+              {% endwith %}
+            </div>
+            <div class="font-semibold">{{ r.qtd }}</div>
+          </div>
+        {% empty %}
+          <div class="text-slate-500">Sem registros.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

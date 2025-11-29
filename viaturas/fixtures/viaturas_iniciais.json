@@ -1,0 +1,146 @@
+[
+  {
+    "model": "viaturas.viatura",
+    "pk": 1,
+    "fields": {
+      "prefixo": "25",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 2,
+    "fields": {
+      "prefixo": "35",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 3,
+    "fields": {
+      "prefixo": "36",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 4,
+    "fields": {
+      "prefixo": "38",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 5,
+    "fields": {
+      "prefixo": "39",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 6,
+    "fields": {
+      "prefixo": "40",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 7,
+    "fields": {
+      "prefixo": "41",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 8,
+    "fields": {
+      "prefixo": "MT11",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 9,
+    "fields": {
+      "prefixo": "MT12",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 10,
+    "fields": {
+      "prefixo": "MT13",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 11,
+    "fields": {
+      "prefixo": "MT14",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  },
+  {
+    "model": "viaturas.viatura",
+    "pk": 12,
+    "fields": {
+      "prefixo": "MT15",
+      "placa": "",
+      "modelo": "",
+      "ativo": true,
+      "created_at": "2025-09-12T18:50:00Z",
+      "updated_at": "2025-09-12T18:50:00Z"
+    }
+  }
+]

@@ -1,0 +1,17 @@
+{% for ab in abastecimentos %}
+<tr>
+  <td>{{ ab.data_hora|date:"d/m/Y H:i" }}</td>
+  <td>{{ ab.litros }}</td>
+  <td>{{ ab.valor_total }}</td>
+  <td>{{ ab.hodometro }}</td>
+  <td>{{ ab.local|default:"-" }}</td>
+  <td>
+    {% if ab.comprovante %}
+      <a href="{{ ab.comprovante.url }}" target="_blank">Abrir</a>
+    {% else %}-{% endif %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="muted">Nenhum registro de combustível.</td></tr>
+{% endfor %}
+

@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sistema GCM – Mobile Shell</title>
+    <style>
+      body { 
+        font-family: system-ui, sans-serif; 
+        padding: 20px;
+        background: #f9fafb;
+      }
+      #status { 
+        background: white; 
+        padding: 15px; 
+        border-radius: 8px; 
+        margin: 20px 0;
+        border-left: 4px solid #3b82f6;
+      }
+      #debug {
+        background: #1f2937;
+        color: #10b981;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 20px;
+      }
+      button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔄 Carregando Sistema GCM</h1>
+    <div id="status">Verificando conexão com o servidor…</div>
+    <button id="retry" style="display:none">🔄 Tentar novamente</button>
+    <div id="debug"></div>
+
+    <script>
+      const CANDIDATE_HOSTS = [
+        '192.168.1.7',
+        '10.0.2.2',
+        'localhost'
+      ];
+      const PORT = 8000;
+      const HEALTH_PATH = '/healthz/';
+
+      const statusEl = document.getElementById('status');
+      const retryBtn = document.getElementById('retry');
+      const debugEl = document.getElementById('debug');
+
+      function log(msg) {
+        const time = new Date().toLocaleTimeString();
+        debugEl.innerHTML += `[${time}] ${msg}<br>`;
+        debugEl.scrollTop = debugEl.scrollHeight;
+        console.log(msg);
+      }
+
+      function url(base, path = '/') {
+        const p = path.startsWith('/') ? path : `/${path}`;
+        return `http://${base}:${PORT}${p}`;
+      }
+
+      async function canReach(u, timeoutMs = 3000) {
+        log(`Testando: ${u}`);
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          const res = await fetch(u, { 
+            method: 'GET', 
+            cache: 'no-store', 
+            signal: ctrl.signal,
+            mode: 'cors'
+          });
+          log(`✓ Resposta de ${u}: ${res.status}`);
+          return res.ok;
+        } catch (e) {
+          log(`✗ Erro em ${u}: ${e.message}`);
+          return false;
+        } finally {
+          clearTimeout(t);
+        }
+      }
+
+      async function findBackend() {
+        log('Iniciando busca por servidor...');
+        for (const host of CANDIDATE_HOSTS) {
+          const healthUrl = url(host, HEALTH_PATH);
+          if (await canReach(healthUrl)) {
+            log(`✓ Servidor encontrado em: ${host}`);
+            return url(host, '/');
+          }
+        }
+        log('✗ Nenhum servidor encontrado');
+        return null;
+      }
+
+      async function boot() {
+        statusEl.textContent = 'Verificando conexão com o servidor…';
+        retryBtn.style.display = 'none';
+        debugEl.innerHTML = '';
+        
+        log('=== INICIANDO DIAGNÓSTICO ===');
+        log(`User Agent: ${navigator.userAgent}`);
+        log(`Online: ${navigator.onLine}`);
+        
+        const target = await findBackend();
+        if (target) {
+          statusEl.textContent = '✓ Conectado! Redirecionando...';
+          log(`Redirecionando para: ${target}`);
+          setTimeout(() => {
+            window.location.replace(target);
+          }, 500);
+        } else {
+          statusEl.textContent = '✗ Servidor indisponível. Verifique se o servidor Django está rodando em 192.168.1.7:8000';
+          retryBtn.style.display = 'inline-block';
+          log('=== DIAGNÓSTICO CONCLUÍDO - SERVIDOR NÃO ENCONTRADO ===');
+        }
+      }
+
+      retryBtn.addEventListener('click', boot);
+      boot();
+    </script>
+  </body>
+</html>

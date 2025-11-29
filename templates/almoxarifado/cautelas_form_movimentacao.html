@@ -1,0 +1,78 @@
+{% extends "_layout/base.html" %}
+{% block title %}Movimentar Bem - Cautelas{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Movimentação de Cautela</h1>
+    <p class="text-sm text-slate-600 mt-1">Registre retirada ou devolução do bem com checklists</p>
+  </div>
+  <!-- Card: Dados do Bem -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6">
+    <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l8.21 4.11a2 2 0 001.78 0L21 7m-2 10a2 2 0 002-2V9a2 2 0 00-1.11-1.79l-7-3.5a2 2 0 00-1.78 0l-7 3.5A2 2 0 004 9v6a2 2 0 002 2h13z" />
+        </svg>
+        Dados do Bem
+      </h2>
+    </div>
+    <div class="p-6 text-sm">
+      <div><span class="text-slate-500">Bem:</span> <b>{{ bem }}</b></div>
+    </div>
+  </div>
+  <form method="post" class="space-y-6">{% csrf_token %}
+    <!-- Card: Movimentação -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-14" />
+          </svg>
+          Movimentação
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Tipo</label>
+            {{ form.tipo }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Agente (quem retira/devolve)</label>
+            {{ form.agente }}
+          </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Checklist Saída (JSON)</label>
+            {{ form.checklist_saida_json }}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Checklist Entrada (JSON)</label>
+            {{ form.checklist_entrada_json }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Observação</label>
+          {{ form.observacao }}
+        </div>
+      </div>
+    </div>
+    <!-- Card: Ações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Registrar
+        </button>
+        <a href="{% url 'core:almoxarifado:cautelas' %}" class="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

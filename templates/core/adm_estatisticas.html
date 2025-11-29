@@ -1,0 +1,132 @@
+{% extends "_layout/base.html" %}
+{% block title %}Administração - Estatísticas{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center justify-between" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 13l3 3 7-7"/></svg>
+        <div>
+          <h1 class="text-xl font-bold text-slate-800">Estatísticas</h1>
+          <p class="text-xs text-slate-600">Selecione um módulo de estatísticas no mesmo estilo do Almoxarifado.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <!-- Card: BO (BOGCMI) -->
+    <div class="bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-all h-full flex flex-col">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-200 p-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14l-4-3-4 3-4-3-4 3V5a2 2 0 0 1 2-2Z"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1"><h2 class="text-lg font-semibold">BO (BOGCMI)</h2><span class="badge">Módulo</span></div>
+          <p class="text-sm text-slate-700 mt-2 leading-relaxed">Totais por período, status e destaques por viatura.</p>
+        </div>
+      </div>
+      <div class="mt-auto pt-4 flex flex-col items-stretch gap-2">
+        <a class="btn btn-outline" href="{% url 'core:estatisticas_bo_codigo' %}">Por Código</a>
+        <a class="btn btn-primary" href="{% url 'core:estatisticas_bo' %}">Abrir Estatísticas BO</a>
+      </div>
+    </div>
+
+    <!-- Card: AIT -->
+    <div class="bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-all h-full flex flex-col">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 p-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 2h10a2 2 0 0 1 2 2v16l-7-3-7 3V4a2 2 0 0 1 2-2Z"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1"><h2 class="text-lg font-semibold">AIT</h2><span class="badge">Módulo</span></div>
+          <p class="text-sm text-slate-700 mt-2 leading-relaxed">AITs registradas por período, por integrante e por dia.</p>
+        </div>
+      </div>
+      <div class="mt-auto pt-4 flex items-center justify-end">
+        <a class="btn btn-primary" href="{% url 'core:estatisticas_ait' %}">Abrir Estatísticas AIT</a>
+      </div>
+    </div>
+
+    <!-- Card: Abordados -->
+    <div class="bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-all h-full flex flex-col">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 rounded-xl bg-amber-50 text-amber-700 ring-1 ring-amber-200 p-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1"><h2 class="text-lg font-semibold">Abordados</h2><span class="badge">Módulo</span></div>
+          <p class="text-sm text-slate-700 mt-2 leading-relaxed">Veículos e pessoas abordadas, por integrante e por dia.</p>
+        </div>
+      </div>
+      <div class="mt-auto pt-4 flex items-center justify-end">
+        <a class="btn btn-primary" href="{% url 'core:estatisticas_abordados' %}">Abrir Estatísticas</a>
+      </div>
+    </div>
+
+    <!-- Card: Policiamentos -->
+    <div class="bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-all h-full flex flex-col">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 rounded-xl bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200 p-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1"><h2 class="text-lg font-semibold">Policiamentos</h2><span class="badge">Módulo</span></div>
+          <p class="text-sm text-slate-700 mt-2 leading-relaxed">Estatísticas gerais e por integrante de policiamentos.</p>
+        </div>
+      </div>
+      <div class="mt-auto pt-4 flex items-center justify-end">
+        <a class="btn btn-primary" href="{% url 'core:estatisticas_policiamentos' %}">Abrir Estatísticas</a>
+      </div>
+    </div>
+
+    <!-- Card: Despachos CECOM -->
+    <div class="bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-all h-full flex flex-col">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 rounded-xl bg-violet-50 text-violet-700 ring-1 ring-violet-200 p-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5a2 2 0 0 1 2-2h14v14a2 2 0 0 1-2 2H5l-2 2V5Z"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1"><h2 class="text-lg font-semibold">Despachos CECOM</h2><span class="badge">Módulo</span></div>
+          <p class="text-sm text-slate-700 mt-2 leading-relaxed">Totais por status e tempos médios de resposta e finalização.</p>
+        </div>
+      </div>
+      <div class="mt-auto pt-4 flex items-center justify-end">
+        <a class="btn btn-primary" href="{% url 'core:estatisticas_cecom' %}">Abrir Estatísticas CECOM</a>
+      </div>
+    </div>
+
+    <!-- Card: Veículos Removidos -->
+    <div class="bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-all h-full flex flex-col">
+      <div class="flex items-start gap-4">
+        <div class="shrink-0 rounded-xl bg-rose-50 text-rose-700 ring-1 ring-rose-200 p-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 6h9l7 7v5a2 2 0 0 1-2 2H4V6Zm9 0v5h5"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1"><h2 class="text-lg font-semibold">Veículos Removidos</h2><span class="badge">Módulo</span></div>
+          <p class="text-sm text-slate-700 mt-2 leading-relaxed">Remoções por período, destino e responsável pelo guincho.</p>
+        </div>
+      </div>
+      <div class="mt-auto pt-4 flex items-center justify-end">
+        <a class="btn btn-primary" href="{% url 'core:estatisticas_remocoes' %}">Abrir Remoções</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+    <div class="bg-white border rounded p-4 shadow-sm">
+      <div class="text-slate-500 text-sm">BOs em edição</div>
+      <div class="text-2xl font-semibold">{{ bos_em_edicao|default:'0' }}</div>
+    </div>
+    <div class="bg-white border rounded p-4 shadow-sm">
+      <div class="text-slate-500 text-sm">Talões abertos</div>
+      <div class="text-2xl font-semibold">{{ taloes_abertos|default:'0' }}</div>
+    </div>
+    <div class="bg-white border rounded p-4 shadow-sm">
+      <div class="text-slate-500 text-sm">Ofícios pendentes</div>
+      <div class="text-2xl font-semibold">{{ oficios_pendentes|default:'0' }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

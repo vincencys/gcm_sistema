@@ -1,0 +1,138 @@
+{% load bogcmi_extras %}
+<div class="bg-white rounded-lg border shadow-sm overflow-visible">
+  <div class="overflow-x-auto">
+  <table class="min-w-full align-middle text-[13px]">
+    <thead class="bg-slate-50 border-b text-slate-700 text-xs uppercase tracking-wide sticky top-0 z-10">
+      <tr class="h-11">
+  <th class="text-left p-2 border-r last:border-r-0">Número</th>
+  <th class="text-left p-2 border-r last:border-r-0">Emissão</th>
+        {% with current=request.GET.order %}
+        <th class="text-left p-2 border-r last:border-r-0">
+          {% if current == 'cod' %}
+            <a href="?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}order=-cod" class="underline">Código / Natureza ▲</a>
+          {% elif current == '-cod' %}
+            <a href="?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}order=cod" class="underline">Código / Natureza ▼</a>
+          {% else %}
+            <a href="?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}order=cod" class="underline">Código / Natureza</a>
+          {% endif %}
+        </th>
+        {% endwith %}
+  <th class="text-left p-2 border-r last:border-r-0">Encarregado</th>
+  <th class="text-left p-2 border-r last:border-r-0">Motorista</th>
+  <th class="text-left p-2 border-r last:border-r-0">CECOM</th>
+  <th class="text-left p-2 border-r last:border-r-0">Auxiliares</th>
+  <th class="text-left p-2 border-r last:border-r-0">Viatura</th>
+  <th class="text-left p-2 border-r last:border-r-0">Status</th>
+  <th class="text-left p-2">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for bo in page %}
+      <tr class="hover:bg-slate-50 transition-colors align-top border-b">
+        <td class="p-2 border-r">#{{ bo.numero|default:"(s/ nº)" }}</td>
+    <td class="p-2 border-r whitespace-nowrap">{{ bo.emissao|date:"d/m/Y H:i" }}</td>
+    <td class="p-2 border-r" title="{{ bo.natureza }}">
+      {% with codigo=bo.cod_natureza|default:bo.natureza|extrai_sigla %}
+        {% if codigo %}<span class="px-2 py-0.5 rounded text-xs font-semibold inline-block align-middle {{ codigo|codigo_badge_class }}">{{ codigo }}</span>{% endif %}
+      {% endwith %}
+      <span class="ml-1">{% if bo.natureza %}{{ bo.natureza|descricao_natureza }}{% else %}-{% endif %}</span>
+    </td>
+  <td class="p-2 border-r">{{ bo.encarregado.get_full_name|default:bo.encarregado.username }}</td>
+  <td class="p-2 border-r">{% if bo.motorista %}{{ bo.motorista.get_full_name|default:bo.motorista.username }}{% else %}-{% endif %}</td>
+    <td class="p-2 border-r">{% if bo.cecom %}{{ bo.cecom.get_full_name|default:bo.cecom.username }}{% else %}-{% endif %}</td>
+    <td class="p-2 border-r">
+      {% if bo.auxiliar1 or bo.auxiliar2 %}
+        {% if bo.auxiliar1 %}<span class="inline-block bg-slate-100 rounded px-1 text-xs mr-1" title="Auxiliar 1">{{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}</span>{% endif %}
+        {% if bo.auxiliar2 %}<span class="inline-block bg-slate-100 rounded px-1 text-xs" title="Auxiliar 2">{{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}</span>{% endif %}
+        {% else %}
+          -
+        {% endif %}
+      </td>
+  <td class="p-2 border-r">{{ bo.viatura.prefixo|default:"-" }}</td>
+  <td class="p-2 border-r">{% include "_layout/_status_badges.html" with status=bo.status %}
+    {% if bo.status == 'ARQUIVADO' and bo.numero and doc_map and doc_map|get_item:bo.numero %}
+      <div><span class="inline-block mt-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] rounded">Doc Assinado</span></div>
+    {% endif %}
+  </td>
+  <td class="p-2 text-right">
+    {% with uid=request.user.id %}
+      {% with is_participante=uid|yesno:"" %}{% endwith %} {# placeholder #}
+      {% if uid == bo.encarregado_id or uid == bo.motorista_id or uid == bo.cecom_id or uid == bo.auxiliar1_id or uid == bo.auxiliar2_id or request.user.is_superuser %}
+  <div class="flex items-center gap-1 justify-end flex-wrap">
+    {% if bo.status == 'EDICAO' or bo.status == 'CORRIGIR_BO' %}
+      <a href="{% url 'bogcmi:editar' bo.pk %}" class="px-2 py-1 bg-blue-600 text-white rounded shadow-sm hover:bg-blue-700" title="Editar BO">Editar</a>
+    {% elif bo.status == 'ARQUIVADO' %}
+      {# Ver Documento fora do menu (assinado, se houver), depois Excluir para moises/superuser #}
+      {% if bo.numero and doc_map %}
+        {% with doc=doc_map|get_item:bo.numero %}
+          {% if doc %}
+            <a href="{% url 'bogcmi:servir_documento_assinado' doc.id %}" target="_blank" class="px-2 py-1 bg-emerald-600 text-white rounded shadow-sm hover:bg-emerald-700" title="Abrir documento final assinado">Ver Documento</a>
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+      {% if request.user.username == 'moises' or request.user.is_superuser %}
+        <a href="{% url 'bogcmi:excluir' bo.pk %}" onclick="return confirm('Excluir este BO arquivado? Esta ação não pode ser desfeita.');" class="px-2 py-1 bg-red-600 text-white rounded shadow-sm hover:bg-red-700">Excluir</a>
+      {% endif %}
+    {% elif bo.status == 'FINALIZADO' and bo.documento_html %}
+      {# Mostrar Editar também em FINALIZADO, além de Ver Documento; menu removido #}
+      <a href="{% url 'bogcmi:editar' bo.pk %}" class="px-2 py-1 bg-blue-600 text-white rounded shadow-sm hover:bg-blue-700" title="Editar BO">Editar</a>
+      {# Ver Documento visível apenas para comando/moises ou integrantes do BO #}
+      {% if is_comando or request.user.username == 'moises' or uid == bo.encarregado_id or uid == bo.motorista_id or uid == bo.cecom_id or uid == bo.auxiliar1_id or uid == bo.auxiliar2_id %}
+        <a href="{% url 'bogcmi:visualizar_documento_bo' bo.pk %}" class="px-2 py-1 bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700" title="Ver documento{% if not is_comando and request.user.username != 'moises' %} (modo consultivo){% endif %}">Ver Documento</a>
+      {% endif %}
+      {% if bo.encarregado == request.user %}
+      <form method="post" action="{% url 'bogcmi:despachar_cmt' bo.pk %}" class="inline" onsubmit="return confirm('Despachar este BO para o Comando?');">
+        {% csrf_token %}
+        <button type="submit" class="px-2 py-1 bg-amber-600 text-white rounded shadow-sm hover:bg-amber-700" title="Despachar ao Comando">Despachar CMT</button>
+      </form>
+      {% else %}
+      <button type="button" disabled class="px-2 py-1 bg-gray-400 text-white rounded shadow-sm cursor-not-allowed" title="Apenas o Encarregado pode despachar ao Comando">Despachar CMT</button>
+      {% endif %}
+      {% if request.user.username == 'moises' or request.user.is_superuser %}
+        <a href="{% url 'bogcmi:excluir' bo.pk %}" onclick="return confirm('Excluir este BO? Esta ação não pode ser desfeita.');" class="px-2 py-1 bg-red-600 text-white rounded shadow-sm hover:bg-red-700">Excluir</a>
+      {% endif %}
+    {% elif bo.status == 'DESPACHO_CMT' %}
+      {% if request.user.username == 'moises' or request.user.is_superuser %}
+        <a href="{% url 'bogcmi:excluir' bo.pk %}" onclick="return confirm('Excluir este BO (Despacho CMT)? Esta ação não pode ser desfeita.');" class="px-2 py-1 bg-red-600 text-white rounded shadow-sm hover:bg-red-700">Excluir</a>
+      {% endif %}
+    {% endif %}
+  </div>
+      {% else %}
+        {# Não participante - Ver Documento bloqueado (apenas comando/moises ou integrantes podem ver) #}
+        {% if bo.status != 'EDICAO' and bo.status != 'CORRIGIR_BO' and bo.documento_html %}
+          {% if is_comando or request.user.username == 'moises' %}
+            <a href="{% url 'bogcmi:visualizar_documento_bo' bo.pk %}" class="px-2 py-1 bg-slate-200 text-slate-700 rounded shadow-sm hover:bg-slate-300 text-xs">Ver Documento</a>
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endwith %}
+  </td>
+      </tr>
+    {% empty %}
+  <tr><td colspan="11" class="p-3 text-slate-600">Nenhum registro.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+<div class="mt-2 flex items-center justify-center text-sm">
+  <div class="flex gap-1 items-center">
+    {% if page.has_previous %}
+      <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page=1">«</a>
+      <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page.previous_page_number }}">‹</a>
+    {% else %}
+      <span class="px-2 py-1 border rounded opacity-40 select-none">«</span>
+      <span class="px-2 py-1 border rounded opacity-40 select-none">‹</span>
+    {% endif %}
+    <span class="px-2 py-1 border rounded bg-slate-50 select-none">Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+      <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page.next_page_number }}">›</a>
+      <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page.paginator.num_pages }}">»</a>
+    {% else %}
+      <span class="px-2 py-1 border rounded opacity-40 select-none">›</span>
+      <span class="px-2 py-1 border rounded opacity-40 select-none">»</span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Menu contextual removido a pedido; sem três pontinhos e sem Baixar HTML -->

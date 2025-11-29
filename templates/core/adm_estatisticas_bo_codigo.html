@@ -1,0 +1,160 @@
+{% extends "_layout/base.html" %}
+{% block title %}BO por Código{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-3 md:px-0">
+  <div class="mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold">BO por Código</h1>
+        <p class="text-sm md:text-base text-slate-600">Selecione um código de ocorrência e um período para ver lista, gráficos e estatísticas por bairros.</p>
+      </div>
+      <form method="get" class="bg-white border rounded-xl shadow-sm px-3 py-3 flex flex-col gap-3">
+        <input type="hidden" name="tab" value="{{ tab }}" />
+        <div class="w-full">
+          <label class="block text-xs text-slate-500">Código de Ocorrência</label>
+          <select name="cod" class="input w-full js-choices text-sm">
+            <option value="">— Selecione —</option>
+            {% for c in codigos %}
+              <option value="{{ c.sigla }}" {% if cod|default:''|lower == c.sigla|lower %}selected{% endif %}>{{ c.sigla }} — {{ c.descricao }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500">De</label>
+            <input type="date" name="de" value="{{ de|date:'Y-m-d' }}" class="input w-full text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500">Até</label>
+            <input type="date" name="ate" value="{{ ate|date:'Y-m-d' }}" class="input w-full text-sm" />
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" type="submit">Pesquisar</button>
+      </form>
+    </div>
+
+    <!-- Abas de período -->
+    <div class="mt-4 flex gap-1 md:gap-2 overflow-x-auto pb-2">
+      {% for k,lbl in abas %}
+        <a href="?tab={{ k }}&cod={{ cod }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}" class="px-3 py-1.5 rounded-md border text-xs md:text-sm whitespace-nowrap {% if tab == k %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-700{% endif %}">{{ lbl }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if not cod %}
+    <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded p-4 text-sm md:text-base">Selecione um código para visualizar os dados.</div>
+  {% else %}
+    <!-- Ações de export -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <a class="btn btn-secondary text-xs md:text-sm" href="?tab={{ tab }}&cod={{ cod }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv">CSV</a>
+      <a class="btn btn-primary text-xs md:text-sm" href="?tab={{ tab }}&cod={{ cod }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=pdf">PDF</a>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div class="bg-white border rounded p-3 md:p-4 shadow-sm col-span-2 md:col-span-1">
+        <div class="text-slate-500 text-xs md:text-sm">Código</div>
+        <div class="text-base md:text-xl font-semibold truncate">{{ cod }}{% if cod_obj %} — {{ cod_obj.descricao|truncatewords:3 }}{% endif %}</div>
+      </div>
+      <div class="bg-white border rounded p-3 md:p-4 shadow-sm">
+        <div class="text-slate-500 text-xs md:text-sm">Total BOs</div>
+        <div class="text-xl md:text-2xl font-semibold">{{ total }}</div>
+      </div>
+      <div class="bg-white border rounded p-3 md:p-4 shadow-sm">
+        <div class="text-slate-500 text-xs md:text-sm">Período</div>
+        <div class="text-xs md:text-lg font-medium">{{ de|date:'d/m/Y' }} — {{ ate|date:'d/m/Y' }}</div>
+      </div>
+      <div class="bg-white border rounded p-3 md:p-4 shadow-sm">
+        <div class="text-slate-500 text-xs md:text-sm">Aba</div>
+        <div class="text-sm md:text-lg font-medium">{{ tab|title }}</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+      <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 lg:col-span-2">
+        <h2 class="font-semibold mb-3 text-sm md:text-base">Série por Dia</h2>
+        <div class="w-full overflow-x-auto">
+          <canvas id="chartSerie" class="max-w-full"></canvas>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
+        <h2 class="font-semibold mb-3 text-sm md:text-base">Por Status</h2>
+        <div class="mb-3"><canvas id="chartStatus"></canvas></div>
+        <div class="divide-y text-sm">
+          {% for s in por_status %}
+            <div class="flex items-center justify-between py-1.5"><span>{{ s.status }}</span><span class="font-semibold">{{ s.qtd }}</span></div>
+          {% empty %}
+            <div class="text-slate-500">Sem registros.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 mt-4 md:mt-6">
+      <h2 class="font-semibold mb-3 text-sm md:text-base">Top Bairros</h2>
+      <div class="mb-4">
+        <canvas id="chartBairros"></canvas>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h3 class="font-semibold mb-2 text-xs md:text-sm text-slate-600">Lista de Bairros</h3>
+          <div class="divide-y text-xs md:text-sm max-h-80 overflow-y-auto">
+            {% for b in por_bairro|slice:":10" %}
+              <div class="flex items-center justify-between py-1.5 gap-2">
+                <span class="truncate flex-1">{{ b.bairro|default:'—' }}</span>
+                <span class="font-semibold shrink-0">{{ b.qtd }}</span>
+              </div>
+            {% empty %}
+              <div class="text-slate-500">Sem registros.</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2 text-xs md:text-sm text-slate-600">Por Usuário</h3>
+          <div class="overflow-x-auto -mx-3 md:mx-0">
+            <table class="min-w-full text-xs md:text-sm">
+              <thead>
+                <tr class="text-left text-slate-500">
+                  <th class="py-2 pr-3 pl-3 md:pl-0">Usuário</th>
+                  <th class="py-2">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                {% for u in usuarios %}
+                  <tr>
+                    <td class="py-2 pr-3 pl-3 md:pl-0 truncate max-w-[200px]">{{ u.encarregado__first_name }} {{ u.encarregado__last_name }}{% if not u.encarregado__first_name and not u.encarregado__last_name %}{{ u.encarregado__username }}{% endif %}</td>
+                    <td class="py-2 font-semibold">{{ u.qtd }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td class="py-3 text-slate-500 pl-3 md:pl-0" colspan="2">Sem registros.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  const serie = JSON.parse('\n' + '{{ serie_por_dia|default:"[]"|escapejs }}');
+  const sLabels = serie.map(x => new Date(x.dia).toLocaleDateString('pt-BR'));
+  const sValues = serie.map(x => x.qtd);
+  const ctxSerie = document.getElementById('chartSerie');
+  if(ctxSerie){ new Chart(ctxSerie, { type:'line', data:{ labels: sLabels, datasets:[{ label:'BOs/dia', data: sValues, borderColor:'#0284c7', backgroundColor:'rgba(2,132,199,.15)', tension:.25 }] }, options:{ scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } } }); }
+
+  const stLabels = JSON.parse('\n' + '{{ chart_status_labels|default:"[]"|escapejs }}');
+  const stValues = JSON.parse('\n' + '{{ chart_status_values|default:"[]"|escapejs }}');
+  const ctxStatus = document.getElementById('chartStatus');
+  if(ctxStatus){ new Chart(ctxStatus, { type:'pie', data:{ labels: stLabels, datasets:[{ data: stValues, backgroundColor:['#10b981','#60a5fa','#f59e0b','#ef4444','#8b5cf6'] }] }, options:{ plugins:{ legend:{ position:'bottom' } } } }); }
+
+  const bLabels = JSON.parse('\n' + '{{ chart_bairros_labels|default:"[]"|escapejs }}');
+  const bValues = JSON.parse('\n' + '{{ chart_bairros_values|default:"[]"|escapejs }}');
+  const ctxB = document.getElementById('chartBairros');
+  if(ctxB){ new Chart(ctxB, { type:'bar', data:{ labels: bLabels, datasets:[{ label:'Total', data: bValues, backgroundColor:'#0ea5e9' }] }, options:{ indexAxis: 'y', scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } } }, plugins:{ legend:{ display:false } } } }); }
+})();
+</script>
+{% endblock %}

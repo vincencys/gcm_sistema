@@ -1,0 +1,689 @@
+{% extends '_layout/base.html' %}
+{% load static %}
+{% block title %}Livro Eletrônico do Plantão CECOM{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">Livro Eletrônico do Plantão CECOM</h1>
+    <a href="{% url 'cecom:painel' %}" class="text-blue-600 hover:underline">← Voltar</a>
+  </div>
+  <div class="bg-white border rounded-lg p-4 space-y-6">
+    <style>
+      /* Estilo geral para selects com Choices.js (viaturas, postos, pessoas) */
+      .js-choices + .choices { width: 100%; min-width: 240px; }
+      .js-choices + .choices .choices__inner {
+        min-height: 38px; /* altura confortável */
+        border-radius: 0.375rem; /* igual ao rounded */
+      }
+      .js-choices + .choices .choices__list--dropdown { width: 100%; max-height: 280px; }
+      /* Evitar quebra de palavras em QUALQUER item/renderização do Choices */
+      .choices, .choices *:not(input) {
+        word-break: normal !important;
+        overflow-wrap: normal !important; /* aka word-wrap */
+        white-space: nowrap !important;
+        hyphens: none !important;
+      }
+      .choices .choices__item,
+      .choices .choices__list .choices__item,
+      .choices .choices__list--dropdown .choices__item {
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      /* Input de busca do Choices permanece de uma linha */
+      .choices .choices__input {
+        white-space: nowrap !important;
+      }
+      /* Layout linha para selects com botão Adicionar */
+      .box-pessoas { display: flex; gap: 0.5rem; align-items: center; }
+      .box-pessoas .choices { flex: 1 1 260px; }
+      .box-pessoas select { flex: 1 1 260px; }
+    </style>
+    {% if livro_readonly %}
+      <div class="p-3 rounded bg-amber-100 border border-amber-300 text-amber-900 text-sm">
+        Modo somente leitura. Apenas o usuário que iniciou o plantão ou o superadmin <strong>moises</strong> podem editar.
+      </div>
+    {% endif %}
+  <form method="post" id="form-livro" class="space-y-4" novalidate>
+      {% csrf_token %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label class="block text-xs font-semibold mb-1">Equipe de Plantão</label>
+          {{ form.equipe_plantao }}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Coordenador / Lider</label>
+          <div class="box-pessoas">
+            {{ form.cga_do_dia }}
+            <button type="button" id="btn-add-cga" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Adicionar</button>
+          </div>
+          <ul id="cga-box" class="mt-2 space-y-1 text-xs"></ul>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-slate-50 rounded border p-3">
+          <h2 class="text-sm font-semibold mb-2">Viaturas</h2>
+          <div id="form-add-viatura" class="space-y-2">
+            {{ viatura_form.viatura }}
+            <label class="block text-[11px] font-semibold text-slate-600 mt-1">Integrantes</label>
+            <div class="grid grid-cols-2 gap-2">
+              {{ viatura_form.integrante1 }}
+              {{ viatura_form.integrante2 }}
+              {{ viatura_form.integrante3 }}
+              {{ viatura_form.integrante4 }}
+            </div>
+            <button type="button" id="btn-add-viatura" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Adicionar</button>
+          </div>
+          <ul id="lista-viaturas" class="mt-3 space-y-2 text-xs"></ul>
+          {% if viaturas_list %}
+            <div class="mt-4 border-t pt-2">
+              <h3 class="text-xs font-semibold text-slate-600 mb-1">Registradas</h3>
+              <table class="min-w-full text-[11px] border">
+                <thead class="bg-slate-100">
+                  <tr>
+                    <th class="p-1 text-left">VTR</th>
+                    <th class="p-1 text-left">Integrantes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {% for v in viaturas_list %}
+                  <tr class="border-t">
+                    <td class="p-1 align-top">{{ v.viatura.prefixo }}</td>
+                    <td class="p-1">
+                      {% for integ in v.integrantes %}
+                        {% with pf=integ.perfil %}
+                          <div>{{ pf.matricula|default:integ.username }} - {{ integ.get_full_name|default:integ.username }}</div>
+                        {% endwith %}
+                      {% endfor %}
+                      {% if v.integrantes|length == 0 %}<span class="text-slate-500">(sem integrantes)</span>{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+        <div class="bg-slate-50 rounded border p-3">
+          <h2 class="text-sm font-semibold mb-2">Postos Fixos</h2>
+          <div id="form-add-posto" class="space-y-2">
+            {{ posto_form.tipo }}
+            <div id="wrap-desc-outros">{{ posto_form.descricao_outros }}</div>
+            <div class="grid grid-cols-2 gap-2">
+              {{ posto_form.gcm1 }}
+              {{ posto_form.gcm2 }}
+            </div>
+            <button type="button" id="btn-add-posto" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Adicionar</button>
+          </div>
+          <ul id="lista-postos" class="mt-3 space-y-2 text-xs"></ul>
+          {% if postos_list %}
+            <div class="mt-4 border-t pt-2">
+              <h3 class="text-xs font-semibold text-slate-600 mb-1">Registrados</h3>
+              <table class="min-w-full text-[11px] border">
+                <thead class="bg-slate-100">
+                  <tr>
+                    <th class="p-1 text-left">Tipo</th>
+                    <th class="p-1 text-left">GCMs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {% for p in postos_list %}
+                  <tr class="border-t">
+                    <td class="p-1 align-top">{{ p.get_tipo_display }}{% if p.tipo == 'OUTROS' and p.descricao_outros %}<div class="text-[10px] text-slate-500">{{ p.descricao_outros }}</div>{% endif %}</td>
+                    <td class="p-1">
+                      {% if p.gcm1 %}{% with pf=p.gcm1.perfil %}<div>{{ pf.matricula|default:p.gcm1.username }} - {{ p.gcm1.get_full_name|default:p.gcm1.username }}</div>{% endwith %}{% endif %}
+                      {% if p.gcm2 %}{% with pf=p.gcm2.perfil %}<div>{{ pf.matricula|default:p.gcm2.username }} - {{ p.gcm2.get_full_name|default:p.gcm2.username }}</div>{% endwith %}{% endif %}
+                      {% if not p.gcm1 and not p.gcm2 %}<span class="text-slate-500">(sem GCMs)</span>{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Pessoas: Dispensados -->
+        <div class="bg-slate-50 rounded border p-3">
+          <label class="block text-xs font-semibold mb-2">Dispensados</label>
+          <div class="box-pessoas">
+            <select id="sel-disp" class="border rounded px-2 py-1 js-choices select-pessoa"></select>
+            <button type="button" id="btn-add-disp" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Adicionar</button>
+          </div>
+          <ul id="lista-disp" class="mt-2 space-y-1 text-xs"></ul>
+        </div>
+        <!-- Pessoas: Atraso ao Serviço -->
+        <div class="bg-slate-50 rounded border p-3">
+          <label class="block text-xs font-semibold mb-2">Atraso ao Serviço</label>
+          <div class="space-y-2">
+            <div class="box-pessoas">
+              <select id="sel-atr" class="border rounded px-2 py-1 js-choices select-pessoa"></select>
+              <button type="button" id="btn-add-atr" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Adicionar</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 md:max-w-md">
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Início</label>
+                <input id="atr-inicio" type="time" class="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Final</label>
+                <input id="atr-fim" type="time" class="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Tempo total</label>
+                <input id="atr-total" type="text" class="border rounded px-2 py-1 w-full bg-slate-100 text-slate-600" placeholder="0h00m" disabled />
+              </div>
+            </div>
+          </div>
+          <ul id="lista-atr" class="mt-2 space-y-1 text-xs"></ul>
+        </div>
+        <!-- Pessoas: Banco de Horas -->
+        <div class="bg-slate-50 rounded border p-3">
+          <label class="block text-xs font-semibold mb-2">Banco de Horas</label>
+          <div class="space-y-2">
+            <div class="box-pessoas">
+              <select id="sel-ban" class="border rounded px-2 py-1 js-choices select-pessoa"></select>
+              <button type="button" id="btn-add-ban" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Adicionar</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 md:max-w-md">
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Início</label>
+                <input id="ban-inicio" type="time" class="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Final</label>
+                <input id="ban-fim" type="time" class="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Tempo total</label>
+                <input id="ban-total" type="text" class="border rounded px-2 py-1 w-full bg-slate-100 text-slate-600" placeholder="0h00m" disabled />
+              </div>
+            </div>
+          </div>
+          <ul id="lista-ban" class="mt-2 space-y-1 text-xs"></ul>
+        </div>
+        <!-- Pessoas: Hora Extra -->
+        <div class="bg-slate-50 rounded border p-3">
+          <label class="block text-xs font-semibold mb-2">Hora Extra</label>
+          <div class="space-y-2">
+            <div class="box-pessoas">
+              <select id="sel-hor" class="border rounded px-2 py-1 js-choices select-pessoa"></select>
+              <button type="button" id="btn-add-hor" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Adicionar</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 md:max-w-md">
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Início</label>
+                <input id="hor-inicio" type="time" class="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Final</label>
+                <input id="hor-fim" type="time" class="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-600 mb-1">Tempo total</label>
+                <input id="hor-total" type="text" class="border rounded px-2 py-1 w-full bg-slate-100 text-slate-600" placeholder="0h00m" disabled />
+              </div>
+            </div>
+          </div>
+          <ul id="lista-hor" class="mt-2 space-y-1 text-xs"></ul>
+        </div>
+        <!-- Esconder campos de texto antigos para compatibilidade (não usados no PDF) -->
+        <div class="hidden">{{ form.dispensados }}</div>
+        <div class="hidden">{{ form.atraso_servico }}</div>
+        <div class="hidden">{{ form.banco_horas }}</div>
+        <div class="hidden">{{ form.hora_extra }}</div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Ocorrências Não Atendidas</label>
+          {{ form.ocorrencias_nao_atendidas }}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Ocorrências do Plantão</label>
+          {{ form.ocorrencias_do_plantao }}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">AIT's Recebidas (Qtd)</label>
+          {{ form.aits_recebidas }}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Observações</label>
+          {{ form.observacoes }}
+        </div>
+      </div>
+      <fieldset class="border rounded p-3">
+        <legend class="text-sm font-semibold">Checklist CECOM</legend>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+          <label>{{ form.chk_radio }} Radio</label>
+          <label>{{ form.chk_computador }} Computador</label>
+            <label>{{ form.chk_cameras }} Câmeras</label>
+          <label>{{ form.chk_celulares }} Celulares</label>
+          <label>{{ form.chk_carregadores }} Carregadores</label>
+          <label>{{ form.chk_telefones }} Telefones</label>
+          <label>{{ form.chk_livros }} Livros</label>
+          <label>{{ form.chk_monitor }} Monitor</label>
+        </div>
+      </fieldset>
+      <div>
+        {% if not livro_readonly %}
+          <button type="submit" id="btn-save-livro" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Salvar Livro</button>
+        {% else %}
+          <button type="button" disabled class="px-4 py-2 bg-slate-300 text-slate-600 rounded cursor-not-allowed">Somente Leitura</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+  
+<div id="toast-container" class="fixed top-4 right-4 space-y-2 z-50"></div>
+<script>
+// Dados iniciais vindos do backend
+const INITIAL_VIATURAS = JSON.parse('{{ initial_viaturas_json|escapejs }}' || '[]');
+const INITIAL_POSTOS = JSON.parse('{{ initial_postos_json|escapejs }}' || '[]');
+const csrftoken = document.querySelector('#form-livro [name=csrfmiddlewaretoken]').value;
+const INITIAL_PESSOAS = JSON.parse('{{ initial_pessoas_json|escapejs }}' || '{}');
+const INITIAL_CGA = JSON.parse('{{ initial_cga_json|escapejs }}' || '{}');
+const LIVRO_READONLY = '{{ livro_readonly|yesno:"true,false" }}' === 'true';
+
+// --- Helpers de reset imediato dos selects (inclui integração com Choices.js se presente) ---
+function resetSelect(el){
+  if(!el) return;
+  // Tenta selecionar opção vazia; se não existir, primeira.
+  const emptyOpt = Array.from(el.options||[]).find(o=>o.value==='');
+  if(emptyOpt){ emptyOpt.selected = true; } else { el.selectedIndex = 0; }
+  // Zera value explicitamente (caso plugin use dataset)
+  if(emptyOpt) el.value = '';
+  // --- Integração Choices.js robusta ---
+  try {
+    if(window.Choices){
+      // Recupera ou cria instância
+      let inst = el._choicesInst || el.choices || null;
+      if(!inst || !inst.config){
+        try { inst = new window.Choices(el, {searchEnabled:true, shouldSort:false}); el._choicesInst = inst; } catch(e) { inst=null; }
+      }
+      if(inst){
+        try { inst.removeActiveItems(); } catch(_){ }
+        try { inst.clearInput(); } catch(_){ }
+        // Recolocar placeholder se existir opção vazia
+        if(emptyOpt){
+          // Alguns temas precisam inserir manualmente
+          try { inst.setChoiceByValue(''); } catch(_){ }
+        }
+      }
+    }
+  } catch(_){ /* noop */ }
+  // Dispara eventos para atualizar UI ligada (select2, choices, listeners customizados)
+  ['change','input'].forEach(ev=>{
+    try { el.dispatchEvent(new Event(ev,{bubbles:true})); } catch(_) {}
+  });
+}
+
+function resetViaturaFormFields(){
+  const wrap = document.getElementById('form-add-viatura');
+  if(!wrap) return;
+  const selects = wrap.querySelectorAll('select');
+  selects.forEach(s=> resetSelect(s));
+  // Foco de volta no select principal de viatura (assumindo primeiro select)
+  if(selects.length) setTimeout(()=>selects[0].focus(), 10);
+  ensureChoicesIntegrity();
+}
+
+function resetPostoFormFields(){
+  const wrap = document.getElementById('form-add-posto');
+  if(!wrap) return;
+  const selects = wrap.querySelectorAll('select');
+  const inputs = wrap.querySelectorAll('input[type="text"]');
+  selects.forEach(s=> resetSelect(s));
+  inputs.forEach(i=> { i.value=''; i.dispatchEvent(new Event('input',{bubbles:true})); });
+  // Reaplica lógica OUTROS
+  if(typeof toggleDesc === 'function') setTimeout(()=>toggleDesc(), 0);
+  if(selects.length) setTimeout(()=>selects[0].focus(), 10);
+  ensureChoicesIntegrity();
+}
+
+function toast(msg, tipo='info'){
+  const wrap = document.getElementById('toast-container');
+  const div = document.createElement('div');
+  const colors = {info:'bg-slate-800',erro:'bg-red-600',sucesso:'bg-green-600',warn:'bg-amber-600'};
+  div.className = `${colors[tipo]||colors.info} text-white px-3 py-2 rounded shadow text-sm animate-fade`;
+  div.textContent = msg;
+  wrap.appendChild(div);
+  setTimeout(()=>{ div.classList.add('opacity-0','transition'); setTimeout(()=>div.remove(),600); }, 3500);
+}
+
+function postJSON(url, data){
+  return fetch(url,{method:'POST', headers:{'X-CSRFToken':csrftoken}, body:data});
+}
+
+function addViatura(){
+  const wrap = document.getElementById('form-add-viatura');
+  const selects = wrap.querySelectorAll('select');
+  const fd = new FormData();
+  selects.forEach(s=>fd.append(s.name, s.value));
+  postJSON("{% url 'cecom:livro_cecom_add_viatura' plantao.pk %}", fd).then(r=>r.json()).then(d=>{
+    if(!d.sucesso){ toast(d.erro||'Erro', 'erro'); return; }
+    renderViatura(d);
+    resetViaturaFormFields();
+    toast('Viatura adicionada','sucesso');
+  }).catch(()=>toast('Falha ao adicionar viatura','erro'));
+}
+
+const URL_DEL_VIATURA_TEMPLATE = "{% url 'cecom:livro_cecom_del_viatura' plantao.pk 0 %}"; // substitui /0/
+function delViatura(id, li){
+  const fd = new FormData();
+  const url = URL_DEL_VIATURA_TEMPLATE.replace(/0\/$/, id+"/");
+  postJSON(url, fd).then(r=>r.json()).then(d=>{
+    if(!d.sucesso){ toast(d.erro||'Erro ao remover','erro'); return; }
+    li.remove(); toast('Viatura removida','sucesso');
+  }).catch(()=>toast('Falha na remoção','erro'));
+}
+
+function addPosto(){
+  const wrap = document.getElementById('form-add-posto');
+  const fields = wrap.querySelectorAll('select, input');
+  // Validação OUTROS
+  const tipoSel = wrap.querySelector('select[name$="tipo"]');
+  const descInput = wrap.querySelector('input[name$="descricao_outros"]');
+  if(tipoSel && tipoSel.value === 'OUTROS' && (!descInput.value || !descInput.value.trim())){
+    toast('Descrição é obrigatória para OUTROS','warn');
+    descInput.focus();
+    return;
+  }
+  const fd = new FormData();
+  fields.forEach(s=>fd.append(s.name, s.value));
+  postJSON("{% url 'cecom:livro_cecom_add_posto' plantao.pk %}", fd).then(r=>r.json()).then(d=>{
+    if(!d.sucesso){ toast(d.erro||'Erro', 'erro'); return; }
+    renderPosto(d);
+    resetPostoFormFields();
+    toast('Posto adicionado','sucesso');
+  }).catch(()=>toast('Falha ao adicionar posto','erro'));
+}
+
+const URL_DEL_POSTO_TEMPLATE = "{% url 'cecom:livro_cecom_del_posto' plantao.pk 0 %}"; // substitui /0/
+function delPosto(id, li){
+  const fd = new FormData();
+  const url = URL_DEL_POSTO_TEMPLATE.replace(/0\/$/, id+"/");
+  postJSON(url, fd).then(r=>r.json()).then(d=>{
+    if(!d.sucesso){ toast(d.erro||'Erro ao remover','erro'); return; }
+    li.remove(); toast('Posto removido','sucesso');
+  }).catch(()=>toast('Falha na remoção','erro'));
+}
+
+function renderViatura(d){
+  const ul = document.getElementById('lista-viaturas');
+  const li = document.createElement('li');
+  li.className='border rounded p-2 flex items-start justify-between gap-2';
+  const ints = (d.integrantes||[]).map(i=>`${i.matricula} - ${i.nome}`).join(', ') || '(sem integrantes)';
+  li.innerHTML = `<div><span class='font-semibold'>VTR ${d.viatura}</span> <span class='text-slate-600'>${ints}</span></div>`+
+    `<button type='button' class='text-red-600 text-[11px] hover:underline shrink-0'>Remover</button>`;
+  li.querySelector('button').addEventListener('click',()=>delViatura(d.id, li));
+  ul.appendChild(li);
+}
+
+function renderPosto(d){
+  const ul = document.getElementById('lista-postos');
+  const li = document.createElement('li');
+  li.className='border rounded p-2 flex items-start justify-between gap-2';
+  const g = [d.gcm1, d.gcm2].filter(Boolean).map(i=>`${i.matricula} - ${i.nome}`).join('; ') || '(sem GCMs)';
+  const desc = `${d.tipo}${d.descricao_outros? ' - '+d.descricao_outros: ''}`;
+  li.innerHTML = `<div><span class='font-semibold'>${desc}</span> <span class='text-slate-600'>${g}</span></div>`+
+    `<button type='button' class='text-red-600 text-[11px] hover:underline shrink-0'>Remover</button>`;
+  li.querySelector('button').addEventListener('click',()=>delPosto(d.id, li));
+  ul.appendChild(li);
+}
+
+function preload(){
+  INITIAL_VIATURAS.forEach(renderViatura);
+  INITIAL_POSTOS.forEach(renderPosto);
+  // Pessoas inicialmente salvas
+  ['DISP','ATRASO','BANCO','HORA_EXTRA'].forEach(tp=>{
+    const arr = (INITIAL_PESSOAS && INITIAL_PESSOAS[tp]) || [];
+    arr.forEach(p=>renderPessoa(tp, p));
+  });
+  // CGA inicial
+  try{ if(INITIAL_CGA && INITIAL_CGA.id){ renderCGA(INITIAL_CGA); } }catch(_){ }
+}
+
+// Garante que nenhum select js-choices fique "sumido" (select escondido sem wrapper Choices gerado)
+function ensureChoicesIntegrity(){
+  if(!window.document) return;
+  document.querySelectorAll('select.js-choices').forEach(sel=>{
+    const hidden = getComputedStyle(sel).display === 'none';
+    const hasWrapper = !!sel.nextElementSibling && sel.nextElementSibling.classList.contains('choices');
+    if(window.Choices){
+      // Se está visível mas sem instância e usuário quer recurso, inicializa
+      if(!sel._choicesInst && !hasWrapper){
+        try { sel._choicesInst = new window.Choices(sel, {searchEnabled:true, shouldSort:false}); }
+        catch(e){ /* fallback: mostra select puro */ sel.style.display=''; }
+      }
+      // Caso esteja escondido e não tenha wrapper (estado quebrado), re-exibe
+      if(hidden && !hasWrapper){ sel.style.display=''; }
+    } else {
+      // Sem biblioteca carregada: garantir exibição
+      if(hidden) sel.style.display='';
+    }
+  });
+}
+
+// Roda ao carregar
+document.addEventListener('DOMContentLoaded', ()=>{
+  // 1) Copiar opções (matrícula - nome) do campo CGA para os 4 selects ANTES de inicializar Choices
+  const cgaSel = document.querySelector('select[name="cga_do_dia"]');
+  const targets = [document.getElementById('sel-disp'), document.getElementById('sel-atr'), document.getElementById('sel-ban'), document.getElementById('sel-hor')];
+  function cloneOptionsFromSource(){
+    if(!cgaSel) return;
+    const html = cgaSel.innerHTML;
+    targets.forEach(t=>{
+      if(!t) return;
+      // Atualiza opções nativas
+      t.innerHTML = html;
+      // Se já existir instância Choices, atualiza-a também
+      try{
+        if(window.Choices){
+          const inst = t._choicesInst || t.choices || null;
+          if(inst && inst.setChoices){
+            const opts = Array.from(t.options||[]).map(o=>({value:o.value, label:o.text, selected:o.selected, disabled:o.disabled}));
+            inst.clearChoices();
+            inst.setChoices(opts, 'value', 'label', true);
+          }
+        }
+      }catch(_){/* noop */}
+      // Após clonar, força voltar ao placeholder (traço)
+      try { resetSelect(t); } catch(_){ }
+    });
+  }
+  cloneOptionsFromSource();
+
+  // 2) Inicializar/recuperar Choices e garantir integridade visual
+  ensureChoicesIntegrity();
+  // Observador para qualquer remoção/acréscimo que quebre wrappers
+  const obs = new MutationObserver(()=>ensureChoicesIntegrity());
+  obs.observe(document.body, {childList:true, subtree:true});
+  // Re-run após 1s (caso script externo de Choices carregue depois) e refaz o clone
+  setTimeout(()=>{ cloneOptionsFromSource(); ensureChoicesIntegrity(); }, 1000);
+  if(LIVRO_READONLY){
+    // Desabilitar selects e botões
+    targets.forEach(t=>{ if(t){ t.setAttribute('disabled','disabled'); } });
+    ['btn-add-disp','btn-add-atr','btn-add-ban','btn-add-hor'].forEach(id=>{const b=document.getElementById(id); if(b){ b.setAttribute('disabled','disabled'); b.classList.add('opacity-60','cursor-not-allowed'); }});
+  }
+});
+
+// Mostrar/ocultar descrição_outros conforme tipo
+const tipoSelect = document.querySelector('#form-add-posto select[name$="tipo"]');
+const descOutros = document.querySelector('#form-add-posto input[name$="descricao_outros"]');
+const wrapDescOutros = document.getElementById('wrap-desc-outros');
+if(tipoSelect && descOutros){
+  function toggleDesc(){
+    if(tipoSelect.value === 'OUTROS'){
+      wrapDescOutros.classList.remove('hidden');
+    } else {
+      wrapDescOutros.classList.add('hidden');
+      descOutros.value='';
+    }
+  }
+  toggleDesc();
+  tipoSelect.addEventListener('change', toggleDesc);
+}
+
+document.getElementById('btn-add-viatura').addEventListener('click', addViatura);
+document.getElementById('btn-add-posto').addEventListener('click', addPosto);
+preload();
+
+// ------- Pessoas (Dispensados / Atraso / Banco / Hora Extra) -------
+const URL_ADD_PESSOA = "{% url 'cecom:livro_cecom_add_pessoa' plantao.pk %}";
+const URL_DEL_PESSOA_TEMPLATE = "{% url 'cecom:livro_cecom_del_pessoa' plantao.pk 0 %}"; // substitui /0/
+
+function addPessoa(tipo, selectEl, listEl, inicioEl, fimEl, totalEl){
+  const usuario = selectEl.value;
+  if(!usuario){ toast('Selecione um usuário','warn'); return; }
+  let inicio = '', fim = '';
+  if(tipo !== 'DISP'){
+    inicio = (inicioEl && inicioEl.value) || '';
+    fim = (fimEl && fimEl.value) || '';
+    if(!inicio || !fim){ toast('Informe horário inicial e final','warn'); return; }
+  }
+  const fd = new FormData(); fd.append('tipo', tipo); fd.append('usuario', usuario);
+  if(inicio) fd.append('inicio', inicio);
+  if(fim) fd.append('fim', fim);
+  postJSON(URL_ADD_PESSOA, fd).then(r=>r.json()).then(d=>{
+    if(!d.sucesso){ toast(d.erro||'Erro','erro'); return; }
+    renderPessoa(tipo, d);
+    resetSelect(selectEl);
+    if(inicioEl) inicioEl.value='';
+    if(fimEl) fimEl.value='';
+    if(totalEl) totalEl.value='0h00m';
+    toast('Adicionado','sucesso');
+  }).catch(()=>toast('Falha ao adicionar','erro'));
+}
+
+function delPessoa(id, li){
+  const url = URL_DEL_PESSOA_TEMPLATE.replace(/0\/$/, id+"/");
+  postJSON(url, new FormData()).then(r=>r.json()).then(d=>{
+    if(!d.sucesso){ toast(d.erro||'Erro ao remover','erro'); return; }
+    li.remove(); toast('Removido','sucesso');
+  }).catch(()=>toast('Falha na remoção','erro'));
+}
+
+function renderPessoa(tipo, d){
+  // Seleciona UL correto por tipo
+  const map = { 'DISP':'lista-disp', 'ATRASO':'lista-atr', 'BANCO':'lista-ban', 'HORA_EXTRA':'lista-hor' };
+  const ul = document.getElementById(map[tipo]); if(!ul) return;
+  const li = document.createElement('li');
+  li.className = 'border rounded p-2 flex items-center justify-between gap-2';
+  const tempo = (d.inicio && d.fim) ? ` <span class='text-slate-500'>— ${d.inicio}-${d.fim}${d.total_fmt? ' ('+d.total_fmt+')':''}</span>` : '';
+  li.innerHTML = `<div class='text-slate-700'>${(d.matricula||'') + (d.matricula?' - ':'')}${d.nome||''}${tempo}</div>`+
+                 `<button type='button' class='text-red-600 text-[11px] hover:underline shrink-0'>Excluir</button>`;
+  li.querySelector('button').addEventListener('click', ()=>delPessoa(d.id, li));
+  ul.appendChild(li);
+}
+
+// Botões
+if(!LIVRO_READONLY){
+  document.getElementById('btn-add-disp').addEventListener('click', ()=>addPessoa('DISP', document.getElementById('sel-disp'), document.getElementById('lista-disp')));
+  document.getElementById('btn-add-atr').addEventListener('click', ()=>addPessoa('ATRASO', document.getElementById('sel-atr'), document.getElementById('lista-atr'), document.getElementById('atr-inicio'), document.getElementById('atr-fim'), document.getElementById('atr-total')));
+  document.getElementById('btn-add-ban').addEventListener('click', ()=>addPessoa('BANCO', document.getElementById('sel-ban'), document.getElementById('lista-ban'), document.getElementById('ban-inicio'), document.getElementById('ban-fim'), document.getElementById('ban-total')));
+  document.getElementById('btn-add-hor').addEventListener('click', ()=>addPessoa('HORA_EXTRA', document.getElementById('sel-hor'), document.getElementById('lista-hor'), document.getElementById('hor-inicio'), document.getElementById('hor-fim'), document.getElementById('hor-total')));
+
+  function calcDiffToStr(a,b){
+    if(!a||!b) return '0h00m';
+    try{
+      const [h1,m1] = a.split(':').map(Number);
+      const [h2,m2] = b.split(':').map(Number);
+      let t1 = h1*60+m1, t2 = h2*60+m2; if(t2<t1) t2+=24*60; const d=t2-t1; const hh=(d/60)|0; const mm=d%60; return `${hh}h${mm.toString().padStart(2,'0')}m`;
+    }catch(_){ return '0h00m'; }
+  }
+  ['atr','ban','hor'].forEach(prefix=>{
+    const ini = document.getElementById(prefix+'-inicio');
+    const fim = document.getElementById(prefix+'-fim');
+    const tot = document.getElementById(prefix+'-total');
+    if(ini && fim && tot){
+      const upd = ()=>{ tot.value = calcDiffToStr(ini.value, fim.value); };
+      ini.addEventListener('change', upd); fim.addEventListener('change', upd);
+    }
+  });
+}
+
+// Salvamento AJAX do livro
+const formLivro = document.getElementById('form-livro');
+const btnSave = document.getElementById('btn-save-livro');
+if(formLivro){
+  formLivro.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    if(btnSave.dataset.saving==='1') return;
+    btnSave.dataset.saving='1';
+    btnSave.classList.add('opacity-70','cursor-not-allowed');
+    const originalTxt = btnSave.textContent;
+    btnSave.textContent='Salvando...';
+    const fd = new FormData(formLivro);
+    fetch(window.location.href, {method:'POST', headers:{'X-CSRFToken':csrftoken,'X-Requested-With':'XMLHttpRequest','Fetch':'XMLHttpRequest'}, body:fd})
+      .then(async r=>{const ct=r.headers.get('content-type')||''; if(ct.includes('application/json')){const j=await r.json(); return {ok:r.ok, data:j};} const t=await r.text(); return {ok:r.ok, data:{raw:t}};})
+      .then(resp=>{
+        if(resp.ok && resp.data.sucesso){
+          // Redireciona ao painel após salvar com sucesso
+          window.location.href = "{% url 'cecom:painel' %}";
+        } else if(!resp.ok && resp.data.erros){
+          const msgs = Object.values(resp.data.erros).flat().join(' | ');
+          toast('Erros: '+msgs,'erro');
+        } else {
+          toast('Falha ao salvar','erro');
+        }
+      })
+      .catch(()=>toast('Erro de rede ao salvar','erro'))
+      .finally(()=>{
+        btnSave.dataset.saving='';
+        btnSave.classList.remove('opacity-70','cursor-not-allowed');
+        btnSave.textContent = originalTxt;
+      });
+  });
+}
+
+// ------- CGA (único) -------
+const URL_SET_CGA = "{% url 'cecom:livro_cecom_set_cga' plantao.pk %}";
+const URL_CLEAR_CGA = "{% url 'cecom:livro_cecom_clear_cga' plantao.pk %}";
+function renderCGA(d){
+  const ul = document.getElementById('cga-box'); if(!ul) return;
+  ul.innerHTML = '';
+  const li = document.createElement('li');
+  li.className = 'border rounded p-2 flex items-center justify-between gap-2';
+  li.innerHTML = `<div class='text-slate-700'>${(d.matricula||'') + (d.matricula?' - ':'')}${d.nome||''}</div>`+
+                 `<button type='button' id='btn-clear-cga' class='text-red-600 text-[11px] hover:underline shrink-0'>Remover</button>`;
+  ul.appendChild(li);
+  const btn = document.getElementById('btn-clear-cga');
+  if(btn){ btn.addEventListener('click', clearCGA); }
+  // Desabilitar select e botão adicionar enquanto existir CGA
+  const sel = document.querySelector('select[name="cga_do_dia"]');
+  const addBtn = document.getElementById('btn-add-cga');
+  if(sel){ sel.setAttribute('disabled','disabled'); }
+  if(addBtn){ addBtn.setAttribute('disabled','disabled'); addBtn.classList.add('opacity-60','cursor-not-allowed'); }
+}
+function clearCGA(){
+  fetch(URL_CLEAR_CGA, {method:'POST', headers:{'X-CSRFToken':csrftoken}})
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.sucesso){ toast(d.erro||'Erro','erro'); return; }
+      // Limpa UI e reabilita select/botão
+      const ul = document.getElementById('cga-box'); if(ul) ul.innerHTML='';
+      const sel = document.querySelector('select[name="cga_do_dia"]');
+      const addBtn = document.getElementById('btn-add-cga');
+      if(sel){ sel.removeAttribute('disabled'); resetSelect(sel); }
+      if(addBtn){ addBtn.removeAttribute('disabled'); addBtn.classList.remove('opacity-60','cursor-not-allowed'); }
+      toast('CGA removido','sucesso');
+    })
+    .catch(()=>toast('Falha ao remover CGA','erro'));
+}
+function addCGA(){
+  const sel = document.querySelector('select[name="cga_do_dia"]');
+  if(!sel) return;
+  if(document.getElementById('cga-box')?.children?.length){ toast('Já existe um CGA. Remova para trocar.','warn'); return; }
+  const uid = sel.value; if(!uid){ toast('Selecione um CGA','warn'); return; }
+  const fd = new FormData(); fd.append('usuario', uid);
+  fetch(URL_SET_CGA, {method:'POST', headers:{'X-CSRFToken':csrftoken}, body: fd})
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.sucesso){ toast(d.erro||'Erro','erro'); return; }
+      renderCGA(d); toast('CGA definido','sucesso');
+    })
+    .catch(()=>toast('Falha ao definir CGA','erro'));
+}
+const btnAddCGA = document.getElementById('btn-add-cga');
+if(btnAddCGA){ btnAddCGA.addEventListener('click', addCGA); }
+</script>
+</div>
+{% endblock %}

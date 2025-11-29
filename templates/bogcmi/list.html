@@ -1,0 +1,136 @@
+{% extends '_layout/base.html' %}
+{% load bogcmi_extras %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header + Filtros -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">BOGCMI</h1>
+      </div>
+      <a class="inline-flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-md text-xs md:text-sm hover:bg-green-700 w-full md:w-auto" href="{% url 'bogcmi:novo' %}?novo=1" onclick="return confirm('Deseja abrir um novo BO?');">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" /></svg>
+        Novo BO
+      </a>
+    </div>
+    {% include "_layout/_filterbar.html" with filter=filter %}
+  </div>
+
+<div id="results">
+  {# Lista MOBILE: cards verticais (somente telas pequenas) #}
+  <div class="md:hidden space-y-3">
+    {% for bo in page %}
+      <div class="bg-white border rounded-xl p-3 shadow-sm overflow-hidden">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-xs text-slate-500">BOGCMI <b>#{{ bo.numero|default:"(s/ nº)" }}</b></div>
+            <div class="mt-1 font-semibold truncate">
+              {% with codigo=bo.cod_natureza|default:bo.natureza|extrai_sigla %}
+                {% if codigo %}<span class="px-2 py-0.5 rounded text-[11px] font-semibold inline-block align-middle {{ codigo|codigo_badge_class }}">{{ codigo }}</span>{% endif %}
+              {% endwith %}
+              <span class="ml-1">{% if bo.natureza %}{{ bo.natureza|descricao_natureza }}{% else %}-{% endif %}</span>
+            </div>
+          </div>
+          <div class="shrink-0">
+            {% include "_layout/_status_badges.html" with status=bo.status %}
+            {% if bo.status == 'ARQUIVADO' and bo.numero and doc_map and doc_map|get_item:bo.numero %}
+              <div><span class="inline-block mt-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] rounded">Doc Assinado</span></div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mt-2 space-y-1 text-sm break-words">
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Emissão</span><span>{% if bo.emissao %}{{ bo.emissao|date:"d/m/Y H:i" }}{% else %}-{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Viatura</span><span>{{ bo.viatura.prefixo|default:"-" }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Encarregado</span><span class="text-right truncate max-w-[60%]">{{ bo.encarregado.get_full_name|default:bo.encarregado.username }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Motorista</span><span class="text-right truncate max-w-[60%]">{% if bo.motorista %}{{ bo.motorista.get_full_name|default:bo.motorista.username }}{% else %}-{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">CECOM</span><span class="text-right truncate max-w-[60%]">{% if bo.cecom %}{{ bo.cecom.get_full_name|default:bo.cecom.username }}{% else %}-{% endif %}</span></div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Auxiliares</span>
+            <span class="text-right break-words max-w-[60%]">
+              {% if bo.auxiliar1 or bo.auxiliar2 %}
+                {% if bo.auxiliar1 %}<span class="inline-block bg-slate-100 rounded px-1 text-[11px] mr-1" title="Auxiliar 1">{{ bo.auxiliar1.get_full_name|default:bo.auxiliar1.username }}</span>{% endif %}
+                {% if bo.auxiliar2 %}<span class="inline-block bg-slate-100 rounded px-1 text-[11px]" title="Auxiliar 2">{{ bo.auxiliar2.get_full_name|default:bo.auxiliar2.username }}</span>{% endif %}
+              {% else %}-{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          {% with uid=request.user.id %}
+            {% if uid == bo.encarregado_id or uid == bo.motorista_id or uid == bo.cecom_id or uid == bo.auxiliar1_id or uid == bo.auxiliar2_id or request.user.is_superuser %}
+              {% if bo.status == 'EDICAO' or bo.status == 'CORRIGIR_BO' %}
+                <a href="{% url 'bogcmi:editar' bo.pk %}" class="inline-flex items-center justify-center h-9 px-3 border rounded bg-blue-50 text-blue-700 hover:bg-blue-100">Editar</a>
+              {% elif bo.status == 'ARQUIVADO' %}
+                {% if bo.numero and doc_map %}
+                  {% with doc=doc_map|get_item:bo.numero %}
+                    {% if doc %}
+                      <a href="{% url 'bogcmi:servir_documento_assinado' doc.id %}" target="_blank" class="inline-flex items-center justify-center h-9 px-3 border rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100">Ver Documento</a>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+                {% if request.user.username == 'moises' or request.user.is_superuser %}
+                  <a href="{% url 'bogcmi:excluir' bo.pk %}" onclick="return confirm('Excluir este BO arquivado? Esta ação não pode ser desfeita.');" class="inline-flex items-center justify-center h-9 px-3 border rounded bg-rose-50 text-rose-700 hover:bg-rose-100">Excluir</a>
+                {% endif %}
+              {% elif bo.status == 'FINALIZADO' and bo.documento_html %}
+                <a href="{% url 'bogcmi:editar' bo.pk %}" class="inline-flex items-center justify-center h-9 px-3 border rounded bg-blue-50 text-blue-700 hover:bg-blue-100">Editar</a>
+                <a href="{% url 'bogcmi:visualizar_documento_bo' bo.pk %}" class="inline-flex items-center justify-center h-9 px-3 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Ver Doc</a>
+                {% if bo.encarregado == request.user %}
+                <form method="post" action="{% url 'bogcmi:despachar_cmt' bo.pk %}" class="col-span-2" onsubmit="return confirm('Despachar este BO para o Comando?');">
+                  {% csrf_token %}
+                  <button type="submit" class="w-full inline-flex items-center justify-center h-9 px-3 rounded bg-amber-600 text-white hover:bg-amber-700">Despachar CMT</button>
+                </form>
+                {% else %}
+                <button type="button" disabled class="col-span-2 w-full inline-flex items-center justify-center h-9 px-3 rounded bg-gray-400 text-white cursor-not-allowed" title="Apenas o Encarregado pode despachar ao Comando">Despachar CMT</button>
+                {% endif %}
+                {% if request.user.username == 'moises' or request.user.is_superuser %}
+                  <a href="{% url 'bogcmi:excluir' bo.pk %}" onclick="return confirm('Excluir este BO? Esta ação não pode ser desfeita.');" class="col-span-2 inline-flex items-center justify-center h-9 px-3 rounded border bg-rose-50 text-rose-700 hover:bg-rose-100">Excluir</a>
+                {% endif %}
+              {% elif bo.status == 'DESPACHO_CMT' %}
+                {% if request.user.username == 'moises' or request.user.is_superuser %}
+                  <a href="{% url 'bogcmi:excluir' bo.pk %}" onclick="return confirm('Excluir este BO (Despacho CMT)? Esta ação não pode ser desfeita.');" class="col-span-2 inline-flex items-center justify-center h-9 px-3 rounded border bg-rose-50 text-rose-700 hover:bg-rose-100">Excluir</a>
+                {% endif %}
+              {% endif %}
+            {% else %}
+              {% if bo.status != 'EDICAO' and bo.status != 'CORRIGIR_BO' and bo.documento_html %}
+                <a href="{% url 'bogcmi:visualizar_documento_bo' bo.pk %}" class="col-span-2 inline-flex items-center justify-center h-9 px-3 border rounded bg-slate-50 text-slate-700 hover:bg-slate-100 text-xs">Ver Documento</a>
+              {% endif %}
+            {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500">Nenhum registro.</div>
+    {% endfor %}
+
+    {# Paginação (mobile) #}
+    <div class="mt-2 flex items-center justify-center text-sm">
+      <div class="flex gap-1 items-center">
+        {% if page.has_previous %}
+          <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page=1">«</a>
+          <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page.previous_page_number }}">‹</a>
+        {% else %}
+          <span class="px-2 py-1 border rounded opacity-40 select-none">«</span>
+          <span class="px-2 py-1 border rounded opacity-40 select-none">‹</span>
+        {% endif %}
+        <span class="px-2 py-1 border rounded bg-slate-50 select-none">Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+          <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page.next_page_number }}">›</a>
+          <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?page={{ page.paginator.num_pages }}">»</a>
+        {% else %}
+          <span class="px-2 py-1 border rounded opacity-40 select-none">›</span>
+          <span class="px-2 py-1 border rounded opacity-40 select-none">»</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# Desktop: tabela existente #}
+  <div class="hidden md:block">
+    {% include "bogcmi/_table.html" with page=page doc_map=doc_map %}
+  </div>
+</div>
+</div>
+{% endblock %}
+

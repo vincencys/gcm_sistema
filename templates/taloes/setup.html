@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Setup do Plantão{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Configuração do Plantão</h1>
+<form method="post" class="space-y-3 max-w-xl relative">
+  {% csrf_token %}
+  <div><label>Viatura</label> {{ form.viatura|add_class:'z-20' }}</div>
+  <div><label>Plantão</label> {{ form.plantao }}</div>
+  <hr class="my-2">
+  <div><label>Encarregado</label> {{ form.encarregado }}</div>
+  <div><label>Motorista</label> {{ form.motorista }}</div>
+  <div><label>Auxiliar 1</label> {{ form.auxiliar1 }}</div>
+  <div><label>Auxiliar 2</label> {{ form.auxiliar2 }}</div>
+  <button class="btn btn-primary" type="submit">Salvar</button>
+  <a class="btn" href="{% url 'taloes:lista' %}">Voltar</a>
+</form>
+{% endblock %}

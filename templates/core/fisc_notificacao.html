@@ -1,0 +1,184 @@
+{% extends '_layout/base.html' %}
+{% load form_extras %}
+{% block title %}Fiscalização - Notificações{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center justify-between" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">Fiscalização • Notificações</h1>
+      </div>
+      <a href="{% url 'core:fisc_notificacao_novo' %}" class="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">Adicionar</a>
+    </div>
+  </div>
+
+  <form method="get" class="mb-3 grid grid-cols-1 md:grid-cols-3 gap-2 items-start">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nome do notificado" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+    <input type="text" name="endereco" value="{{ endereco }}" placeholder="Buscar por endereço" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+    <button class="btn btn-primary">Buscar</button>
+  </form>
+
+  <!-- Tabela (desktop) -->
+  <div class="overflow-auto bg-white border rounded-lg hidden md:block">
+    <table class="min-w-full border-separate border-spacing-0">
+      <thead>
+        <tr>
+          <th class="p-2 border border-slate-200 bg-slate-100">Número</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Elaborado em</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Notificado</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">CPF/CNPJ</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Status</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Fiscal</th>
+          <th class="p-2 border border-slate-200 bg-slate-100 w-24">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in page_obj.object_list %}
+          <tr>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">{{ n.numero }}</td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">{{ n.emissao_em|date:'d/m/Y H:i' }}</td>
+            <td class="p-2 border border-slate-200">{{ n.notificado_nome }}</td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">
+              {% if n.notificado_cpf %}
+                {{ n.notificado_cpf|format_cpf }}
+              {% elif n.notificado_cnpj %}
+                {{ n.notificado_cnpj|format_cnpj }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap">
+              {% if user.is_superuser or user.username|lower == 'moises' or user.username|lower == 'administrativo' or user.username|lower == 'admnistrativo' %}
+                <select class="px-2 py-1 border rounded text-sm" onchange="alterarStatus('not', {{ n.id }}, this.value)">
+                  <option value="AGUARDANDO" {% if n.status == 'AGUARDANDO' %}selected{% endif %}>Aguardando despacho</option>
+                  <option value="DESPACHADO" {% if n.status == 'DESPACHADO' %}selected{% endif %}>Despachado</option>
+                </select>
+              {% else %}
+                <span class="badge {% if n.status == 'DESPACHADO' %}badge-success{% else %}badge-warning{% endif %}">{{ n.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="p-2 border border-slate-200">{{ n.fiscal_responsavel.get_full_name|default:n.fiscal_responsavel.username }}</td>
+            <td class="p-2 border border-slate-200 whitespace-nowrap w-24 align-middle">
+              <div class="flex flex-col gap-1 w-24">
+                <a href="{% url 'core:fisc_notificacao_documento' n.id %}"
+                   class="h-8 px-2 bg-slate-100 text-slate-700 rounded shadow-sm hover:bg-slate-200 text-[11px] text-center flex items-center justify-center">Ver Documento</a>
+                {% if user.is_superuser or user.username|lower == 'moises' %}
+                <form method="post" action="{% url 'core:fisc_notificacao_excluir' n.id %}" class="inline"
+                      onsubmit="return confirm('Excluir a notificação {{ n.numero }}? Esta ação não pode ser desfeita.');">
+                  {% csrf_token %}
+                  <button type="submit" class="h-8 w-full px-2 bg-red-600 text-white rounded shadow-sm hover:bg-red-700 text-[11px]">Excluir</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="p-2 border border-slate-200 text-center text-slate-500 py-6">Nenhum registro encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Cards (mobile) -->
+  <div class="md:hidden space-y-2">
+    {% for n in page_obj.object_list %}
+      <div class="rounded-lg border bg-white shadow-sm p-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="text-xs text-slate-500">Número</div>
+            <div class="font-semibold text-slate-800">{{ n.numero }}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-500">Elaborado em</div>
+            <div class="text-sm">{{ n.emissao_em|date:'d/m/Y H:i' }}</div>
+          </div>
+        </div>
+        <div class="mt-2 grid grid-cols-1 gap-1 text-sm">
+          <div>
+            <span class="text-xs text-slate-500">Notificado</span>
+            <div class="text-slate-800">{{ n.notificado_nome }}</div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-slate-500">CPF/CNPJ</div>
+            <div class="text-slate-800">
+              {% if n.notificado_cpf %}{{ n.notificado_cpf|format_cpf }}{% elif n.notificado_cnpj %}{{ n.notificado_cnpj|format_cnpj }}{% else %}-{% endif %}
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-slate-500">Status</div>
+            <div>
+              {% if user.is_superuser or user.username|lower == 'moises' or user.username|lower == 'administrativo' or user.username|lower == 'admnistrativo' %}
+                <select class="px-2 py-1 border rounded text-sm" onchange="alterarStatus('not', {{ n.id }}, this.value)">
+                  <option value="AGUARDANDO" {% if n.status == 'AGUARDANDO' %}selected{% endif %}>Aguardando despacho</option>
+                  <option value="DESPACHADO" {% if n.status == 'DESPACHADO' %}selected{% endif %}>Despachado</option>
+                </select>
+              {% else %}
+                <span class="badge {% if n.status == 'DESPACHADO' %}badge-success{% else %}badge-warning{% endif %}">{{ n.get_status_display }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-slate-500">Fiscal</div>
+            <div class="text-slate-800 truncate max-w-[55%] text-right">{{ n.fiscal_responsavel.get_full_name|default:n.fiscal_responsavel.username }}</div>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <a href="{% url 'core:fisc_notificacao_documento' n.id %}"
+             class="flex-1 text-center px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm">Ver</a>
+          {% if user.is_superuser or user.username|lower == 'moises' %}
+          <form method="post" action="{% url 'core:fisc_notificacao_excluir' n.id %}" class="flex-1"
+                onsubmit="return confirm('Excluir a notificação {{ n.numero }}? Esta ação não pode ser desfeita.');">
+            {% csrf_token %}
+            <button type="submit" class="w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm">Excluir</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500 py-6">Nenhum registro encontrado.</div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="mt-3 flex items-center justify-between text-sm">
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    <div class="space-x-1">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}" class="btn">Anterior</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ q }}" class="btn">Próxima</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+<script>
+  async function alterarStatus(tipo, id, status) {
+    try {
+      const resp = await fetch(`/fiscalizacao/${tipo}/${id}/status/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: new URLSearchParams({status})
+      });
+      if (!resp.ok) console.warn('Falha ao alterar status');
+    } catch (e) { console.error(e); }
+  }
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+{% endblock %}

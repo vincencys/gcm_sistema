@@ -1,0 +1,53 @@
+{% extends "_layout/base.html" %}
+{% load static %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<style>
+  /* Oculta a barra de navegação apenas nesta página de login */
+  nav.bg-slate-900 { display: none !important; }
+</style>
+<div class="min-h-[70vh] bg-transparent flex items-center justify-center pt-24 md:pt-0">
+  <div class="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Logo compacto para mobile -->
+    <div class="md:hidden flex items-center justify-center">
+      <img src="{% static 'img/logo_login.png' %}" alt="logo" class="w-11/12 max-w-md h-auto object-contain mb-2" />
+    </div>
+    <!-- Hero / Branding (imagem inteira, sem corte) -->
+    <div class="hidden md:flex items-center justify-center">
+      <div class="w-full max-w-[520px]">
+  <img src="{% static 'img/logo_login.png' %}" alt="hero" class="w-full h-auto rounded-lg object-contain shadow-md" />
+      </div>
+    </div>
+
+    <!-- Login card -->
+    <div class="flex items-center justify-center">
+      <div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
+        <h1 class="text-2xl font-semibold mb-1">Entrar no Sistema</h1>
+        <p class="text-sm text-slate-500 mb-6">Use suas credenciais de serviço</p>
+
+        <form method="post" action="" class="space-y-4">{% csrf_token %}
+          <div>
+            <label class="block text-sm font-medium mb-1">Usuário</label>
+            <input name="username" type="text" required autofocus class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Senha</label>
+            <input name="password" type="password" required class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <label class="inline-flex items-center gap-2"><input type="checkbox" name="remember" class="form-checkbox"/> Lembrar-me</label>
+            <a href="{% url 'users:password_reset' %}" class="text-sky-600 hover:underline">Esqueci a senha</a>
+          </div>
+          <div>
+            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md">Entrar</button>
+          </div>
+        </form>
+
+        <div class="mt-6 text-center text-xs text-slate-500">Desenvolvido por Moisés Oliveira</div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Mantemos a navegação visível também na tela de login -->
+{% endblock %}
+

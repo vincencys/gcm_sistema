@@ -1,0 +1,108 @@
+{% extends "_layout/base.html" %}
+{% block title %}Editar Talão #{{ talao.talao_numero|default:talao.pk }}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-white border rounded-xl p-4 mt-6">
+  <h1 class="text-xl font-semibold mb-4">Editar Talão #{{ talao.talao_numero|default:talao.pk }}</h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+      <label class="block text-sm mb-1">Viatura</label>
+      {{ form.viatura }}
+    </div>
+    <div>
+      <label class="block text-sm mb-1">KM Inicial</label>
+      {{ form.km_inicial }}
+    </div>
+    <div>
+      <label class="block text-sm mb-1">KM Final</label>
+      {{ form.km_final }}
+      {% if form.km_final.errors %}
+        <div class="mt-1 text-sm text-rose-700">{{ form.km_final.errors|striptags }}</div>
+      {% endif %}
+    </div>
+    <div>
+      <label class="block text-sm mb-1">Ocorrência</label>
+      {{ form.codigo_ocorrencia }}
+    </div>
+    <div>
+      <label class="block text-sm mb-1">Local - Área/Bairro</label>
+      {{ form.local_bairro }}
+    </div>
+    <div>
+      <label class="block text-sm mb-1">Local - Rua/Referência</label>
+      {{ form.local_rua }}
+    </div>
+    <div class="flex gap-2 justify-end">
+      <a href="{% url 'taloes:lista' %}" class="btn">Cancelar</a>
+      <button type="submit" class="btn btn-primary" id="btn-salvar-talao">Salvar</button>
+    </div>
+  </form>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.querySelector('form');
+  const btnSalvar = document.getElementById('btn-salvar-talao');
+  if(!form || !btnSalvar) return;
+  function getNumberValue(input){
+    if(!input) return NaN;
+    const v = (input.value||'').toString().replace(/\./g,'').replace(/,/g,'.');
+    const n = parseFloat(v);
+    return isNaN(n) ? NaN : n;
+  }
+  form.addEventListener('submit', function(e){
+    const kmIni = form.querySelector('input[name="km_inicial"]') || document.getElementById('{{ form.km_inicial.id_for_label }}') || document.getElementById('id_km_inicial');
+    const kmFin = form.querySelector('input[name="km_final"]') || document.getElementById('{{ form.km_final.id_for_label }}') || document.getElementById('id_km_final');
+    const selOcorr = form.querySelector('select[name="codigo_ocorrencia"]') || document.getElementById('id_codigo_ocorrencia');
+    const inBairro = form.querySelector('input[name="local_bairro"]') || document.getElementById('id_local_bairro');
+    const vIni = getNumberValue(kmIni);
+    const vFin = getNumberValue(kmFin);
+    if(!isNaN(vIni) && !isNaN(vFin) && vFin < vIni){
+      e.preventDefault();
+      // feedback visual
+      kmFin.classList.add('ring-2','ring-rose-500');
+      setTimeout(()=> kmFin.classList.remove('ring-2','ring-rose-500'), 1500);
+      // toast simples (reaproveita criarToast se existir)
+      if(typeof criarToast === 'function'){
+        criarToast('Coloque o KM igual ou superior ao inicial', 'error');
+      } else {
+        alert('Coloque o KM igual ou superior ao inicial');
+      }
+      kmFin.focus();
+      return false;
+    }
+    // Se há KM final informado (número válido), exigir Ocorrência e Bairro
+    if(!isNaN(vFin)){
+      let bloqueado = false;
+      if(selOcorr && (!selOcorr.value || selOcorr.value === '')){
+        bloqueado = true;
+        selOcorr.classList.add('ring-2','ring-rose-500');
+        setTimeout(()=> selOcorr.classList.remove('ring-2','ring-rose-500'), 1500);
+        if(typeof criarToast === 'function'){
+          criarToast('Selecione a Ocorrência para finalizar o talão', 'error');
+        } else {
+          alert('Selecione a Ocorrência para finalizar o talão');
+        }
+      }
+      const bairroVal = (inBairro && inBairro.value ? inBairro.value.trim() : '');
+      if(!bairroVal){
+        bloqueado = true;
+        if(inBairro){
+          inBairro.classList.add('ring-2','ring-rose-500');
+          setTimeout(()=> inBairro.classList.remove('ring-2','ring-rose-500'), 1500);
+        }
+        if(typeof criarToast === 'function'){
+          criarToast('Informe o bairro para finalizar o talão', 'error');
+        } else {
+          alert('Informe o bairro para finalizar o talão');
+        }
+      }
+      if(bloqueado){
+        e.preventDefault();
+        return false;
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

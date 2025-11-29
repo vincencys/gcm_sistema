@@ -1,0 +1,77 @@
+{% extends "_layout/base.html" %}
+{% block title %}{% if is_create %}Novo Perfil{% else %}Editar Perfil{% endif %} GCM{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <nav class="text-sm text-slate-600 mb-2">
+    <a href="{% url 'core:dashboard' %}" class="hover:text-slate-900">Início</a>
+    <span class="mx-2">›</span>
+    <a href="{% url 'core:config_dashboard' %}" class="hover:text-slate-900">Configurações</a>
+    <span class="mx-2">›</span>
+    <a href="{% url 'core:config_perfis' %}" class="hover:text-slate-900">Perfis GCM</a>
+    <span class="mx-2">›</span>
+    <span class="text-slate-900">{% if is_create %}Novo{% else %}Editar{% endif %}</span>
+  </nav>
+  <h1 class="text-2xl font-bold text-slate-900">{% if is_create %}Novo Perfil GCM{% else %}Editar Perfil — {{ obj.user.username }}{% endif %}</h1>
+  <p class="text-slate-600 mt-1">{% if is_create %}Preencha os dados do perfil GCM{% else %}Atualize as informações do perfil{% endif %}</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-3xl">
+<form method="post" enctype="multipart/form-data" class="space-y-5">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  
+  {% if is_create %}
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <label class="block text-sm font-semibold text-slate-900 mb-2">Selecione o usuário</label>
+    <select name="user_id" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+      <option value="">-- Selecione um usuário --</option>
+      <optgroup label="Sem perfil">
+        {% for u in usuarios_todos %}
+          {% if not u.perfil %}
+          <option value="{{ u.id }}">
+            {% if u.first_name or u.last_name %}
+              {{ u.first_name }} {{ u.last_name }} ({{ u.username }})
+            {% else %}
+              {{ u.username }}
+            {% endif %}
+          </option>
+          {% endif %}
+        {% endfor %}
+      </optgroup>
+      <optgroup label="Já possuem perfil">
+        {% for u in usuarios_todos %}
+          {% if u.perfil %}
+          <option value="{{ u.id }}" disabled title="Já possui perfil">
+            {% if u.first_name or u.last_name %}
+              {{ u.first_name }} {{ u.last_name }} ({{ u.username }}) — já possui perfil
+            {% else %}
+              {{ u.username }} — já possui perfil
+            {% endif %}
+          </option>
+          {% endif %}
+        {% endfor %}
+      </optgroup>
+    </select>
+  </div>
+  {% endif %}
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div><label class="block text-sm font-medium">Matrícula</label>{{ form.matricula }}</div>
+    <div><label class="block text-sm font-medium">Equipe</label>{{ form.equipe }}</div>
+    <div><label class="block text-sm font-medium">Classe</label>{{ form.classe }}</div>
+    <div><label class="block text-sm font-medium">Cargo</label>{{ form.cargo }}</div>
+    <div class="md:col-span-2"><label class="block text-sm font-medium">Email de recuperação</label>{{ form.recovery_email }}</div>
+    <!-- Seção de assinatura removida: usuário preenche no Meu Perfil -->
+    <div class="md:col-span-2"><label class="inline-flex items-center gap-2">{{ form.ativo }} <span>Ativo</span></label></div>
+  </div>
+  <div class="flex gap-3 pt-4 border-t border-slate-200">
+    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium">
+      Salvar
+    </button>
+    <a href="{% url 'core:config_perfis' %}" class="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium">
+      Cancelar
+    </a>
+  </div>
+</form>
+</div>
+{% endblock %}

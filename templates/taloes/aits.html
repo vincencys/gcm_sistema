@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}AITs do Talão{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center justify-between gap-2 mb-3">
+    <h1 class="text-xl font-semibold">AIT's — Talão #{{ talao.talao_numero|default:talao.pk }}</h1>
+    <a href="{% url 'taloes:lista' %}"
+       onclick="if(document.referrer){history.back();return false;}"
+       class="inline-flex items-center justify-center h-9 px-3 border rounded hover:bg-slate-50">
+      Voltar
+    </a>
+  </div>
+  <div class="mb-4 p-3 rounded border bg-white">
+    <form method="post" class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+      {% csrf_token %}
+      <div class="md:col-span-5">{{ form.integrante }}</div>
+      <div class="md:col-span-5">{{ form.numero }}</div>
+      <div class="md:col-span-2 flex gap-2">
+        <button class="h-10 px-3 rounded text-white bg-blue-600 hover:bg-blue-700 w-full">Adicionar</button>
+      </div>
+    </form>
+    <p class="text-xs text-slate-500 mt-2">Selecione o integrante, digite o número da AIT e clique em Adicionar. Você pode remover abaixo.</p>
+  </div>
+  <div class="bg-white border rounded overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 border-b">
+        <tr>
+          <th class="p-2 border text-left">#</th>
+          <th class="p-2 border text-left">Integrante</th>
+          <th class="p-2 border text-left">Número da AIT</th>
+          <th class="p-2 border text-right">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in aits %}
+          <tr class="hover:bg-slate-50">
+            <td class="p-2 border">{{ forloop.counter }}</td>
+            <td class="p-2 border">
+              {% if a.integrante %}{% with pf=a.integrante.perfil %}{{ pf.matricula|default:a.integrante.username }} - {{ a.integrante.get_full_name|default:a.integrante.username }}{% endwith %}{% else %}<span class="text-slate-400">—</span>{% endif %}
+            </td>
+            <td class="p-2 border">{{ a.numero }}</td>
+            <td class="p-2 border text-right">
+              <form method="post" onsubmit="return confirm('Remover AIT {{ a.numero }}?');" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="remover" value="{{ a.id }}" />
+                <button class="h-8 px-2 rounded bg-rose-600 text-white hover:bg-rose-700">Remover</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="p-3 text-center text-slate-500">Nenhuma AIT adicionada.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

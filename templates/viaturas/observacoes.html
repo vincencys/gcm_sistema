@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl">
+  <h1 class="text-xl font-semibold mb-4">Observações da Viatura {{ viatura.prefixo }}</h1>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      {{ form.observacoes.label_tag }}
+      {{ form.observacoes }}
+      {% if form.observacoes.errors %}
+        <div class="text-red-600 text-sm mt-1">{{ form.observacoes.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="flex gap-2">
+      <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Salvar</button>
+      <a href="{% url 'viaturas:lista' %}" class="px-4 py-2 border rounded hover:bg-slate-50">Voltar</a>
+    </div>
+  </form>
+
+  <div class="mt-6 text-xs text-slate-500">
+    Última atualização: {{ viatura.atualizado_em|date:"d/m/Y H:i" }}
+  </div>
+</div>
+{% endblock %}

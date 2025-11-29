@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load taloes_extras %}
+{% block title %}Meus Documentos{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-semibold">Meus PDFs de Plantão</h1>
+    <a href="{% url 'taloes:lista' %}" class="px-3 py-1.5 border rounded hover:bg-slate-50">Voltar</a>
+  </div>
+
+  {# Mobile: cards empilhados #}
+  <div class="md:hidden space-y-3">
+    {% for arq in page_obj.object_list %}
+      <div class="border rounded-xl bg-white p-3 shadow-sm">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-xs text-slate-500">Plantão</div>
+            <div class="mt-1 font-semibold">#{{ arq.numero_sequencial|default:"-" }}</div>
+          </div>
+        </div>
+        <div class="mt-2 space-y-1 text-sm">
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Início</span><span class="whitespace-nowrap">{{ arq.inicio }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Encerrado</span><span class="whitespace-nowrap">{{ arq.encerrado }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Equipe</span><span class="text-right max-w-[60%] break-words">{% if arq.equipe != '-' %}{{ arq.equipe }}{% else %}-{% endif %}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Arquivo</span><span class="text-right max-w-[60%] break-all text-xs">{{ arq.name }}</span></div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <a href="{{ arq.url }}" data-href="{{ arq.url }}" class="js-view-file px-3 py-1 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm">Visualizar</a>
+          <a href="{{ arq.download_url }}" download class="px-3 py-1 border rounded bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm">Download</a>
+          {% if request.user.is_superuser and request.user.username|lower == 'moises' %}
+            <form method="post" action="{% url 'taloes:apagar_documento' %}" onsubmit="return confirm('Excluir este documento?');">
+              {% csrf_token %}
+              <input type="hidden" name="nome" value="{{ arq.name }}">
+              {% if arq.uid %}<input type="hidden" name="uid" value="{{ arq.uid }}">{% endif %}
+              <button class="px-3 py-1 border rounded bg-rose-50 text-rose-700 hover:bg-rose-100 text-sm">Excluir</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500">Nenhum PDF gerado ainda.</div>
+    {% endfor %}
+  </div>
+
+  {# Desktop: tabela #}
+  <div class="hidden md:block overflow-x-auto bg-white shadow rounded border">
+    <table class="min-w-full text-[13px] align-top">
+      <thead class="bg-slate-50 border-b text-slate-700 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="p-2 text-left border-r">Plantão</th>
+          <th class="p-2 text-left border-r">Início</th>
+          <th class="p-2 text-left border-r">Encerrado</th>
+          <th class="p-2 text-left border-r">Equipe</th>
+          <th class="p-2 text-left border-r">Arquivo</th>
+          <th class="p-2 text-left">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for arq in page_obj.object_list %}
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-2 border-r">{{ arq.numero_sequencial|default:"-" }}</td>
+          <td class="p-2 border-r whitespace-nowrap">{{ arq.inicio }}</td>
+          <td class="p-2 border-r whitespace-nowrap">{{ arq.encerrado }}</td>
+          <td class="p-2 border-r max-w-xs">
+            {% if arq.equipe != '-' %}
+              <div class="text-[11px] leading-snug whitespace-normal">{{ arq.equipe }}</div>
+            {% else %}-{% endif %}
+          </td>
+          <td class="p-2 border-r">
+            <span class="text-slate-600 text-xs font-mono break-all">{{ arq.name }}</span>
+          </td>
+          <td class="p-2">
+            <div class="flex flex-wrap gap-1">
+              <a href="{{ arq.url }}" data-href="{{ arq.url }}" class="js-view-file px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700">Visualizar</a>
+              <a href="{{ arq.download_url }}" download class="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">Download</a>
+              {% if request.user.is_superuser and request.user.username|lower == 'moises' %}
+                <form method="post" action="{% url 'taloes:apagar_documento' %}" onsubmit="return confirm('Excluir este documento?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="nome" value="{{ arq.name }}">
+                  {% if arq.uid %}<input type="hidden" name="uid" value="{{ arq.uid }}">{% endif %}
+                  <button class="px-2 py-1 text-xs rounded bg-rose-600 text-white hover:bg-rose-700">Excluir</button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhum PDF gerado ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <div class="mt-4 flex items-center gap-2 flex-wrap justify-center">
+      {% if page_obj.has_previous %}
+        <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page=1">&laquo;</a>
+        <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.previous_page_number }}">&lsaquo;</a>
+      {% else %}
+        <span class="px-3 py-1 border rounded opacity-40 select-none">&laquo;</span>
+        <span class="px-3 py-1 border rounded opacity-40 select-none">&lsaquo;</span>
+      {% endif %}
+
+      <span class="px-3 py-1 border rounded bg-slate-50 select-none">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.next_page_number }}">&rsaquo;</a>
+        <a class="px-3 py-1 border rounded hover:bg-slate-50" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+      {% else %}
+        <span class="px-3 py-1 border rounded opacity-40 select-none">&rsaquo;</span>
+        <span class="px-3 py-1 border rounded opacity-40 select-none">&raquo;</span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

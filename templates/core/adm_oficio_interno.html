@@ -1,0 +1,270 @@
+{% extends '_layout/base.html' %}
+{% block title %}Administração - Ofício Interno{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center justify-between" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">Ofício Interno</h1>
+      </div>
+      <a href="{% url 'core:oficio_interno_novo' %}" class="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">Adicionar</a>
+    </div>
+  </div>
+
+  <form method="get" class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-2 items-start">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por texto ou criador" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+    <select name="status" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+      <option value="">Todos os status</option>
+      {% for val,label in STATUS_CHOICES %}
+        <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-primary">Buscar</button>
+  </form>
+
+  <!-- Seção: Meus Ofícios -->
+  <h2 class="text-lg font-semibold text-slate-700 mb-2">Meus Ofícios</h2>
+  <div class="overflow-auto bg-white border rounded-lg mb-8 hidden md:block">
+    <table class="min-w-full border-separate border-spacing-0">
+      <thead>
+        <tr>
+          <th class="p-2 border border-slate-200 bg-slate-100">#</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Emissão</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Tipo</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Status</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Supervisor</th>
+          <th class="p-2 border border-slate-200 bg-slate-100 w-28">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+  {% for o in meus_page.object_list %}
+        <tr>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.id }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.created_at|date:'d/m/Y H:i' }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.get_tipo_display }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap"><span class="badge {% if o.status in 'DEFERIDO' %}badge-success{% elif o.status in 'INDEFERIDO' %}badge-danger{% else %}badge-warning{% endif %}">{{ o.get_status_display }}</span></td>
+          <td class="p-2 border border-slate-200">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap w-28 align-middle">
+            <div class="flex flex-col gap-1 w-28">
+              <a href="{% url 'core:oficio_interno_ver' o.id %}" class="h-8 px-2 bg-slate-100 text-slate-700 rounded shadow-sm hover:bg-slate-200 text-[11px] text-center flex items-center justify-center">Ver</a>
+              {% if user.is_superuser or user.username|lower == 'moises' %}
+              <form method="post" action="{% url 'core:oficio_interno_excluir' o.id %}" class="inline" onsubmit="return confirm('Excluir o ofício #{{ o.id }}?');">
+                {% csrf_token %}
+                <button type="submit" class="h-8 w-full px-2 bg-red-600 text-white rounded shadow-sm hover:bg-red-700 text-[11px]">Excluir</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="p-2 border border-slate-200 text-center text-slate-500 py-6">Nenhum registro.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="md:hidden space-y-2 mb-8">
+  {% for o in meus_page.object_list %}
+    <div class="rounded-lg border bg-white shadow-sm p-3">
+      <div class="flex items-start justify-between gap-2">
+        <div><div class="text-xs text-slate-500">Ofício</div><div class="font-semibold text-slate-800">#{{ o.id }}</div></div>
+        <div class="text-right"><div class="text-xs text-slate-500">Emissão</div><div class="text-sm">{{ o.created_at|date:'d/m/Y H:i' }}</div></div>
+      </div>
+      <div class="mt-2 grid grid-cols-1 gap-1 text-sm">
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Tipo</div><div class="text-slate-800">{{ o.get_tipo_display }}</div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Status</div><div><span class="badge {% if o.status in 'DEFERIDO' %}badge-success{% elif o.status in 'INDEFERIDO' %}badge-danger{% else %}badge-warning{% endif %}">{{ o.get_status_display }}</span></div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Supervisor</div><div class="text-slate-800 truncate max-w-[55%] text-right">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</div></div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        <a href="{% url 'core:oficio_interno_ver' o.id %}" class="flex-1 text-center px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm">Ver</a>
+        {% if user.is_superuser or user.username|lower == 'moises' %}
+        <form method="post" action="{% url 'core:oficio_interno_excluir' o.id %}" class="flex-1" onsubmit="return confirm('Excluir o ofício #{{ o.id }}?');">
+          {% csrf_token %}
+          <button type="submit" class="w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm">Excluir</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}<div class="text-center text-slate-500 py-6">Nenhum registro.</div>{% endfor %}
+  </div>
+  {% include '_partials/pagination.html' with page_obj=meus_page page_name='page_meus' extra_query=extra_meus %}
+
+  <!-- Seção: Pendente da Aprovação do Supervisor -->
+  <h2 class="text-lg font-semibold text-slate-700 mb-2">Pendente da Aprovação do Supervisor</h2>
+  <div class="overflow-auto bg-white border rounded-lg mb-8 hidden md:block">
+    <table class="min-w-full border-separate border-spacing-0">
+      <thead>
+        <tr>
+          <th class="p-2 border border-slate-200 bg-slate-100">#</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Emissão</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Tipo</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Status</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Supervisor</th>
+          <th class="p-2 border border-slate-200 bg-slate-100 w-28">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+  {% for o in sup_page.object_list %}
+        <tr>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.id }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.created_at|date:'d/m/Y H:i' }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.get_tipo_display }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap"><span class="badge badge-warning">{{ o.get_status_display }}</span></td>
+          <td class="p-2 border border-slate-200">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap w-28 align-middle">
+            <div class="flex flex-col gap-1 w-28">
+              <a href="{% url 'core:oficio_interno_ver' o.id %}" class="h-8 px-2 bg-slate-100 text-slate-700 rounded shadow-sm hover:bg-slate-200 text-[11px] text-center flex items-center justify-center">Ver</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="p-2 border border-slate-200 text-center text-slate-500 py-6">Nenhum registro.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="md:hidden space-y-2 mb-8">
+  {% for o in sup_page.object_list %}
+    <div class="rounded-lg border bg-white shadow-sm p-3">
+      <div class="flex items-start justify-between gap-2">
+        <div><div class="text-xs text-slate-500">Ofício</div><div class="font-semibold text-slate-800">#{{ o.id }}</div></div>
+        <div class="text-right"><div class="text-xs text-slate-500">Emissão</div><div class="text-sm">{{ o.created_at|date:'d/m/Y H:i' }}</div></div>
+      </div>
+      <div class="mt-2 grid grid-cols-1 gap-1 text-sm">
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Tipo</div><div class="text-slate-800">{{ o.get_tipo_display }}</div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Status</div><div><span class="badge badge-warning">{{ o.get_status_display }}</span></div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Supervisor</div><div class="text-slate-800 truncate max-w-[55%] text-right">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</div></div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        <a href="{% url 'core:oficio_interno_ver' o.id %}" class="flex-1 text-center px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm">Ver</a>
+      </div>
+    </div>
+    {% empty %}<div class="text-center text-slate-500 py-6">Nenhum registro.</div>{% endfor %}
+  </div>
+  {% include '_partials/pagination.html' with page_obj=sup_page page_name='page_sup' extra_query=extra_sup %}
+
+  <!-- Seção: Pendente da Aprovação do Comando -->
+  <h2 class="text-lg font-semibold text-slate-700 mb-2">Pendente da Aprovação do Comando</h2>
+  <div class="overflow-auto bg-white border rounded-lg mb-6 hidden md:block">
+    <table class="min-w-full border-separate border-spacing-0">
+      <thead>
+        <tr>
+          <th class="p-2 border border-slate-200 bg-slate-100">#</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Emissão</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Tipo</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Status</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Supervisor</th>
+          <th class="p-2 border border-slate-200 bg-slate-100 w-28">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+  {% for o in cmd_page.object_list %}
+        <tr>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.id }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.created_at|date:'d/m/Y H:i' }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.get_tipo_display }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap"><span class="badge badge-warning">{{ o.get_status_display }}</span></td>
+          <td class="p-2 border border-slate-200">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap w-28 align-middle">
+            <div class="flex flex-col gap-1 w-28">
+              <a href="{% url 'core:oficio_interno_ver' o.id %}" class="h-8 px-2 bg-slate-100 text-slate-700 rounded shadow-sm hover:bg-slate-200 text-[11px] text-center flex items-center justify-center">Ver</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="p-2 border border-slate-200 text-center text-slate-500 py-6">Nenhum registro.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="md:hidden space-y-2">
+  {% for o in cmd_page.object_list %}
+    <div class="rounded-lg border bg-white shadow-sm p-3">
+      <div class="flex items-start justify-between gap-2">
+        <div><div class="text-xs text-slate-500">Ofício</div><div class="font-semibold text-slate-800">#{{ o.id }}</div></div>
+        <div class="text-right"><div class="text-xs text-slate-500">Emissão</div><div class="text-sm">{{ o.created_at|date:'d/m/Y H:i' }}</div></div>
+      </div>
+      <div class="mt-2 grid grid-cols-1 gap-1 text-sm">
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Tipo</div><div class="text-slate-800">{{ o.get_tipo_display }}</div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Status</div><div><span class="badge badge-warning">{{ o.get_status_display }}</span></div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Supervisor</div><div class="text-slate-800 truncate max-w-[55%] text-right">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</div></div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        <a href="{% url 'core:oficio_interno_ver' o.id %}" class="flex-1 text-center px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm">Ver</a>
+      </div>
+    </div>
+    {% empty %}<div class="text-center text-slate-500 py-6">Nenhum registro.</div>{% endfor %}
+  </div>
+  {% include '_partials/pagination.html' with page_obj=cmd_page page_name='page_cmd' extra_query=extra_cmd %}
+
+  <!-- Seção: Ofícios que EU decidi/ despachei -->
+  <h2 class="text-lg font-semibold text-slate-700 mb-2 mt-8">Ofícios que eu deferi/indeferi ou despachei</h2>
+  <div class="overflow-auto bg-white border rounded-lg mb-8 hidden md:block">
+    <table class="min-w-full border-separate border-spacing-0">
+      <thead>
+        <tr>
+          <th class="p-2 border border-slate-200 bg-slate-100">#</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Emissão</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Tipo</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Status</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Minha ação</th>
+          <th class="p-2 border border-slate-200 bg-slate-100">Supervisor</th>
+          <th class="p-2 border border-slate-200 bg-slate-100 w-28">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in minhas_page.object_list %}
+        <tr>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.id }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.created_at|date:'d/m/Y H:i' }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">{{ o.get_tipo_display }}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap"><span class="badge {% if o.status in 'DEFERIDO' %}badge-success{% elif o.status in 'INDEFERIDO' %}badge-danger{% else %}badge-warning{% endif %}">{{ o.get_status_display }}</span></td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap">
+            {% with tipo=o.minha_ultima_acao_tipo %}
+              <span class="badge {% if tipo == 'DEFERIR' %}badge-success{% elif tipo == 'INDEFERIR' %}badge-danger{% else %}badge-info{% endif %}">{{ tipo }}</span>
+              <span class="text-xs text-slate-500 ml-1">{{ o.minha_ultima_acao|date:'d/m/Y H:i' }}</span>
+            {% endwith %}
+          </td>
+          <td class="p-2 border border-slate-200">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</td>
+          <td class="p-2 border border-slate-200 whitespace-nowrap w-28 align-middle">
+            <div class="flex flex-col gap-1 w-28">
+              <a href="{% url 'core:oficio_interno_ver' o.id %}" class="h-8 px-2 bg-slate-100 text-slate-700 rounded shadow-sm hover:bg-slate-200 text-[11px] text-center flex items-center justify-center">Ver</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="p-2 border border-slate-200 text-center text-slate-500 py-6">Nenhum registro.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="md:hidden space-y-2 mb-8">
+    {% for o in minhas_page.object_list %}
+    <div class="rounded-lg border bg-white shadow-sm p-3">
+      <div class="flex items-start justify-between gap-2">
+        <div><div class="text-xs text-slate-500">Ofício</div><div class="font-semibold text-slate-800">#{{ o.id }}</div></div>
+        <div class="text-right"><div class="text-xs text-slate-500">Emissão</div><div class="text-sm">{{ o.created_at|date:'d/m/Y H:i' }}</div></div>
+      </div>
+      <div class="mt-2 grid grid-cols-1 gap-1 text-sm">
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Tipo</div><div class="text-slate-800">{{ o.get_tipo_display }}</div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Status</div><div><span class="badge {% if o.status in 'DEFERIDO' %}badge-success{% elif o.status in 'INDEFERIDO' %}badge-danger{% else %}badge-warning{% endif %}">{{ o.get_status_display }}</span></div></div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Minha ação</div>
+          <div>
+            {% with tipo=o.minha_ultima_acao_tipo %}
+              <span class="badge {% if tipo == 'DEFERIR' %}badge-success{% elif tipo == 'INDEFERIR' %}badge-danger{% else %}badge-info{% endif %}">{{ tipo }}</span>
+              <span class="text-xs text-slate-500 ml-1">{{ o.minha_ultima_acao|date:'d/m/Y H:i' }}</span>
+            {% endwith %}
+          </div>
+        </div>
+        <div class="flex items-center justify-between"><div class="text-xs text-slate-500">Supervisor</div><div class="text-slate-800 truncate max-w-[55%] text-right">{% if o.supervisor %}{{ o.supervisor.get_full_name|default:o.supervisor.username }}{% else %}—{% endif %}</div></div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        <a href="{% url 'core:oficio_interno_ver' o.id %}" class="flex-1 text-center px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm">Ver</a>
+      </div>
+    </div>
+    {% empty %}<div class="text-center text-slate-500 py-6">Nenhum registro.</div>{% endfor %}
+  </div>
+  {% include '_partials/pagination.html' with page_obj=minhas_page page_name='page_minhas' extra_query=extra_minhas %}
+</div>
+{% endblock %}

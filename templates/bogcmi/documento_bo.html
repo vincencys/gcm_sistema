@@ -1,0 +1,348 @@
+{% load bogcmi_extras %}
+{% load static %}
+<div class="bo-print-wrapper">
+    <header class="bo-header no-print-shadow">
+        <div class="logo-area">
+            <img src="{% static 'img/logo_gcm.png' %}" alt="Logo" onerror="this.onerror=null;this.replaceWith(document.createElement('span'));">
+        </div>
+        <div class="titulo-area">
+            <h1>Prefeitura da Estância Turística de Ibiúna</h1>
+            <h2>Secretaria Municipal de Segurança Pública</h2>
+            <h3>Boletim de Ocorrência da Guarda Civil Municipal Integrado</h3>
+        </div>
+        <div class="info-numero">
+            <div class="rotulo">Nº BO</div>
+            <div class="valor">{{ bo.numero }}</div>
+            <div class="data-emissao">Emitido em {{ bo.finalizado_em|date:'d/m/Y H:i' }}</div>
+        </div>
+    </header>
+    <div class="linha-divisoria"></div>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Dados do BO</h4>
+        <p><strong>Número:</strong> {{ bo.numero }}</p>
+        {% with codigo=bo.cod_natureza|default:bo.natureza|extrai_sigla descricao=bo.natureza|descricao_natureza %}
+        <p><strong>Código de Ocorrência:</strong> {% if codigo %}{{ codigo }}{% else %}-{% endif %}{% if descricao and descricao != codigo %} — {{ descricao }}{% endif %}</p>
+        {% endwith %}
+        <p><strong>Solicitante:</strong> {{ bo.solicitante }}</p>
+        <p><strong>Endereço:</strong> {{ bo.rua }} Nº {{ bo.numero_endereco }}, {{ bo.bairro }}, {{ bo.cidade }} - {{ bo.uf }}</p>
+        <p><strong>Viatura:</strong> {{ bo.viatura.prefixo|default:bo.viatura }}</p>
+        <p><strong>GCMs Envolvidos:</strong>
+            <span><strong>Encarregado:</strong> {% if bo.encarregado %}{{ bo.encarregado.get_full_name|default:bo.encarregado }} ({{ bo.encarregado.username }}){% else %}-{% endif %}</span>
+            &nbsp;|&nbsp;<span><strong>Motorista:</strong> {% if bo.motorista %}{{ bo.motorista.get_full_name|default:bo.motorista }} ({{ bo.motorista.username }}){% else %}-{% endif %}</span>
+            &nbsp;|&nbsp;<span><strong>Aux1:</strong> {% if bo.auxiliar1 %}{{ bo.auxiliar1.get_full_name|default:bo.auxiliar1 }} ({{ bo.auxiliar1.username }}){% else %}-{% endif %}</span>
+            &nbsp;|&nbsp;<span><strong>Aux2:</strong> {% if bo.auxiliar2 %}{{ bo.auxiliar2.get_full_name|default:bo.auxiliar2 }} ({{ bo.auxiliar2.username }}){% else %}-{% endif %}</span>
+            &nbsp;|&nbsp;<span><strong>CECOM:</strong> {% if bo.cecom %}{{ bo.cecom.get_full_name|default:bo.cecom }} ({{ bo.cecom.username }}){% else %}-{% endif %}</span>
+        </p>
+        <p><strong>Deslocamento:</strong> KM Início: {{ bo.km_inicio|default_if_none:'-' }} | KM Final: {{ bo.km_final|default_if_none:'-' }} | KM Utilizada: {% if km_utilizada is not None %}{{ km_utilizada }}{% else %}-{% endif %}</p>
+        <p><strong>Tempo:</strong> Início: {{ bo.horario_inicial|default_if_none:'-' }} | Final: {{ bo.horario_final|default_if_none:'-' }} | Duração: {{ bo.duracao|default_if_none:'-' }}</p>
+        <p><strong>Status:</strong> {{ bo.status }} — <strong>Finalizado em:</strong> {{ bo.finalizado_em }}</p>
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Envolvidos</h4>
+        {% for envolvido in envolvidos %}
+            <div class="item">
+                <strong>Nome:</strong> {{ envolvido.nome }}<br>
+                <strong>Nome Social:</strong> {{ envolvido.nome_social|default:'-' }}<br>
+                <strong>Telefone:</strong> {{ envolvido.telefone|default:'-' }}<br>
+                <strong>RG:</strong> {{ envolvido.rg|default:'-' }} &nbsp; <strong>CPF:</strong> {{ envolvido.cpf|default:'-' }}<br>
+                <strong>Condição:</strong> {{ envolvido.condicao }} {% if envolvido.outra_condicao %}({{ envolvido.outra_condicao }}){% endif %}<br>
+                <strong>Nascimento:</strong> {{ envolvido.data_nascimento|date:'d/m/Y'|default:'-' }} &nbsp; <strong>Estado Civil:</strong> {{ envolvido.estado_civil|default:'-' }}<br>
+                <strong>Gênero:</strong> {{ envolvido.genero|default:'-' }} &nbsp; <strong>Cutis:</strong> {{ envolvido.cutis|default:'-' }}<br>
+                <strong>Endereço:</strong> {{ envolvido.endereco }} Nº {{ envolvido.numero }}, {{ envolvido.bairro }}, {{ envolvido.cidade }} - {{ envolvido.uf }}<br>
+                <strong>Referência:</strong> {{ envolvido.ponto_referencia|default:'-' }}<br>
+                <strong>Profissão:</strong> {{ envolvido.profissao|default:'-' }}
+                {% if envolvido.cidade_natural or envolvido.uf_natural or envolvido.pais_natural %}<br><strong>Naturalidade:</strong> {{ envolvido.cidade_natural|default:'-' }} - {{ envolvido.uf_natural|default:'-' }}{% if envolvido.pais_natural %} / {{ envolvido.pais_natural }}{% endif %}{% endif %}
+                {% if envolvido.nome_pai or envolvido.nome_mae %}<br><strong>Filiação:</strong> Pai: {{ envolvido.nome_pai|default:'-' }} | Mãe: {{ envolvido.nome_mae|default:'-' }}{% endif %}
+                {% if envolvido.outro_documento %}<br><strong>Outro Documento:</strong> {{ envolvido.outro_documento }}{% endif %}
+                {% if envolvido.assinatura %}
+                    <br><strong>Assinatura:</strong>
+                    <div class="assin-envolvido">
+                        <img src="{{ envolvido.assinatura.url }}" alt="Assinatura" class="assin-img max-h-24 mt-1">
+                        {% if qr_code_base64 %}
+                        <div class="qr-mini">
+                            <img src="{{ qr_code_base64 }}" alt="QR Verificação">
+                            <div class="qr-mini-legend">Verificação</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if bo.validacao_token %}<div class="token-mini"><span>Token:</span> <code>{{ bo.validacao_token }}</code></div>{% endif %}
+                {% endif %}
+                {% if envolvido.sinais %}<br><strong>Sinais/Características:</strong> {{ envolvido.sinais }}{% endif %}
+                {% if envolvido.dados_adicionais %}<br><strong>Dados Adicionais / Versão:</strong> {{ envolvido.dados_adicionais }}{% endif %}
+                {% if envolvido.providencia %}<br><strong>Providência:</strong> {{ envolvido.providencia }}{% endif %}
+                {% for anexo in anexos_envolvidos %}
+                    {% if anexo.envolvido_id == envolvido.id %}
+                        <br><strong>Anexo:</strong> <a href="{{ anexo.arquivo.url }}" target="_blank">{{ anexo.descricao }}</a>
+                        {% with anexo.arquivo.url|lower as u %}
+                            {% if u|slice:"-4:" == '.jpg' or u|slice:"-4:" == '.png' or u|slice:"-4:" == '.gif' or u|slice:"-5:" == '.jpeg' %}
+                                <br><img src="{{ anexo.arquivo.url }}" alt="{{ anexo.descricao }}" class="max-h-48 mt-1">
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% empty %}
+            <p>Nenhum envolvido cadastrado.</p>
+        {% endfor %}
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Apreensões</h4>
+        {% for ap in apreensoes %}
+            <div class="item">
+                <strong>Descrição:</strong> {{ ap.descricao }}<br>
+                <strong>Unidade:</strong> {{ ap.unidade_medida }} &nbsp; <strong>Quantidade:</strong> {{ ap.quantidade }}<br>
+                <strong>Destino:</strong> {{ ap.destino }} &nbsp; <strong>Recebedor:</strong> {{ ap.recebedor }}
+                {% for anexo in anexos_apreensao %}
+                    {% if anexo.apreensao_id == ap.id %}
+                        <br><strong>Anexo:</strong> <a href="{{ anexo.arquivo.url }}" target="_blank">{{ anexo.descricao }}</a>
+                        {% with anexo.arquivo.url|lower as u %}
+                            {% if u|slice:"-4:" == '.jpg' or u|slice:"-4:" == '.png' or u|slice:"-4:" == '.gif' or u|slice:"-5:" == '.jpeg' %}
+                                <br><img src="{{ anexo.arquivo.url }}" alt="{{ anexo.descricao }}" class="max-h-48 mt-1">
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% empty %}
+            <p>Nenhuma apreensão cadastrada.</p>
+        {% endfor %}
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Veículos Envolvidos</h4>
+        {% for veic in veiculos %}
+            <div class="item">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                    <div><strong>Marca:</strong> {{ veic.marca }}</div>
+                    <div><strong>Modelo:</strong> {{ veic.modelo }}</div>
+                    <div><strong>Placa:</strong> {{ veic.placa|default:'-' }}</div>
+                    <div><strong>Cor:</strong> {{ veic.cor|default:'-' }}</div>
+                    <div><strong>Renavam:</strong> {{ veic.renavam|default:'-' }}</div>
+                    <div><strong>Chassi:</strong> {{ veic.numero_chassi|default:'-' }}</div>
+                    <div><strong>Motor Nº:</strong> {{ veic.numero_motor|default:'-' }}</div>
+                    <div><strong>Cidade Placa:</strong> {{ veic.placa_cidade|default:'-' }}</div>
+                    <div><strong>UF Placa:</strong> {{ veic.placa_estado|default:'-' }}</div>
+                    <div><strong>Ano Modelo:</strong> {{ veic.ano_modelo|default:'-' }}</div>
+                    <div><strong>Ano Fabricação:</strong> {{ veic.ano_fabricacao|default:'-' }}</div>
+                    <div><strong>Proprietário:</strong> {{ veic.proprietario|default:'-' }}</div>
+                    <div><strong>CPF:</strong> {{ veic.cpf|default:'-' }}</div>
+                    <div><strong>CNPJ:</strong> {{ veic.cnpj|default:'-' }}</div>
+                    <div><strong>CNH:</strong> {{ veic.cnh|default:'-' }}</div>
+                    <div><strong>Cat. CNH:</strong> {{ veic.categoria_cnh|default:'-' }}</div>
+                    <div><strong>Validade CNH:</strong> {{ veic.validade_cnh|date:'d/m/Y'|default:'-' }}</div>
+                    <div><strong>Semáforo:</strong> {{ veic.semaforo|default:'-' }}</div>
+                    <div><strong>Tipo Pista:</strong> {{ veic.tipo_pista|default:'-' }}</div>
+                    <div><strong>Tipo Acidente:</strong> {{ veic.tipo_acidente|default:'-' }}</div>
+                    <div><strong>Tempo:</strong> {{ veic.tempo|default:'-' }}</div>
+                    <div><strong>Iluminação:</strong> {{ veic.iluminacao|default:'-' }}</div>
+                    <div><strong>Situação Veículo:</strong> {{ veic.situacao_veiculo|default:'-' }}</div>
+                </div>
+                {% if veic.observacao_situacao %}<div class="mt-1"><strong>Obs. Situação:</strong> {{ veic.observacao_situacao }}</div>{% endif %}
+                {% if veic.apreensao_ait or veic.apreensao_crr or veic.apreensao_responsavel_guincho or veic.apreensao_destino %}
+                    <div class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded">
+                        <div class="font-semibold text-amber-800 mb-1">Apreensão de Veículo</div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                            <div><strong>n° das AIT's relacionadas:</strong> {{ veic.apreensao_ait|default:'-' }}</div>
+                            <div><strong>n° do CRR:</strong> {{ veic.apreensao_crr|default:'-' }}</div>
+                            <div><strong>Resp. Guincho:</strong> {{ veic.apreensao_responsavel_guincho|default:'-' }}</div>
+                            <div><strong>Destino:</strong> {{ veic.apreensao_destino|default:'-' }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if veic.danos_identificados %}
+                    <div class="mt-2"><strong>Danos:</strong>
+                        {% for d in veic.danos_identificados|split_csv %}
+                            <span class="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs mr-1 mb-1">{{ d|humaniza_dano }}</span>
+                        {% endfor %}
+                    </div>
+                    {% with d=veic.danos_identificados %}
+                        {% if 'tanque' in d or 'guidao' in d or 'escapamento' in d or 'rabeta' in d %}
+                            <div class="mt-3"><strong>Diagrama (Motocicleta):</strong>
+                                <div class="damage-diagram mt-1">
+                                    <img src="{% static 'img/user_moto.png' %}" onerror="this.onerror=null;this.src='{{ STATIC_URL }}img/moto_cg.svg';" alt="Moto" />
+                                    {% if 'roda-dianteira' in d %}<span style="left:19%;top:68%">Roda D</span>{% endif %}
+                                    {% if 'roda-traseira' in d %}<span style="left:70%;top:68%">Roda T</span>{% endif %}
+                                    {% if 'guidao' in d %}<span style="left:27%;top:21%">Guidão</span>{% endif %}
+                                    {% if 'farol' in d %}<span style="left:30%;top:33%">Farol</span>{% endif %}
+                                    {% if 'tanque' in d %}<span style="left:44%;top:37%">Tanque</span>{% endif %}
+                                    {% if 'assento' in d %}<span style="left:58%;top:32%">Assento</span>{% endif %}
+                                    {% if 'motor' in d %}<span style="left:52%;top:54%">Motor</span>{% endif %}
+                                    {% if 'escapamento' in d %}<span style="left:77%;top:54%">Escap.</span>{% endif %}
+                                    {% if 'rabeta' in d %}<span style="left:83%;top:32%">Rabeta</span>{% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="mt-3"><strong>Diagrama (Automóvel):</strong>
+                                <div class="damage-diagram mt-1">
+                                    <img src="{% static 'img/user_car.png' %}" onerror="this.onerror=null;this.src='{{ STATIC_URL }}img/car_top.svg';" alt="Automóvel" />
+                                    {% if 'parachoque-dianteiro' in d %}<span style="left:95%;top:50%">Parachoque Dianteiro</span>{% endif %}
+                                    {% if 'farol-dianteiro-esquerdo' in d %}<span style="left:95%;top:75%">Farol Esquerdo</span>{% endif %}
+                                    {% if 'farol-dianteiro-direito' in d %}<span style="left:95%;top:25%">Farol Direito</span>{% endif %}
+                                    {% if 'capo' in d %}<span style="left:80%;top:50%">Capô</span>{% endif %}
+                                    {% if 'porta-dianteira-esquerda' in d %}<span style="left:50%;top:80%">Porta D Esq</span>{% endif %}
+                                    {% if 'porta-traseira-esquerda' in d %}<span style="left:31%;top:80%">Porta T Esq</span>{% endif %}
+                                    {% if 'porta-dianteira-direita' in d %}<span style="left:50%;top:20%">Porta D Dir</span>{% endif %}
+                                    {% if 'porta-traseira-direita' in d %}<span style="left:31%;top:20%">Porta T Dir</span>{% endif %}
+                                    {% if 'Teto' in d %}<span style="left:40%;top:50%">Teto</span>{% endif %}
+                                    {% if 'porta-malas' in d %}<span style="left:20%;top:50%">Porta Mala</span>{% endif %}
+                                    {% if 'lanterna-traseira-esquerda' in d %}<span style="left:3%;top:75%">Lanterna E</span>{% endif %}
+                                    {% if 'lanterna-traseira-direita' in d %}<span style="left:3%;top:25%">Lanterna D</span>{% endif %}
+                                    {% if 'parachoque-traseiro' in d %}<span style="left:3%;top:50%">Parachoque Traseiro</span>{% endif %}
+                                    {% if 'roda-dianteira-esquerda' in d %}<span style="left:80%;top:80%">Roda DE</span>{% endif %}
+                                    {% if 'roda-dianteira-direita' in d %}<span style="left:80%;top:20%">Roda DD</span>{% endif %}
+                                    {% if 'roda-traseira-esquerda' in d %}<span style="left:16%;top:80%">Roda TE</span>{% endif %}
+                                    {% if 'roda-traseira-direita' in d %}<span style="left:16%;top:20%">Roda TD</span>{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                {% endif %}
+                {% for anexo in anexos_veiculos %}
+                    {% if anexo.veiculo_id == veic.id %}
+                        <div class="mt-2"><strong>Anexo:</strong> <a href="{{ anexo.arquivo.url }}" target="_blank">{{ anexo.descricao }}</a>
+                            {% with anexo.arquivo.url|lower as u %}
+                                {% if u|slice:"-4:" == '.jpg' or u|slice:"-4:" == '.png' or u|slice:"-4:" == '.gif' or u|slice:"-5:" == '.jpeg' %}
+                                    <br><img src="{{ anexo.arquivo.url }}" alt="{{ anexo.descricao }}" class="max-h-40 mt-1">
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% empty %}
+            <p>Nenhum veículo cadastrado.</p>
+        {% endfor %}
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Equipes de Apoio</h4>
+        {% for eq in equipes %}
+            <div class="item">
+                <strong>Viatura:</strong> {{ eq.viatura }}<br>
+                <strong>Instituição:</strong> {{ eq.instituicao }}<br>
+                <strong>Participantes:</strong> {{ eq.participantes }}<br>
+                <strong>Observações:</strong> {{ eq.observacoes }}
+            </div>
+        {% empty %}
+            <p>Nenhuma equipe cadastrada.</p>
+        {% endfor %}
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Histórico</h4>
+        <p>{{ historico|default:'Nenhum histórico preenchido.' }}</p>
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Anexos Gerais</h4>
+        {% for anexo in anexos_gerais %}
+            <div class="item">
+                <strong>Descrição:</strong> {{ anexo.descricao }}<br>
+                <strong>Arquivo:</strong> <a href="{{ anexo.arquivo.url }}" target="_blank">Ver arquivo</a>
+                {% with anexo.arquivo.url|lower as u %}
+                    {% if u|slice:"-4:" == '.jpg' or u|slice:"-4:" == '.png' or u|slice:"-4:" == '.gif' or u|slice:"-5:" == '.jpeg' %}
+                        <br><img src="{{ anexo.arquivo.url }}" alt="{{ anexo.descricao }}" class="max-h-48 mt-1">
+                    {% endif %}
+                {% endwith %}
+            </div>
+        {% empty %}
+            <p>Nenhum anexo geral cadastrado.</p>
+        {% endfor %}
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Dados de Finalização</h4>
+        <p><strong>BOPC:</strong> {{ bo.numero_bopc }}</p>
+        <p><strong>TCO:</strong> {{ bo.numero_tco }}</p>
+        <p><strong>Autoridade Policial:</strong> {{ bo.autoridade_policial }}</p>
+        <p><strong>Escrivão:</strong> {{ bo.escrivao }}</p>
+        <p><strong>Algemas:</strong> {{ bo.algemas }}</p>
+        <p><strong>Grande Vulto:</strong> {{ bo.grande_vulto }}</p>
+        <p><strong>Local Finalização:</strong> {{ bo.local_finalizacao }}</p>
+        <p><strong>Flagrante:</strong> {{ bo.flagrante }}</p>
+    </section>
+
+    <section class="bloco">
+        <h4 class="bloco-titulo">Responsável / Encarregado</h4>
+        {% if bo.encarregado and bo.encarregado.perfil %}
+            {% with perf=bo.encarregado.perfil %}
+            <p><strong>Nome:</strong> {{ bo.encarregado.get_full_name|default:bo.encarregado.username }} ({{ bo.encarregado.username }})</p>
+            <p><strong>Classe:</strong> {{ perf.classe_legivel|default:'-' }} &nbsp; <strong>Cargo:</strong> {{ perf.cargo|default:'-' }}</p>
+            {% if qr_code_base64 %}
+            <div class="qr-wrapper"><img src="{{ qr_code_base64 }}" alt="QR Code Validação"/><div class="qr-legenda">Verificação Online</div>{% if bo.validacao_token %}<div class="qr-token">Token: <code>{{ bo.validacao_token }}</code></div>{% endif %}</div>
+            {% endif %}
+            <div class="assinatura-wrapper">
+                {% if perf.assinatura_img %}
+                    <div class="assinatura-imagem"><img src="{{ perf.assinatura_img.url }}" alt="Assinatura"/></div>
+                {% elif perf.assinatura_digital %}
+                    <div class="assinatura-imagem"><img src="{{ perf.assinatura_digital }}" alt="Assinatura"/></div>
+                {% else %}
+                    <div class="assinatura-placeholder">(Sem assinatura cadastrada)</div>
+                {% endif %}
+                <div class="assinatura-linha">
+                    {{ bo.encarregado.get_full_name|default:bo.encarregado.username }}<br>
+                    {% if perf.matricula %}<span class="sub">Mat: {{ perf.matricula }}</span><br>{% endif %}
+                    <span class="sub">{{ perf.cargo|default:'-' }}{% if perf.classe_legivel %} - {{ perf.classe_legivel }}{% endif %}</span>
+                </div>
+            </div>
+            {% endwith %}
+        {% else %}
+            <p>Encarregado não definido ou sem perfil configurado.</p>
+            <div class="assinatura-wrapper">
+                <div class="assinatura-linha">_____________________________________<br><span class="sub">Encarregado</span></div>
+            </div>
+        {% endif %}
+    </section>
+
+    <footer class="bo-footer">
+        <div class="footer-left">BO Nº {{ bo.numero }}</div>
+        <div class="footer-center">Sistema GCM - Documento Gerado Automaticamente</div>
+        <div class="footer-right"></div>
+    </footer>
+</div>
+
+<style>
+.bo-print-wrapper { font-family: Arial, sans-serif; color:#111827; padding-bottom:110px; }
+.bo-header { display:flex; align-items:flex-start; gap:1.25rem; padding:1rem 0 0.5rem; }
+.bo-header .logo-area img { width:90px; max-height:90px; object-fit:contain; }
+.bo-header h1 { font-size:1.05rem; margin:0; font-weight:700; text-transform:uppercase; }
+.bo-header h2 { font-size:0.85rem; margin:2px 0 6px; font-weight:600; }
+.bo-header h3 { font-size:0.8rem; margin:0; font-weight:500; letter-spacing:.5px; color:#374151; }
+.bo-header .titulo-area { padding-top:2px; }
+.bo-header .info-numero { margin-left:auto; text-align:right; font-size:0.7rem; font-weight:600; align-self:flex-start; }
+.bo-header .info-numero .rotulo { font-size:0.55rem; letter-spacing:1px; color:#555; }
+.bo-header .info-numero .valor { font-size:1rem; font-weight:700; background:#111827; color:#fff; padding:4px 8px; border-radius:4px; margin:2px 0 4px; display:inline-block; }
+.bo-header .info-numero .data-emissao { font-weight:400; }
+.linha-divisoria { height:2px; background:#111827; margin:4px 0 10px; }
+.bloco { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:10px 14px 12px; margin-bottom:14px; page-break-inside:avoid; font-size:0.72rem; line-height:1.25rem; }
+.bloco-titulo { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#374151; margin:0 0 6px; border-left:4px solid #111827; padding-left:6px; }
+.item { border-bottom:1px dashed #d1d5db; padding:4px 0 6px; margin-bottom:4px; }
+.item:last-child { border-bottom:0; }
+.bo-footer { position:fixed; bottom:0; left:0; right:0; font-size:0.6rem; color:#374151; display:flex; justify-content:space-between; padding:4px 20px 6px; border-top:1px solid #d1d5db; background:#f9fafb; }
+@media print { body,html { background:#fff; } .no-print-shadow, .bloco { box-shadow:none !important; }
+    .bo-footer { position:fixed; }
+    .bo-print-wrapper { padding-bottom:130px; }
+    @page { size:A4; margin:14mm 12mm 18mm 12mm; }
+}
+.damage-diagram { position:relative; max-width:360px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:6px; padding:6px; margin-left:60px; }
+.damage-diagram img { width:100%; height:auto; display:block; }
+.damage-diagram span { position:absolute; transform:translate(-50%, -50%); background:#ffffff; border:1px solid #1f2937; font-size:9px; font-weight:600; padding:2px 4px; border-radius:4px; line-height:1.1; box-shadow:0 1px 2px rgba(0,0,0,.25); }
+damage-diagram span::after { content:""; position:absolute; left:50%; top:100%; width:0; height:0; transform:translateX(-50%); border:4px solid transparent; border-top-color:#1f2937; }
+.assinatura-wrapper { margin-top:10px; text-align:center; margin-bottom:70px; }
+.assinatura-imagem img { max-height:70px; max-width:240px; display:block; margin:0 auto 4px; object-fit:contain; }
+.assinatura-placeholder { font-size:0.55rem; color:#6b7280; margin-bottom:6px; }
+.assinatura-linha { margin:6px auto 0; padding-top:4px; width:240px; max-width:240px; border-top:1px solid #111827; font-size:0.6rem; font-weight:600; line-height:0.85rem; display:inline-block; }
+.assinatura-linha .sub { font-weight:400; font-size:0.55rem; letter-spacing:.3px; }
+.qr-wrapper { float:right; text-align:center; margin:4px 0 8px 12px; }
+.qr-wrapper img { width:90px; height:90px; object-fit:contain; border:1px solid #e5e7eb; padding:4px; background:#fff; border-radius:6px; }
+.qr-legenda { font-size:0.5rem; margin-top:2px; letter-spacing:.5px; text-transform:uppercase; color:#374151; }
+.qr-token { font-size:0.52rem; color:#111827; margin-top:2px; word-break:break-all; max-width:110px; margin-left:auto; margin-right:auto; }
+.assin-envolvido { display:flex; align-items:flex-start; gap:14px; }
+.assin-envolvido .qr-mini { text-align:center; margin-left:16px; }
+.assin-envolvido .qr-mini img { width:92px; height:92px; object-fit:contain; border:1px solid #e5e7eb; padding:3px; background:#fff; border-radius:6px; }
+.assin-envolvido .qr-mini-legend { font-size:0.5rem; color:#374151; margin-top:2px; }
+.token-mini { font-size:0.6rem; color:#374151; margin-top:4px; word-break:break-all; }
+</style>

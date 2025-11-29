@@ -1,0 +1,54 @@
+# Core (Django + REST)
+Django>=5.2,<5.3
+djangorestframework>=3.15,<3.16
+django-filter>=24.2,<25.0
+
+# Realtime (Channels)
+channels>=4.1,<4.2
+daphne>=4.1,<4.2
+
+# Cache/Message broker
+redis>=5.0,<6.0
+
+# Tarefas assíncronas
+celery>=5.4,<5.5
+
+# Arquivos estáticos / imagens / PDFs
+pillow>=11.2,<12
+weasyprint==61.2
+reportlab>=4.2,<4.3
+whitenoise>=6.7,<7
+qrcode[pil]>=7.4,<8
+PyPDF2>=3.0,<4.0
+pypdf>=4.3,<5.0
+pdfkit>=1.0.0,<2.0          # Wrapper para wkhtmltopdf (primeira tentativa de alta fidelidade)
+xhtml2pdf>=0.2.15,<0.3      # Fallback adicional usado em _gerar_pdf_bo_bytes
+pyotp>=2.9,<3
+
+# Forms/UI
+django-crispy-forms>=2.1,<2.2
+crispy-tailwind==0.5.0
+
+# Fuso horário no Windows (recomendado)
+tzdata>=2024.1 ; platform_system == "Windows"
+
+# Push/FCM
+firebase-admin>=6,<7
+
+# ===== Opcionais (descomente se for usar) =====
+
+# Produção (Linux)
+# gunicorn>=21.2,<22 ; platform_system != "Windows"
+
+# Postgres
+# psycopg[binary]>=3.1,<3.2
+
+# Compactação melhor para static (brotli)
+# brotli>=1.1,<2
+
+# Variáveis de ambiente
+# django-environ>=0.11,<0.12
+# python-decouple>=3.8,<4
+
+# Debug em dev
+# django-debug-toolbar>=4.4,<4.5

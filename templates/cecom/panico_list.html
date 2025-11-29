@@ -1,0 +1,455 @@
+{% extends '_layout/base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <h1 class="text-xl font-bold text-slate-800">Disparos de Pânico</h1>
+      </div>
+    </div>
+  </div>
+
+  {% if pode_excluir %}
+  <form id="form-excluir-multiplos" method="post" class="mb-4">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="excluir_multiplos">
+    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm" onclick="return confirm('Tem certeza que deseja excluir os disparos selecionados?');">
+      🗑️ Excluir Selecionados
+    </button>
+    <span id="contador-selecionados" class="ml-3 text-sm text-slate-600">0 selecionados</span>
+  </form>
+  {% endif %}
+
+<form method="get" class="mb-4 bg-gray-50 p-4 rounded border">
+  <h3 class="font-semibold mb-2 text-sm">🔍 Busca Avançada</h3>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold">Status</label>
+      <select name="status" class="border rounded px-2 py-2">
+        <option value="">-- Todos Status --</option>
+        {% for code,label in status_choices %}
+        <option value="{{ code }}" {% if status_f == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold">Busca (Nome / CPF / ID)</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Ex: Maria" class="border rounded px-2 py-2" />
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold">De (Data)</label>
+      <input type="date" name="de" value="{{ de }}" class="border rounded px-2 py-2" />
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold">Até (Data)</label>
+      <input type="date" name="ate" value="{{ ate }}" class="border rounded px-2 py-2" />
+    </div>
+  </div>
+  <div class="flex gap-2 mt-3">
+    <button class="btn btn-primary px-3 py-1 bg-blue-600 text-white rounded">Filtrar</button>
+    <a href="?" class="text-xs text-gray-600 underline self-center">Limpar</a>
+  </div>
+</form>
+
+{# Lista MOBILE: cards verticais (somente telas pequenas) #}
+<div class="md:hidden space-y-3">
+  {% for d in page %}
+    <div class="bg-white border rounded-xl p-3 shadow-sm overflow-hidden">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <div class="text-xs text-slate-500">Disparo <b>#{{ d.id }}</b></div>
+          <div class="mt-1 font-semibold truncate">{{ d.assistida.nome }}</div>
+          <div class="text-xs text-gray-500">CPF {{ d.assistida.cpf }}</div>
+          {% if d.assistida.telefone %}<div class="text-xs text-gray-600">Tel {{ d.assistida.telefone }}</div>{% endif %}
+        </div>
+        <div class="shrink-0">
+          <span class="inline-block px-2 py-1 rounded text-xs font-semibold
+            {% if d.status == 'ABERTA' %}bg-red-600 text-white
+            {% elif d.status == 'EM_ATENDIMENTO' %}bg-yellow-500 text-black
+            {% elif d.status == 'ENCERRADA' %}bg-green-600 text-white
+            {% elif d.status == 'CANCELADA' %}bg-gray-400 text-white
+            {% elif d.status == 'FALSO_POSITIVO' %}bg-purple-500 text-white
+            {% elif d.status == 'TESTE' %}bg-blue-500 text-white
+            {% endif %}
+          ">{{ d.get_status_display }}</span>
+        </div>
+      </div>
+
+      <div class="mt-2 space-y-1 text-sm break-words">
+        <div class="flex justify-between gap-3"><span class="text-slate-500">Aberto em</span><span>{{ d.created_at|date:'d/m/Y H:i' }}</span></div>
+        <div class="flex justify-between gap-3"><span class="text-slate-500">Atendimento</span><span>{% if d.em_atendimento_em %}{{ d.em_atendimento_em|date:'d/m/Y H:i' }}{% else %}-{% endif %}</span></div>
+        <div class="flex justify-between gap-3"><span class="text-slate-500">Encerrado</span><span>{% if d.encerrado_em %}{{ d.encerrado_em|date:'d/m/Y H:i' }}{% else %}-{% endif %}</span></div>
+        {% if d.latitude and d.longitude %}
+        <div class="flex justify-between gap-3">
+          <span class="text-slate-500">Local</span>
+          <a href="{% url 'cecom:panico_detalhe' d.id %}" target="_blank" class="text-blue-700 hover:underline text-xs">
+            {{ d.latitude }}, {{ d.longitude }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="mt-3 flex flex-col gap-2">
+        {% if d.status == 'ABERTA' %}
+          <div class="grid grid-cols-2 gap-1">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ d.id }}">
+              <input type="hidden" name="acao" value="encerrar">
+              <input type="hidden" name="status_final" value="ENCERRADA">
+              <button class="w-full px-3 py-2 text-xs rounded bg-green-600 text-white hover:bg-green-700">✅ Confirmar</button>
+            </form>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ d.id }}">
+              <input type="hidden" name="acao" value="encerrar">
+              <input type="hidden" name="status_final" value="CANCELADA">
+              <button class="w-full px-3 py-2 text-xs rounded bg-red-600 text-white hover:bg-red-700">✖️ Recusar</button>
+            </form>
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ d.id }}">
+            <input type="hidden" name="acao" value="encerrar">
+            <input type="hidden" name="status_final" value="TESTE">
+            <button class="w-full px-3 py-2 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">🧪 Marcar como Teste</button>
+          </form>
+        {% elif d.status in status_ativos %}
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ d.id }}">
+            <input type="hidden" name="acao" value="encerrar">
+            <input type="hidden" name="status_final" value="ENCERRADA">
+            <button class="w-full px-3 py-2 text-xs rounded bg-green-600 text-white">Encerrar</button>
+          </form>
+          <details class="text-xs">
+            <summary class="cursor-pointer text-gray-600 py-1">▼ Outras opções</summary>
+            <div class="mt-2 space-y-1">
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ d.id }}">
+                <input type="hidden" name="acao" value="encerrar">
+                <input type="hidden" name="status_final" value="CANCELADA">
+                <button class="w-full px-2 py-2 text-xs rounded bg-gray-500 text-white">Cancelar</button>
+              </form>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ d.id }}">
+                <input type="hidden" name="acao" value="encerrar">
+                <input type="hidden" name="status_final" value="FALSO_POSITIVO">
+                <button class="w-full px-2 py-2 text-xs rounded bg-purple-600 text-white">Falso Positivo</button>
+              </form>
+            </div>
+          </details>
+        {% endif %}
+        {% if pode_excluir %}
+          <form method="post" onsubmit="return confirm('Confirma exclusão do disparo #{{ d.id }}?');">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ d.id }}">
+            <input type="hidden" name="acao" value="excluir">
+            <button class="w-full px-2 py-2 text-xs rounded bg-red-600 text-white hover:bg-red-700">🗑️ Excluir</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="text-center text-slate-500 py-8">Nenhum disparo encontrado.</div>
+  {% endfor %}
+</div>
+
+{# Desktop: tabela existente #}
+<div class="hidden md:block">
+<table class="min-w-full text-sm border border-slate-300 border-collapse">
+  <thead class="bg-gray-100">
+    <tr>
+      {% if pode_excluir %}<th class="p-2 text-center border border-slate-300"><input type="checkbox" id="selecionar-todos" title="Selecionar todos"></th>{% endif %}
+      <th class="p-2 text-left border border-slate-300">ID</th>
+      <th class="p-2 text-left border border-slate-300">Assistida</th>
+      <th class="p-2 text-left border border-slate-300">Status</th>
+      <th class="p-2 text-left border border-slate-300">Aberto em</th>
+      <th class="p-2 text-left border border-slate-300">Atendimento</th>
+      <th class="p-2 text-left border border-slate-300">Encerrado</th>
+      <th class="p-2 text-left border border-slate-300">Local</th>
+      <th class="p-2 text-left border border-slate-300">Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for d in page %}
+    <tr class="hover:bg-gray-50">
+      {% if pode_excluir %}
+      <td class="p-2 text-center border border-slate-200">
+        <input type="checkbox" name="disparos_selecionados" value="{{ d.id }}" form="form-excluir-multiplos" class="checkbox-disparo">
+      </td>
+      {% endif %}
+      <td class="p-2 border border-slate-200">{{ d.id }}</td>
+  <td class="p-2 border border-slate-200">{{ d.assistida.nome }}<br><span class="text-xs text-gray-500">CPF {{ d.assistida.cpf }}</span>{% if d.assistida.telefone %}<br><span class="text-xs text-gray-600">Tel {{ d.assistida.telefone }}</span>{% endif %}</td>
+      <td class="p-2 border border-slate-200">
+        <span class="inline-block px-2 py-1 rounded text-xs font-semibold
+          {% if d.status == 'ABERTA' %}bg-red-600 text-white
+          {% elif d.status == 'EM_ATENDIMENTO' %}bg-yellow-500 text-black
+          {% elif d.status == 'ENCERRADA' %}bg-green-600 text-white
+          {% elif d.status == 'CANCELADA' %}bg-gray-400 text-white
+          {% elif d.status == 'FALSO_POSITIVO' %}bg-purple-500 text-white
+          {% elif d.status == 'TESTE' %}bg-blue-500 text-white
+          {% endif %}
+        ">{{ d.get_status_display }}</span>
+      </td>
+      <td class="p-2 border border-slate-200">{{ d.created_at|date:'d/m/Y H:i' }}</td>
+      <td class="p-2 border border-slate-200">{% if d.em_atendimento_em %}{{ d.em_atendimento_em|date:'d/m/Y H:i' }}{% else %}-{% endif %}</td>
+      <td class="p-2 border border-slate-200">{% if d.encerrado_em %}{{ d.encerrado_em|date:'d/m/Y H:i' }}{% else %}-{% endif %}</td>
+      <td class="p-2 text-xs border border-slate-200">
+        {% if d.latitude and d.longitude %}
+          <a href="{% url 'cecom:panico_detalhe' d.id %}" target="_blank" class="text-blue-700 hover:underline" title="Abrir mapa em outra tela">
+            {{ d.latitude }}<br>{{ d.longitude }}
+          </a>
+        {% else %}-{% endif %}
+      </td>
+      <td class="p-2 border border-slate-200">
+        {% if d.status == 'ABERTA' %}
+          <div class="flex gap-1">
+            <form method="post" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ d.id }}">
+              <input type="hidden" name="acao" value="encerrar">
+              <input type="hidden" name="status_final" value="ENCERRADA">
+              <button class="px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700" title="Confirmar">✅ Confirmar</button>
+            </form>
+            <form method="post" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ d.id }}">
+              <input type="hidden" name="acao" value="encerrar">
+              <input type="hidden" name="status_final" value="CANCELADA">
+              <button class="px-3 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700" title="Recusar">✖️ Recusar</button>
+            </form>
+            <form method="post" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ d.id }}">
+              <input type="hidden" name="acao" value="encerrar">
+              <input type="hidden" name="status_final" value="TESTE">
+              <button class="px-3 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700" title="Marcar como Teste">🧪 Teste</button>
+            </form>
+          </div>
+        {% elif d.status in status_ativos %}
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ d.id }}">
+            <input type="hidden" name="acao" value="encerrar">
+            <input type="hidden" name="status_final" value="ENCERRADA">
+            <button class="px-2 py-1 text-xs rounded bg-green-600 text-white" title="Encerrar">Encerrar</button>
+          </form>
+          <details class="inline-block">
+            <summary class="cursor-pointer text-xs text-gray-600">▼ Outros</summary>
+            <div class="mt-1 space-y-1">
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ d.id }}">
+                <input type="hidden" name="acao" value="encerrar">
+                <input type="hidden" name="status_final" value="CANCELADA">
+                <button class="px-2 py-1 text-xs rounded bg-gray-500 text-white w-full">Cancelar</button>
+              </form>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ d.id }}">
+                <input type="hidden" name="acao" value="encerrar">
+                <input type="hidden" name="status_final" value="FALSO_POSITIVO">
+                <button class="px-2 py-1 text-xs rounded bg-purple-600 text-white w-full">Falso Positivo</button>
+              </form>
+            </div>
+          </details>
+        {% else %}
+          <span class="text-xs text-gray-500">—</span>
+        {% endif %}
+        {% if pode_excluir %}
+          <form method="post" class="inline" onsubmit="return confirm('Confirma exclusão do disparo #{{ d.id }}?');">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ d.id }}">
+            <input type="hidden" name="acao" value="excluir">
+            <button class="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700" title="Excluir">🗑️</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="{% if pode_excluir %}9{% else %}8{% endif %}" class="p-4 text-center text-gray-500 border border-slate-200">Nenhum disparo encontrado.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="mt-4 text-xs text-gray-500">Atualizado em: <span id="ultima-atualizacao">{{ agora|date:'d/m/Y H:i:s' }}</span></p>
+</div>
+
+<script>
+// Script para selecionar/desselecionar todos
+{% if pode_excluir %}
+document.addEventListener('DOMContentLoaded', function() {
+  const selecionarTodos = document.getElementById('selecionar-todos');
+  const checkboxes = document.querySelectorAll('.checkbox-disparo');
+  const contador = document.getElementById('contador-selecionados');
+  
+  function atualizarContador() {
+    const selecionados = document.querySelectorAll('.checkbox-disparo:checked').length;
+    contador.textContent = selecionados + ' selecionados';
+  }
+  
+  selecionarTodos.addEventListener('change', function() {
+    checkboxes.forEach(cb => cb.checked = this.checked);
+    atualizarContador();
+  });
+  
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', atualizarContador);
+  });
+});
+{% endif %}
+
+(function(){
+  console.log('[Lista Pânico] 🔄 Script de atualização automática iniciado');
+  var canUpdate = true;
+  var knownOpenIds = new Set();
+
+  function snapshotOpenIds(){
+    try{
+      knownOpenIds.clear();
+      document.querySelectorAll('tbody tr').forEach(function(tr){
+        var idCell = tr.querySelector('td:first-child');
+        var statusCell = tr.querySelector('td:nth-child(3) span');
+        if(!idCell || !statusCell) return;
+        var id = (idCell.textContent||'').trim();
+        var status = (statusCell.textContent||'').trim().toUpperCase();
+        if(status === 'ABERTA'){ knownOpenIds.add(id); }
+      });
+      console.log('[Lista Pânico] 🧮 Snapshot ABERTAS:', Array.from(knownOpenIds));
+    }catch(e){ console.warn('[Lista Pânico] snapshotOpenIds err', e); }
+  }
+
+  // Inicializa o snapshot na carga
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', snapshotOpenIds);
+  } else {
+    snapshotOpenIds();
+  }
+  
+  function updateTimestamp(){
+    var now = new Date();
+    var formatted = now.toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    var el = document.getElementById('ultima-atualizacao');
+    if(el) el.textContent = formatted;
+  }
+  
+  function reloadTable(){
+    if(!canUpdate){
+      console.log('[Lista Pânico] ⏸️ Atualização pausada (formulário expandido)');
+      return;
+    }
+    
+    console.log('[Lista Pânico] 🔄 Atualizando tabela...');
+    var url = window.location.href;
+    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+    .then(res=>res.text())
+    .then(html=>{
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(html, 'text/html');
+      var newTbody = doc.querySelector('tbody');
+      var currentTbody = document.querySelector('tbody');
+      if(newTbody && currentTbody){
+        // Antes de trocar, capture os IDs ABERTA atuais
+        var oldOpen = new Set(knownOpenIds);
+        currentTbody.innerHTML = newTbody.innerHTML;
+        updateTimestamp();
+        console.log('[Lista Pânico] ✅ Tabela atualizada');
+
+        // Após atualizar a tabela, detecta ABERTAS novas (fallback caso WS falhe)
+        knownOpenIds.clear();
+        var novoDisparoData = null;
+        document.querySelectorAll('tbody tr').forEach(function(tr){
+          try{
+            var idCell = tr.querySelector('td:first-child');
+            var nameCell = tr.querySelector('td:nth-child(2)');
+            var statusCell = tr.querySelector('td:nth-child(3) span');
+            if(!idCell || !statusCell) return;
+            var id = (idCell.textContent||'').trim();
+            var status = (statusCell.textContent||'').trim().toUpperCase();
+            if(status === 'ABERTA'){
+              knownOpenIds.add(id);
+              if(!oldOpen.has(id) && !novoDisparoData){
+                // Extrai dados básicos da linha para o modal
+                var nome = (nameCell ? nameCell.childNodes[0].textContent : '').trim();
+                var telMatch = (nameCell ? nameCell.textContent : '').match(/Tel\s+([0-9\.\-\(\)\s]+)/i);
+                var telefone = telMatch ? telMatch[1].trim() : '';
+                novoDisparoData = {
+                  tipo: 'PANICO_DISPARADO',
+                  disparo_id: id,
+                  assistida: { nome: nome || 'Assistida', cpf: '', telefone: telefone || '' },
+                  coords: { lat: 0, lng: 0, accuracy: null },
+                  aberto_em: new Date().toISOString(),
+                  link_cecom: window.location.origin + '/cecom/panico/' + id + '/'
+                };
+              }
+            }
+          }catch(e){ /* ignore parsing errors */ }
+        });
+
+        if(novoDisparoData){
+          console.log('[Lista Pânico] 🚨 Fallback: novo disparo detectado via tabela. Disparando alerta...', novoDisparoData);
+          window.dispatchEvent(new CustomEvent('panico:novo', { detail: novoDisparoData }));
+        }
+      }
+    })
+    .catch(err=>{
+      console.error('[Lista Pânico] ❌ Erro ao atualizar:', err);
+    });
+  }
+  
+  // Pausa atualização quando formulário "Outros" está expandido
+  document.addEventListener('toggle', function(e){
+    if(e.target.tagName === 'DETAILS'){
+      canUpdate = !e.target.open;
+      console.log('[Lista Pânico]', canUpdate ? '▶️ Atualização retomada' : '⏸️ Atualização pausada');
+    }
+  }, true);
+  
+  // Atualização automática a cada 3 segundos (mais rápido para melhor experiência)
+  setInterval(reloadTable, 3000);
+  console.log('[Lista Pânico] ⏰ Atualização automática configurada (3s)');
+  
+  // WebSocket para atualização instantânea
+  try{
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var wsUrl = proto + location.host + '/ws/panico/alertas/';
+    console.log('[Lista Pânico] 🔌 Conectando WebSocket:', wsUrl);
+    var ws = new WebSocket(wsUrl);
+    
+    ws.onopen = function(){
+      console.log('[Lista Pânico] ✅ WebSocket conectado');
+    };
+    
+    ws.onmessage = function(evt){
+      try{
+        var data = JSON.parse(evt.data || '{}');
+        console.log('[Lista Pânico] 📨 WebSocket recebeu:', data.tipo);
+        if(['PANICO_DISPARADO', 'PANICO_STATUS_MUDOU'].indexOf(data.tipo) >= 0){
+          console.log('[Lista Pânico] 🔄 Atualizando por evento WebSocket');
+          setTimeout(reloadTable, 500);
+        }
+      }catch(e){
+        console.warn('[Lista Pânico] ⚠️ Erro ao processar WebSocket:', e);
+      }
+    };
+    
+    ws.onerror = function(err){
+      console.error('[Lista Pânico] ❌ Erro WebSocket:', err);
+    };
+    
+    ws.onclose = function(){
+      console.log('[Lista Pânico] 🔌 WebSocket desconectado');
+    };
+  }catch(err){
+    console.error('[Lista Pânico] ❌ Erro ao criar WebSocket:', err);
+  }
+})();
+</script>
+{% endblock %}

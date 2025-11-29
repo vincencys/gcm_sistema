@@ -1,0 +1,26 @@
+{# Componente de paginação padrão (parametrizável por page_name) #}
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="py-3">
+  <div class="flex items-center gap-1 justify-center flex-wrap text-sm">
+    {% with p=page_name|default:'page' %}
+      {% if page_obj.has_previous %}
+        <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?{{ p }}=1{{ extra_query|default:'' }}" title="Primeira">&laquo;</a>
+        <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?{{ p }}={{ page_obj.previous_page_number }}{{ extra_query|default:'' }}" title="Anterior">&lsaquo;</a>
+      {% else %}
+        <span class="px-2 py-1 border rounded opacity-40 select-none">&laquo;</span>
+        <span class="px-2 py-1 border rounded opacity-40 select-none">&lsaquo;</span>
+      {% endif %}
+
+      <span class="px-3 py-1 border rounded bg-slate-50 select-none font-medium">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+      {% if page_obj.has_next %}
+        <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?{{ p }}={{ page_obj.next_page_number }}{{ extra_query|default:'' }}" title="Próxima">&rsaquo;</a>
+        <a class="px-2 py-1 border rounded hover:bg-slate-50" href="?{{ p }}={{ page_obj.paginator.num_pages }}{{ extra_query|default:'' }}" title="Última">&raquo;</a>
+      {% else %}
+        <span class="px-2 py-1 border rounded opacity-40 select-none">&rsaquo;</span>
+        <span class="px-2 py-1 border rounded opacity-40 select-none">&raquo;</span>
+      {% endif %}
+    {% endwith %}
+  </div>
+</div>
+{% endif %}

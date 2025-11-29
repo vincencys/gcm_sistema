@@ -1,0 +1,62 @@
+
+{% extends "_layout/base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Talão #{{ talao.id }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-3">
+  <h1 class="text-2xl font-semibold">Talão — {{ talao.viatura.prefixo }} • Equipe {{ talao.equipe }}</h1>
+  <div class="space-x-2">
+    <a href="{% url 'taloes:relatorio' talao.id %}" class="btn">Imprimir/Exportar</a>
+    <a href="{% url 'taloes:minhas' %}" class="btn">Voltar</a>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-3 gap-4">
+  <section class="md:col-span-2 bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Atividades</h2>
+    <form method="post" class="grid md:grid-cols-4 gap-3 mb-3">
+      {% csrf_token %}
+      {{ aform|crispy }}
+      <div class="col-span-4"><button name="add_atividade" value="1" class="btn btn-primary">Adicionar nova atividade</button></div>
+    </form>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="px-3 py-2 text-left">Data/Hora</th>
+            <th class="px-3 py-2">Código</th>
+            <th class="px-3 py-2">KM</th>
+            <th class="px-3 py-2">Bairro</th>
+            <th class="px-3 py-2">Local</th>
+            <th class="px-3 py-2">Obs.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in atividades %}
+          <tr class="border-t">
+            <td class="px-3 py-2">{{ a.momento|date:"d/m/Y H:i" }}</td>
+            <td class="px-3 py-2">{{ a.codigo.codigo }} — {{ a.codigo.descricao }}</td>
+            <td class="px-3 py-2 text-right">{{ a.km }}</td>
+            <td class="px-3 py-2">{{ a.bairro }}</td>
+            <td class="px-3 py-2">{{ a.local }}</td>
+            <td class="px-3 py-2">{{ a.observacao }}</td>
+          </tr>
+          {% empty %}
+          <tr><td class="px-3 py-3" colspan="6">Sem atividades ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <aside class="bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Relatório do Encarregado</h2>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      {{ rform|crispy }}
+      <button class="btn btn-primary" name="salvar_relatorio" value="1">Salvar relatório</button>
+    </form>
+  </aside>
+</div>
+{% endblock %}
+

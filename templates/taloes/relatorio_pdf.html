@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Relatório de Ronda — Talão {{ talao.pk }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; }
+    h1 { font-size: 16px; margin: 0 0 6px 0; }
+    h2 { font-size: 14px; margin: 12px 0 6px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 6px; }
+    th { background: #f3f3f3; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+  <table style="width:100%; border:0; margin-bottom:12px;">
+    <tr>
+      <td style="width:90px; text-align:center;">
+        <img src="{{ logo_url|default:'/static/img/logo_gcm.png' }}" alt="Logo" style="max-width:80px; height:auto;">
+      </td>
+      <td style="text-align:center; line-height:1.3;">
+        <div style="font-size:14px; font-weight:bold;">PREFEITURA DA ESTÂNCIA TURÍSTICA DE IBIÚNA</div>
+        <div style="font-size:12px;">Secretaria Municipal de Segurança Pública</div>
+        <div style="font-size:12px; font-weight:bold; margin-top:4px;">Relatório de Ronda da Guarda Civil Municipal Integrado</div>
+      </td>
+      <td style="width:90px; text-align:right; font-size:10px; vertical-align:top;">
+        <div>Talão #{{ talao.pk }}</div>
+        {% with bo=talao.bos.last %}
+          {% if bo and bo.numero %}<div>BOGCM Nº: {{ bo.numero }}</div>{% endif %}
+        {% endwith %}
+        <div>Gerado em: {{ now|date:"d/m/Y H:i" }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <h1 style="margin-top:0;">Relatório de Ronda</h1>
+  <div class="muted">VTR: {{ talao.viatura.prefixo|default:"(sem viatura)" }} — Equipe {{ talao.equipe|default:talao.equipe_texto }}</div>
+  <div class="muted">Período: {{ talao.inicio|date:"d/m/Y H:i" }}{% if talao.fim %} a {{ talao.fim|date:"d/m/Y H:i" }}{% endif %}</div>
+    {% with bo=talao.bos.last %}
+      <div class="muted">BOGCM Nº: {% if bo and bo.numero %}{{ bo.numero }}{% elif bo %}#{{ bo.pk }}{% else %}—{% endif %}</div>
+    {% endwith %}
+
+  <h2>Atividades</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Horário</th><th>Código</th><th>Local</th><th>KM</th><th>Observações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in talao.atividades.all|dictsortreversed:"horario" %}
+        <tr>
+          <td>{{ a.horario|date:"d/m/Y H:i" }}</td>
+          <td>{{ a.codigo.codigo }} — {{ a.codigo.descricao }}</td>
+          <td>{{ a.local }}</td>
+          <td>{{ a.km|default:"—" }}</td>
+          <td>{{ a.observacoes }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Nenhuma atividade.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if talao.relatorio %}
+    <h2>Relatório do Encarregado</h2>
+    <pre>{{ talao.relatorio }}</pre>
+  {% endif %}
+</body>
+</html>
+

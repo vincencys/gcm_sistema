@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      <h1 class="text-xl font-bold text-slate-800">{{ titulo }}</h1>
+    </div>
+  </div>
+  
+  {% block extra_nav %}{% endblock %}
+  
+  <form method="get" class="mb-4 flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por ID, tipo, nº BOGCM, arquivo..." class="border border-slate-300 rounded px-3 py-2 flex-1" />
+    <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Buscar</button>
+    {% if q %}<a href="?" class="text-sm text-slate-600 underline self-center">Limpar</a>{% endif %}
+  </form>
+  {# Mobile: cards verticais #}
+  <div class="md:hidden space-y-3">
+    {% for d in page_obj %}
+      <div class="bg-white border rounded-xl p-3 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-xs text-slate-500">{{ d.get_tipo_display }}</div>
+            <div class="mt-1 font-semibold truncate">
+              {% if d.tipo == 'BOGCMI' and d.bo_numero %}
+                <span class="px-2 py-0.5 rounded text-[11px] bg-green-50 text-green-700 align-middle">BOGCM {{ d.bo_numero }}</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-700 align-middle">ID {{ d.id }}</span>
+              {% endif %}
+              <span class="ml-1 truncate inline-block align-middle max-w-[60%]">{{ d.nome_arquivo }}</span>
+            </div>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="inline-block px-2 py-0.5 bg-slate-50 text-slate-700 text-[10px] rounded">{{ d.get_status_display }}</span>
+            {% if bulk_sign %}
+              <div class="mt-2"><input type="checkbox" name="ids" value="{{ d.id }}" class="chk-row scale-110" form="form-bulk-sign"/></div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mt-2 space-y-1 text-sm break-words">
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Arquivo</span><span class="text-right truncate max-w-[60%]"><a class="text-blue-600 underline" href="{{ d.arquivo.url }}" target="_blank">{{ d.nome_arquivo }}</a></span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Origem</span><span>{{ d.usuario_origem.get_username }}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Criado</span><span class="whitespace-nowrap">{{ d.created_at|date:'d/m/Y H:i' }}</span></div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          {% block linha_acoes_mobile %}{% endblock %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-slate-500">Nenhum documento.</div>
+    {% endfor %}
+  </div>
+
+  {# Desktop: tabela original #}
+  <div class="hidden md:block overflow-x-auto bg-white shadow rounded border">
+    <table class="min-w-full text-[13px] align-top">
+      <thead class="bg-slate-50 border-b text-slate-700 text-xs uppercase tracking-wide">
+        <tr>
+          {% if bulk_sign %}
+            <th class="p-2 text-left border-r last:border-r-0"><input type="checkbox" id="chk-all" class="scale-110"/></th>
+          {% endif %}
+          <th class="p-2 text-left border-r last:border-r-0">ID</th>
+          <th class="p-2 text-left border-r last:border-r-0">Tipo</th>
+          <th class="p-2 text-left border-r last:border-r-0">Nº BOGCM</th>
+          <th class="p-2 text-left border-r last:border-r-0">Arquivo</th>
+          <th class="p-2 text-left border-r last:border-r-0">Origem</th>
+          <th class="p-2 text-left border-r last:border-r-0">Criado</th>
+          <th class="p-2 text-left border-r last:border-r-0">Status</th>
+          <th class="p-2 text-left border-r last:border-r-0">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in page_obj %}
+        <tr class="border-b hover:bg-slate-50">
+          {% if bulk_sign %}
+              <td class="p-2 border-r last:border-r-0"><input type="checkbox" name="ids" value="{{ d.id }}" class="chk-row scale-110" form="form-bulk-sign"/></td>
+          {% endif %}
+          <td class="p-2 border-r last:border-r-0">{{ d.id }}</td>
+          <td class="p-2 border-r last:border-r-0">{{ d.get_tipo_display }}</td>
+          <td class="p-2 border-r last:border-r-0">{% if d.tipo == 'BOGCMI' %}{{ d.bo_numero|default:'-' }}{% else %}-{% endif %}</td>
+          <td class="p-2 border-r last:border-r-0"><a class="text-blue-600 underline" href="{{ d.arquivo.url }}" target="_blank">{{ d.nome_arquivo }}</a></td>
+          <td class="p-2 border-r last:border-r-0">{{ d.usuario_origem.get_username }}</td>
+          <td class="p-2 border-r last:border-r-0 whitespace-nowrap">{{ d.created_at|date:'d/m/Y H:i' }}</td>
+          <td class="p-2 border-r last:border-r-0">{{ d.get_status_display }}</td>
+          <td class="p-2 border-r last:border-r-0">
+            {% block linha_acoes %}{% endblock %}
+          </td>
+        </tr>
+        {% empty %}
+  <tr><td colspan="{% if bulk_sign %}9{% else %}8{% endif %}" class="p-4 text-center text-slate-500">Nenhum documento.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if bulk_sign %}
+    <form id="form-bulk-sign" method="post" action="{% url 'common:assinar_documentos_lote' %}" class="mt-3 flex items-center justify-between gap-3">
+      {% csrf_token %}
+      <button id="btn-bulk-sign" type="submit" class="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50" disabled>Assinar selecionados</button>
+      <div class="text-sm text-slate-600">Selecionados: <span id="sel-count">0</span></div>
+    </form>
+  {% endif %}
+  <div class="mt-4 flex items-center gap-2">
+    {% if page_obj.has_previous %}<a class="px-2 py-1 border rounded" href="?page={{ page_obj.previous_page_number }}&q={{ q }}">«</a>{% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a class="px-2 py-1 border rounded" href="?page={{ page_obj.next_page_number }}&q={{ q }}">»</a>{% endif %}
+  </div>
+</div>
+{% if bulk_sign %}
+<script>
+  (function(){
+    const all = document.getElementById('chk-all');
+    const rows = Array.from(document.querySelectorAll('.chk-row'));
+    const btn = document.getElementById('btn-bulk-sign');
+    const cnt = document.getElementById('sel-count');
+    function update(){
+      const n = rows.filter(r=>r.checked).length;
+      cnt.textContent = n;
+      btn.disabled = n===0;
+    }
+    if(all){
+      all.addEventListener('change', ()=>{ rows.forEach(r=>{ r.checked = all.checked;}); update(); });
+    }
+    rows.forEach(r=>r.addEventListener('change', update));
+    const form = document.getElementById('form-bulk-sign');
+    form.addEventListener('submit', function(e){
+      const n = rows.filter(r=>r.checked).length;
+      if(n===0){ e.preventDefault(); return; }
+      if(!confirm(`Assinar ${n} documento(s) selecionado(s)?`)){
+        e.preventDefault();
+      }
+    });
+  })();
+ </script>
+{% endif %}
+{% endblock %}

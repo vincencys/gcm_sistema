@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Iniciar Plantão{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Iniciar Plantão</h1>
+    <p class="text-sm text-slate-600 mt-1">Configure a equipe e viatura para iniciar um novo plantão</p>
+  </div>
+
+  {% if form.errors or form.non_field_errors %}
+    <div class="mb-6 px-4 py-3 rounded-lg border border-rose-300 bg-rose-50 text-rose-800">
+      <div class="font-semibold mb-2">Corrija os erros antes de enviar:</div>
+      <ul class="list-disc pl-5 text-sm space-y-1">
+        {% for err in form.non_field_errors %}
+          <li>{{ err }}</li>
+        {% endfor %}
+        {% for field in form %}
+          {% for err in field.errors %}
+            <li><strong>{{ field.label }}:</strong> {{ err }}</li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form id="form-iniciar-plantao" method="post" action="{% url 'taloes:iniciar_plantao' %}" class="space-y-6" autocomplete="off">
+    {% csrf_token %}
+    
+    <!-- Card: Configuração do Plantão -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-visible">
+      <div class="px-4 py-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <h2 class="text-base font-semibold" style="color:#0f172a;display:flex;align-items:center;gap:.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Configuração do Plantão
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="relative z-30">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Viatura</label>
+          {{ form.viatura }}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Equipe</label>
+            {{ form.plantao }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Coordenador / Líder</label>
+            {{ form.coordenador_lider }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Encarregado</label>
+            {{ form.encarregado }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Motorista</label>
+            {{ form.motorista }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Auxiliar 1</label>
+            {{ form.auxiliar1 }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Auxiliar 2</label>
+            {{ form.auxiliar2 }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Ações -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <input id="btn-iniciar-plantao" type="submit" value="Salvar e iniciar" class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer" />
+        <a class="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors" href="{% url 'taloes:lista' %}">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Cancelar
+        </a>
+      </div>
+      <div class="mt-3 md:hidden">
+        <button type="button" id="btn-compat" class="text-xs underline text-slate-600">Se travar, tocar aqui para enviar</button>
+      </div>
+    </div>
+  </form>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const btn = document.getElementById('btn-iniciar-plantao');
+  const form = document.getElementById('form-iniciar-plantao');
+  if (btn && form) {
+    form.addEventListener('submit', function(){
+      try { btn.disabled = true; btn.classList.add('opacity-60'); btn.value = 'Enviando...'; } catch(_) {}
+    });
+    const compat = document.getElementById('btn-compat');
+    if (compat) {
+      compat.addEventListener('click', function(){
+        try { form.submit(); } catch(_) {}
+      });
+    }
+  }
+});
+</script>
+{% endblock %}
+

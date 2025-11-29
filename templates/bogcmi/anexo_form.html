@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Adicionar Anexo{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Adicionar Anexo</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="descricao" class="block text-sm font-medium text-gray-700">Descrição</label>
+            <input type="text" id="descricao" name="descricao" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+        </div>
+        <div class="mb-4">
+            <label for="arquivo" class="block text-sm font-medium text-gray-700">Arquivo</label>
+            <input type="file" id="arquivo" name="arquivo" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border file:border-gray-300 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" required>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700">Salvar</button>
+            <a href="{% url 'bogcmi:anexo_lista' %}" class="ml-2 px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,2 @@
+// Mantido vazio; repositórios e plugins são gerenciados em settings.gradle
+// Evita blocos legacy (buildscript/allprojects) para AGP 8+.

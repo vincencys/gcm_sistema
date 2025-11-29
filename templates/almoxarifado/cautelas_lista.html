@@ -1,0 +1,460 @@
+{% extends "_layout/base.html" %}
+{% load almox_tags %}
+{% block title %}Cautelas - Lista{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-3 md:px-0">
+  <!-- Cabeçalho modernizado -->
+  <div class="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink:0;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 5h14M7 11h14M7 17h14M3 5h.01M3 11h.01M3 17h.01" />
+        </svg>
+        Cautelas - Solicitações & Operações
+      </h1>
+      <p class="text-xs text-slate-600 mt-1 max-w-xl">Acompanhe solicitações, aprovações, entregas e devoluções.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm" href="{% url 'core:almoxarifado:cautelas' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        Itens / Cadastros
+      </a>
+      <a class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm" href="{% url 'core:almoxarifado:painel' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M9 3v18m6-18v18" /></svg>
+        Painel
+      </a>
+      <a class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 text-xs shadow-sm" href="{% url 'core:almoxarifado:cautelas_suporte_solicitar' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" /></svg>
+        Solicitar arma de suporte
+      </a>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 md:gap-6">
+    <div>
+      <h2 class="text-base md:text-lg font-semibold mb-2">Minhas solicitações</h2>
+      
+      {# Mobile: cards verticais #}
+      <div class="md:hidden space-y-3">
+        {% for c in minhas %}
+          <div class="bg-white border rounded-xl p-3 shadow-sm">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex-1">
+                <div class="text-xs text-slate-500">Solicitação #{{ c.id }}</div>
+                <div class="font-semibold">{{ c.get_status_display }}</div>
+              </div>
+            </div>
+            <div class="text-sm space-y-1">
+              <div class="flex justify-between"><span class="text-slate-500">Criada:</span><span class="text-xs">{{ c.created_at|date:"d/m/Y H:i" }}</span></div>
+            </div>
+            <div class="mt-3">
+              <a class="btn btn-sm text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center text-slate-500 py-8 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+
+      {# Desktop: tabela #}
+      <div class="hidden md:block bg-white border rounded-xl shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr class="text-left">
+              <th class="p-2 border">#</th>
+              <th class="p-2 border">Status</th>
+              <th class="p-2 border">Criada</th>
+              <th class="p-2 border">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for c in minhas %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ c.id }}</td>
+              <td class="p-2 border">{{ c.get_status_display }}</td>
+              <td class="p-2 border">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+              <td class="p-2 border"><a class="link" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a></td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="4">Sem registros.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="text-base md:text-lg font-semibold mb-2">Pendentes (aprovação)</h2>
+      
+      {# Mobile: cards verticais #}
+      <div class="md:hidden space-y-3">
+        {% for c in pendentes %}
+          <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-yellow-500">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex-1">
+                <div class="text-xs text-slate-500">#{{ c.id }}</div>
+                <div class="font-semibold text-sm">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</div>
+              </div>
+            </div>
+            <div class="text-sm space-y-1">
+              <div class="flex justify-between"><span class="text-slate-500">Criada:</span><span class="text-xs">{{ c.created_at|date:"d/m/Y H:i" }}</span></div>
+            </div>
+            <div class="mt-3">
+              <a class="btn btn-sm text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center text-slate-500 py-8 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+
+      {# Desktop: tabela #}
+      <div class="hidden md:block bg-white border rounded-xl shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr class="text-left">
+              <th class="p-2 border">#</th>
+              <th class="p-2 border">Usuário</th>
+              <th class="p-2 border">Criada</th>
+              <th class="p-2 border">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for c in pendentes %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ c.id }}</td>
+              <td class="p-2 border">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</td>
+              <td class="p-2 border">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+              <td class="p-2 border"><a class="link" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a></td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="4">Sem registros.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="text-base md:text-lg font-semibold mb-2">Aprovadas (entrega)</h2>
+      
+      {# Mobile: cards verticais #}
+      <div class="md:hidden space-y-3">
+        {% for c in aprovadas %}
+          <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-green-600">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex-1">
+                <div class="text-xs text-slate-500">#{{ c.id }}</div>
+                <div class="font-semibold text-sm">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</div>
+              </div>
+            </div>
+            <div class="text-sm space-y-1">
+              <div class="flex justify-between"><span class="text-slate-500">Aprovada:</span><span class="text-xs">{{ c.aprovada_em|date:"d/m/Y H:i" }}</span></div>
+              {% if c.observacoes %}
+                {% if 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                  <div class="mt-2"><span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 text-xs">Devolução solicitada</span></div>
+                {% endif %}
+              {% endif %}
+            </div>
+            <div class="mt-3 flex flex-col gap-2">
+              <a class="btn btn-sm text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a>
+              {% if request.user.id == c.usuario_id %}
+                {% if c.observacoes %}
+                  {% if not 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                    <a class="btn btn-sm btn-outline text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+                  {% endif %}
+                {% else %}
+                  <a class="btn btn-sm btn-outline text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center text-slate-500 py-8 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+
+      {# Desktop: tabela #}
+      <div class="hidden md:block bg-white border rounded-xl shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr class="text-left">
+              <th class="p-2 border">#</th>
+              <th class="p-2 border">Usuário</th>
+              <th class="p-2 border">Aprovada</th>
+              <th class="p-2 border">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for c in aprovadas %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ c.id }}</td>
+              <td class="p-2 border">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</td>
+              <td class="p-2 border">{{ c.aprovada_em|date:"d/m/Y H:i" }}</td>
+              <td class="p-2 border">
+                <a class="link" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a>
+                {% if request.user.id == c.usuario_id %}
+                  {% if c.observacoes %}
+                    {% if not 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                      · <a class="link text-amber-700" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+                    {% endif %}
+                  {% else %}
+                    · <a class="link text-amber-700" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+                  {% endif %}
+                {% endif %}
+                {% if c.observacoes %}
+                  {% if 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                    · <span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">Devolução solicitada</span>
+                  {% endif %}
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="4">Sem registros.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="text-base md:text-lg font-semibold mb-2">Abertas (devolução)</h2>
+      
+      {# Mobile: cards verticais #}
+      <div class="md:hidden space-y-3">
+        {% for c in abertas %}
+          <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-blue-600">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex-1">
+                <div class="text-xs text-slate-500">#{{ c.id }}</div>
+                <div class="font-semibold text-sm">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <a class="btn btn-sm text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center text-slate-500 py-8 text-sm">Sem registros.</div>
+        {% endfor %}
+      </div>
+
+      {# Desktop: tabela #}
+      <div class="hidden md:block bg-white border rounded-xl shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr class="text-left">
+              <th class="p-2 border">#</th>
+              <th class="p-2 border">Usuário</th>
+              <th class="p-2 border">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for c in abertas %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-2 border">{{ c.id }}</td>
+              <td class="p-2 border">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</td>
+              <td class="p-2 border"><a class="link" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a></td>
+            </tr>
+          {% empty %}
+            <tr><td class="p-3 text-center text-slate-500" colspan="3">Sem registros.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consulta / Filtros -->
+  <div class="mt-8">
+    <form method="get" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-4">
+      <div class="px-4 py-3 flex items-center gap-2" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h8M6 10h12M8 14h10M5 18h14" /></svg>
+        <h2 class="text-sm font-semibold text-slate-800">Consulta</h2>
+      </div>
+      <div class="p-4 grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Buscar</label>
+          <input class="input text-xs" type="text" name="q" value="{{ params.q|default:'' }}" placeholder="#ID ou usuário" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Status</label>
+          <select name="status" class="input text-xs">
+            <option value="">Todos</option>
+            {% for s,v in status_choices %}<option value="{{ s }}" {% if params.status == s %}selected{% endif %}>{{ v }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Tipo</label>
+          <select name="tipo" class="input text-xs">
+            <option value="">Todos</option>
+            {% for t,v in tipo_choices %}<option value="{{ t }}" {% if params.tipo == t %}selected{% endif %}>{{ v }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">De</label>
+          <input class="input text-xs" type="date" name="de" value="{{ params.de|default:'' }}" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Até</label>
+          <input class="input text-xs" type="date" name="ate" value="{{ params.ate|default:'' }}" />
+        </div>
+        <div class="flex items-end">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+            <input type="checkbox" name="mine" value="1" {% if params.mine == '1' %}checked{% endif %} />
+            <span>Apenas minhas</span>
+          </label>
+        </div>
+        <div class="flex items-end gap-2 col-span-1 md:col-span-6">
+          <button class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-medium hover:bg-indigo-700 shadow-sm" type="submit">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            Filtrar
+          </button>
+          <a class="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-md text-xs font-medium hover:bg-slate-50" href="{% url 'core:almoxarifado:cautelas_lista' %}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            Limpar
+          </a>
+        </div>
+      </div>
+    </form>
+
+    {# Mobile: cards verticais #}
+    <div class="md:hidden space-y-3 mb-3">
+      {% for c in page_obj.object_list %}
+        <div class="bg-white border rounded-xl p-3 shadow-sm">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1">
+              <div class="text-xs text-slate-500">#{{ c.id }} - {{ c.get_tipo_display }}</div>
+              <div class="font-semibold text-sm">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</div>
+            </div>
+            <div class="shrink-0">
+              <span class="{{ c.status|status_badge_class }} text-xs">{{ c.get_status_display }}</span>
+            </div>
+          </div>
+          <div class="text-xs space-y-1">
+            <div class="flex justify-between"><span class="text-slate-500">Criada:</span><span>{{ c.created_at|date:"d/m/Y H:i" }}</span></div>
+            {% if c.data_hora_prevista_devolucao %}<div class="flex justify-between"><span class="text-slate-500">Prev. Devolução:</span><span>{{ c.data_hora_prevista_devolucao|date:"d/m/Y H:i" }}</span></div>{% endif %}
+            {% if c.aprovada_em %}<div class="flex justify-between"><span class="text-slate-500">Aprovada:</span><span>{{ c.aprovada_em|date:"d/m/Y H:i" }}</span></div>{% endif %}
+            {% if c.data_hora_devolucao %}<div class="flex justify-between"><span class="text-slate-500">Devolução:</span><span>{{ c.data_hora_devolucao|date:"d/m/Y H:i" }}</span></div>{% endif %}
+          </div>
+          <div class="mt-3 flex flex-col gap-2">
+            <a class="btn btn-sm text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a>
+            {% if c.status == 'APROVADA' and request.user.id == c.usuario_id %}
+              {% if c.observacoes %}
+                {% if not 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                  <a class="btn btn-sm btn-outline text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+                {% endif %}
+              {% else %}
+                <a class="btn btn-sm btn-outline text-xs px-3 py-1" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+              {% endif %}
+            {% endif %}
+            {% if c.observacoes %}
+              {% if 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                <span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-xs">Devolução solicitada</span>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-slate-500 py-8 text-sm">Sem resultados.</div>
+      {% endfor %}
+    </div>
+
+    {# Desktop: tabela #}
+    <div class="hidden md:block bg-white border rounded-xl shadow-sm overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50">
+          <tr class="text-left">
+            <th class="p-2 border">
+              <a href="?sort=id&dir={% if params.sort == 'id' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">#
+                {% if params.sort == 'id' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">
+              <a href="?sort=usuario&dir={% if params.sort == 'usuario' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">Usuário
+                {% if params.sort == 'usuario' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">
+              <a href="?sort=tipo&dir={% if params.sort == 'tipo' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">Tipo
+                {% if params.sort == 'tipo' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">
+              <a href="?sort=status&dir={% if params.sort == 'status' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">&nbsp;Status
+                {% if params.sort == 'status' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">
+              <a href="?sort=criada&dir={% if params.sort == 'criada' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">Criada
+                {% if params.sort == 'criada' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">
+              <a href="?sort=prev&dir={% if params.sort == 'prev' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">Prev. Devolução
+                {% if params.sort == 'prev' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">
+              <a href="?sort=aprovada&dir={% if params.sort == 'aprovada' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">Aprovada
+                {% if params.sort == 'aprovada' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">
+              <a href="?sort=devolucao&dir={% if params.sort == 'devolucao' and params.dir != 'asc' %}asc{% else %}desc{% endif %}&{{ qstr_preserved }}">Devolução
+                {% if params.sort == 'devolucao' %}{% if params.dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+              </a>
+            </th>
+            <th class="p-2 border">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+        {% for c in page_obj.object_list %}
+          <tr class="hover:bg-slate-50">
+            <td class="p-2 border">{{ c.id }}</td>
+            <td class="p-2 border">{% with u=c.usuario %}{% with mat=u.perfil.matricula|default:u.username nome=u.get_full_name|default:u.get_username %}{{ mat }} - {{ nome }}{% endwith %}{% endwith %}</td>
+            <td class="p-2 border">{{ c.get_tipo_display }}</td>
+            <td class="p-2 border"><span class="{{ c.status|status_badge_class }}">{{ c.get_status_display }}</span></td>
+            <td class="p-2 border">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+            <td class="p-2 border">{{ c.data_hora_prevista_devolucao|date:"d/m/Y H:i"|default:"-" }}</td>
+            <td class="p-2 border">{{ c.aprovada_em|date:"d/m/Y H:i"|default:"-" }}</td>
+            <td class="p-2 border">{{ c.data_hora_devolucao|date:"d/m/Y H:i"|default:"-" }}</td>
+            <td class="p-2 border">
+              <a class="link" href="{% url 'core:almoxarifado:cautelas_detalhe' c.id %}">Abrir</a>
+              {% if c.status == 'APROVADA' and request.user.id == c.usuario_id %}
+                {% if c.observacoes %}
+                  {% if not 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                    · <a class="link text-amber-700" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+                  {% endif %}
+                {% else %}
+                  · <a class="link text-amber-700" href="{% url 'core:almoxarifado:cautelas_solicitar_devolucao' c.id %}">Solicitar devolução</a>
+                {% endif %}
+              {% endif %}
+              {% if c.observacoes %}
+                {% if 'DEVOLUCAO_SOLICITADA=1' in c.observacoes %}
+                  · <span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">Devolução solicitada</span>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-3 text-center text-slate-500" colspan="9">Sem resultados.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <div class="p-3 flex flex-col md:flex-row items-center justify-between text-xs md:text-sm gap-3">
+        <div>Total: {{ total_count }}</div>
+        <div class="flex gap-2">
+          {% if page_obj.has_previous %}
+            <a class="btn text-xs px-3 py-1" href="?page={{ page_obj.previous_page_number }}&{{ qstr_preserved }}">« Anterior</a>
+          {% endif %}
+          <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a class="btn text-xs px-3 py-1" href="?page={{ page_obj.next_page_number }}&{{ qstr_preserved }}">Próxima »</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
