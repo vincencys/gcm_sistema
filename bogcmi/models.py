@@ -274,6 +274,26 @@ class VeiculoEnvolvido(models.Model):
     apreensao_responsavel_guincho = models.CharField(max_length=120, blank=True)
     apreensao_destino = models.CharField(max_length=120, blank=True)
     
+    def save(self, *args, **kwargs):
+        # Sanitizar danos_identificados para garantir formato consistente e evitar crashes no template/PDF
+        if self.danos_identificados:
+            try:
+                # Normalizar: remover espaços extras, vírgulas duplicadas, garantir ASCII seguro
+                partes = [p.strip() for p in self.danos_identificados.split(',') if p.strip()]
+                # Filtrar caracteres problemáticos (manter alfanumérico, -, espaço)
+                import re
+                partes_safe = []
+                for p in partes:
+                    # Converter para ASCII seguro (remove acentos/especiais)
+                    p_clean = re.sub(r'[^a-zA-Z0-9\-\s]', '', p)
+                    if p_clean:
+                        partes_safe.append(p_clean.lower().strip())
+                self.danos_identificados = ','.join(partes_safe) if partes_safe else ''
+            except Exception:
+                # Em caso de falha na sanitização, limpa completamente
+                self.danos_identificados = ''
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"{self.marca} {self.modelo} - {self.placa or 'Sem placa'}"
 

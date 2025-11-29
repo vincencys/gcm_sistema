@@ -284,7 +284,8 @@ def _gerar_pdf_bo_bytes(bo, request):
                     '--dpi','96',
                     html_f, pdf_f
                 ]
-                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+                # Timeout reduzido para 60s em produção; se travar/demorar muito, aborta e tenta fallback
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
                 if proc.returncode == 0 and os.path.exists(pdf_f):
                     with open(pdf_f,'rb') as pf: pdf_bytes = pf.read()
                     if pdf_bytes:
@@ -293,6 +294,8 @@ def _gerar_pdf_bo_bytes(bo, request):
                 stderr_tail = (proc.stderr or '')[-300:]
                 stdout_tail = (proc.stdout or '')[-120:]
                 _log_bo_pdf(f"wkhtmltopdf direto falhou rc={proc.returncode} stderr={stderr_tail} stdout={stdout_tail}")
+        except subprocess.TimeoutExpired:
+            _log_bo_pdf(f"wkhtmltopdf direto TIMEOUT (60s) - PDF muito complexo ou sistema lento")
         except Exception as e_dir:
             _log_bo_pdf(f"wkhtmltopdf direto exception: {e_dir}")
     else:
@@ -1125,9 +1128,11 @@ def bo_despachar_cmt(request, pk):
     try:
         pdf_bytes = _gerar_pdf_bo_bytes(bo, request)
     except Exception as e:
+        import traceback
+        trace = traceback.format_exc()
+        _log_bo_pdf(f"ABORT despacho bo_id={bo.id}: {e}\n{trace}")
         from django.contrib import messages
-        messages.error(request, f'Falha ao gerar PDF do BO para despacho: {e}. Verifique o wkhtmltopdf ou libs do WeasyPrint.')
-        _log_bo_pdf(f"ABORT despacho bo_id={bo.id}: {e}")
+        messages.error(request, f'Falha ao gerar PDF do BO para despacho: {e}. O documento foi salvo mas não pôde ser despachado. Verifique o log bo_pdf_debug.log.')
         return redirect('bogcmi:editar', pk=bo.pk)
     from django.core.files.base import ContentFile
     doc_exist = DocumentoAssinavel.objects.filter(tipo='BOGCMI', usuario_origem=bo.encarregado, arquivo__icontains=f"{bo.pk}_").first()
@@ -1151,7 +1156,25 @@ def bo_despachar_cmt(request, pk):
     hash8 = hashlib.sha256((f"{numero_clean}-{doc.id}-{base_ts.timestamp()}" ).encode()).hexdigest()[:8]
     nome_pdf = f"{base_ts:%Y%m%d_%H%M%S}_BOGCMI_{numero_clean}_{doc.id}_{hash8}.pdf"
     caminho = f"{base_ts:%Y}/{nome_pdf}"
-    doc.arquivo.save(caminho, ContentFile(pdf_bytes), save=True)
+    # Tentar salvar o PDF e registrar logs detalhados (ajuda em prod/AWS)
+    try:
+        _log_bo_pdf(f"Despacho BO#{bo.id} numero={numero_clean} doc_id={doc.id} caminho_relativo={caminho}")
+        doc.arquivo.save(caminho, ContentFile(pdf_bytes), save=True)
+        # Registrar informações do storage e caminho físico quando possível
+        try:
+            storage = doc.arquivo.storage
+            base_loc = getattr(storage, 'location', '')
+            file_path = ''
+            if base_loc:
+                file_path = os.path.join(base_loc, doc.arquivo.name)
+            _log_bo_pdf(f"PDF salvo: name={doc.arquivo.name} storage_location={base_loc} file_path={file_path} size={len(pdf_bytes)}")
+        except Exception as e_info:
+            _log_bo_pdf(f"PDF salvo, mas falha ao obter info de storage: {e_info}")
+    except Exception as e_save:
+        from django.contrib import messages
+        _log_bo_pdf(f"ERRO ao salvar PDF despacho BO#{bo.id}: {e_save}")
+        messages.error(request, f"Falha ao salvar PDF despachado: {e_save}")
+        return redirect('bogcmi:editar', pk=bo.pk)
     from django.contrib import messages
     messages.success(request, 'Documento despachado para assinatura do Comando.')
     # Permanecer na página da lista (ou voltar para a página que originou a ação) em vez de abrir edição
