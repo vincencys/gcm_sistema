@@ -322,50 +322,22 @@ def gerar_relatorio_livro_cecom(plantao: PlantaoCecomPrincipal, livro: LivroPlan
     c = canvas.Canvas(buffer, pagesize=A4)
     w,h = A4
     y = h - 40  # topo mais justo
-    # Cabeçalho institucional (texto deslocado levemente à esquerda)
+    # Cabeçalho institucional simplificado (sem logo / brasão)
     header_lines = [
-        'PREFEITURA DA ESTÂNCIA TURÍSTICA DE IBIÚNA',
-        'Secretaria Municipal de Segurança Pública',
-        'Livro Eletrônico do CECOM da Guarda Civil Municipal'
+        'Secretaria Municipal de Segurança',
+        'Livro Eletrônico'
     ]
     line_spacing = 12
     header_top_y = y
-    logo_path = None
     logo_w = logo_h = 0
-    try:
-        candidates = [Path(settings.BASE_DIR)/'static'/'img'/'logo_gcm.png']
-        static_root = getattr(settings, 'STATIC_ROOT', None)
-        if static_root:
-            candidates.append(Path(static_root)/'img'/'logo_gcm.png')
-        for p in candidates:
-            if p.exists():
-                logo_path = p; break
-        if logo_path:
-            from PIL import Image as _PIL
-            from reportlab.lib.utils import ImageReader
-            with _PIL.open(logo_path) as im:
-                w0,h0 = im.size
-                max_side = 75
-                esc = min(max_side/w0, max_side/h0, 1)
-                logo_w = w0*esc; logo_h = h0*esc
-            logo_reader = ImageReader(str(logo_path))
-            # Logo mais para esquerda e topo
-            logo_x = 60
-            logo_y = header_top_y - logo_h + 5
-            c.drawImage(logo_reader, logo_x, logo_y, width=logo_w, height=logo_h, preserveAspectRatio=True, mask='auto')
-    except Exception:
-        pass
-    # Textos ao lado do logo, centralizados verticalmente com o meio do logo
-    text_x = 60 + (logo_w or 70) + 20  # espaço após logo
+    text_x = 60  # margem esquerda padrão para texto
     c.setFont('Helvetica-Bold',10)
-    # Calcular início Y para centralizar o bloco de 3 linhas no meio do logo
-    logo_center_y = (header_top_y - (logo_h - 5)) + (logo_h / 2) if logo_h else header_top_y - 20
     text_block_height = (len(header_lines)-1) * line_spacing
-    text_start_y = logo_center_y + (text_block_height / 2)
+    text_start_y = header_top_y - 15  # posiciona bloco abaixo do topo
     for i, hl in enumerate(header_lines):
         c.drawString(text_x, text_start_y - (i*line_spacing), hl)
-    # Linha divisória sob o cabeçalho (abaixo do final do texto e do logo)
-    text_bottom = text_start_y - text_block_height
+    # Linha divisória sob o cabeçalho (abaixo do final do texto)
+    text_bottom = (text_start_y - text_block_height) if header_lines else header_top_y - 10
     logo_bottom = header_top_y - logo_h if logo_h else text_bottom
     y = min(text_bottom, logo_bottom) - 12
     c.setLineWidth(0.6); c.line(50,y,w-50,y); y -= 20

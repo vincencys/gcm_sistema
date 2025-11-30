@@ -241,6 +241,10 @@ LOGIN_URL = "users:login"
 LOGIN_REDIRECT_URL = "core:dashboard"
 LOGOUT_REDIRECT_URL = "users:login"
 
+# --- Branding / PDFs ---
+# Permite ocultar brasão e nome institucional nos novos documentos/PDFs
+PDF_HIDE_BRANDING = True
+
 # --- Crispy Forms ---
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"

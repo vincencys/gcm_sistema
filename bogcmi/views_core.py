@@ -149,14 +149,22 @@ def _gerar_pdf_bo_bytes(bo, request):
     try:
         static_root = getattr(settings, 'STATIC_ROOT', '')
         if static_root and os.path.isdir(static_root):
-            def _static_repl(match):
+            def _static_src_repl(match):
                 rel = match.group(1)
                 local_path = os.path.join(static_root, rel.replace('/', os.sep))
                 if os.path.exists(local_path):
-                    return f"src='file:///{local_path.replace(os.sep,'/')}"  # caminho absoluto
+                    # mantém aspas de abertura/fechamento corretamente
+                    return f"src='file:///{local_path.replace(os.sep,'/')}'"
                 return match.group(0)
-            # Substituir src="/static/..." ou src='/static/...'
-            html_body_local = re.sub(r"src=['\"]/static/(.+?)['\"]", lambda m: _static_repl(m), html_body)
+            def _static_href_repl(match):
+                rel = match.group(1)
+                local_path = os.path.join(static_root, rel.replace('/', os.sep))
+                if os.path.exists(local_path):
+                    return f"href='file:///{local_path.replace(os.sep,'/')}'"
+                return match.group(0)
+            # Substituir src="/static/..." e href="/static/..."
+            html_body_local = re.sub(r"src=['\"]/static/(.+?)['\"]", _static_src_repl, html_body)
+            html_body_local = re.sub(r"href=['\"]/static/(.+?)['\"]", _static_href_repl, html_body_local)
             if html_body_local:
                 html_body = html_body_local
     except Exception as _adj_e:
@@ -1796,7 +1804,7 @@ def _montar_documento_bo_html(request, bo) -> str:
         'diagrama_veiculo_base64': diagrama_base64,
     })
 
-    # Remover CSS inline para manter exatamente o mesmo estilo do BO
+    # Não injetar CSS customizado aqui para preservar layout original do template
     core_css = ""
 
     # Substituições: logo/assinatura em base64 para cumprir renderizadores de PDF
@@ -1809,10 +1817,13 @@ def _montar_documento_bo_html(request, bo) -> str:
     if assinatura_b64:
         html_fragment = re.sub(r"(<div class=\"assinatura-imagem\">)\s*<img[^>]+>", f"\\1<img src=\"{assinatura_b64}\" alt=\"Assinatura\">", html_fragment, flags=re.I)
 
+    # Não remover tags já renderizadas; render_to_string já processou o template.
+    
     # Inserir diagrama no HTML se não estiver presente no template
     if diagrama_base64:
         if 'Diagrama (Automóvel)' not in html_fragment:
             bloco = f"<div class=\"section page-break-avoid\"><div class=\"section-title\">Diagrama (Automóvel)</div><img src=\"{diagrama_base64}\" alt=\"Diagrama do veículo\" style=\"max-width:100%;height:auto\"></div>"
             # Incluir antes do histórico, se existir
             html_fragment = re.sub(r'(</div>\s*<div[^>]*>\s*Histórico)', bloco + r'\1', html_fragment, flags=re.I) or (html_fragment + bloco)
+    
     return core_css + html_fragment

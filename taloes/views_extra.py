@@ -700,7 +700,7 @@ def _render_pdf_reportlab(title: str, linhas: list[str], encarregado_user=None, 
     w, h = A4
     y = h - 50
 
-    # ================= Cabeçalho Institucional (logo + textos + meta + QR) =================
+    # ================= Cabeçalho Institucional (sem logo/brasão) =================
     if meta is None:
         meta = {}
     agora = timezone.now()
@@ -708,49 +708,19 @@ def _render_pdf_reportlab(title: str, linhas: list[str], encarregado_user=None, 
     plantao_id = meta.get('plantao_id')
     verificacao_token = (meta or {}).get('verificacao_token') or ''
     site_base_url = (meta or {}).get('site_base_url') or ''
-    # ===== Novo bloco de cabeçalho com centralização vertical do logo =====
+    # Cabeçalho simplificado: apenas duas linhas
     header_lines = [
-        "PREFEITURA DA ESTÂNCIA TURÍSTICA DE IBIÚNA",
-        "Secretaria Municipal de Segurança Pública",
-        "Relatório de Ronda da Guarda Civil Municipal Integrado",
+        "Secretaria Municipal de Segurança",
+        "Relatório de Ronda",
     ]
     line_spacing = 12
     header_height = (len(header_lines) - 1) * line_spacing
     header_top_y = y
-    header_center_y = header_top_y - header_height / 2
-
-    logo_path = None
-    logo_top = None
-    try:
-        candidates = [Path(settings.BASE_DIR) / 'static' / 'img' / 'logo_gcm.png']
-        static_root = getattr(settings, 'STATIC_ROOT', None)
-        if static_root:
-            candidates.append(Path(static_root) / 'img' / 'logo_gcm.png')
-        for p in candidates:
-            if p.exists():
-                logo_path = p; break
-        if logo_path:
-            from PIL import Image as _PILImage
-            with _PILImage.open(logo_path) as imlogo:
-                w0, h0 = imlogo.size
-                max_side = 70.0
-                esc = min(max_side / w0, max_side / h0, 1.0)
-                w_final = w0 * esc
-                h_final = h0 * esc
-            from reportlab.lib.utils import ImageReader
-            logo = ImageReader(str(logo_path))
-            logo_y = header_center_y - (h_final / 2) + 2
-            logo_x = 90
-            c.drawImage(logo, logo_x, logo_y, width=w_final, height=h_final, preserveAspectRatio=True, mask='auto')
-            logo_top = logo_y + h_final
-    except Exception:
-        pass
 
     c.setFont("Helvetica-Bold", 10)
     for i, hl in enumerate(header_lines):
         c.drawCentredString(w/2, header_top_y - (i*line_spacing), hl)
 
-    # Removido o bloco de metadados e QR superior conforme solicitação
     # Avança Y para baixo do cabeçalho e desce a linha separadora um pouco mais
     y = header_top_y - (len(header_lines)*line_spacing) - 16
     c.setLineWidth(0.6)
