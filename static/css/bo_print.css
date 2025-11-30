@@ -1,0 +1,66 @@
+/* CSS de impressão dedicado para BO (fidelidade com wkhtmltopdf) */
+html, body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  color: #111;
+  background: #fff;
+}
+
+.bo-print-wrapper {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.bo-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.bo-header img { width: 90px; height: auto; }
+.bo-header h1, .bo-header h2, .bo-header h3 { margin: 0; font-weight: 600; }
+
+.section {
+  margin: 14px 0 18px 0;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.field-row { display: flex; gap: 12px; margin: 6px 0; }
+.field { flex: 1; }
+.field label { display:block; font-weight: 600; margin-bottom: 4px; }
+.field .value { white-space: pre-wrap; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 14px 0;
+}
+.table th, .table td {
+  border: 1px solid #ddd;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+.table th { background: #f3f4f6; font-weight: 600; }
+
+.small { font-size: 14px; }
+.muted { color: #666; }
+
+.signature-box {
+  border-top: 2px solid #222;
+  height: 120px;
+  margin-top: 18px;
+}
+
+/* Evitar quebra abrupta perto de títulos */
+.page-break-avoid { page-break-inside: avoid; }
+
+@media print {
+  html, body { font-size: 16px; }
+}

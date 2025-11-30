@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "")  # usado em QR/links absolutos
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0").split(",")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0,gcmsysint.online").split(",")
 
 # Para POST/CSRF no dev e em possíveis hosts locais
 CSRF_TRUSTED_ORIGINS = [
@@ -25,6 +25,10 @@ CSRF_TRUSTED_ORIGINS = [
 
 
 ]
+
+# Produção: confiar domínio público
+if "gcmsysint.online" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://gcmsysint.online")
 
 # Configurações CORS para app mobile
 if DEBUG:
@@ -284,6 +288,8 @@ if not WKHTMLTOPDF_CMD:
     for _cand in [
         r"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe",
         r"C:\\Program Files (x86)\\wkhtmltopdf\\bin\\wkhtmltopdf.exe",
+        "/usr/local/bin/wkhtmltopdf",
+        "/usr/bin/wkhtmltopdf",
     ]:
         if os.path.exists(_cand):
             WKHTMLTOPDF_CMD = _cand

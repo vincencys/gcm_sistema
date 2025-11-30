@@ -30,11 +30,14 @@ from django.utils.safestring import mark_safe
 def dashboard(request):
     hoje = timezone.localdate()
     bos_abertos = BO.objects.filter(emissao__date=hoje, status__in=['EDICAO','FINALIZADO']).order_by('-emissao')[:50]
-    taloes_abertos = (
-        Talao.objects.select_related('viatura','codigo_ocorrencia','codigo_ocorrencia__grupo')
-        .filter(status='ABERTO', iniciado_em__date=hoje)
-        .order_by('iniciado_em')
-    )
+    try:
+        taloes_abertos = (
+            Talao.objects.select_related('viatura','codigo_ocorrencia','codigo_ocorrencia__grupo')
+            .filter(status='ABERTO', iniciado_em__date=hoje)
+            .order_by('iniciado_em')
+        )
+    except Exception:
+        taloes_abertos = []
     # Integrantes por viatura ativa (Plantão CECOM) para fallback
     ativos = PlantaoCECOM.objects.select_related('viatura').prefetch_related('participantes__usuario').filter(ativo=True, viatura__isnull=False)
     func_map = { 'ENC': 'Enc', 'MOT': 'Mot', 'AUX1': 'Aux1', 'AUX2': 'Aux2' }

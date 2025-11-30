@@ -23,7 +23,6 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
-
 from .forms import (
     EnvolvidoForm, ApreensaoForm, AnexoApreensaoForm,
     VeiculoEnvolvidoForm, AnexoVeiculoForm, EquipeApoioForm,
@@ -37,6 +36,12 @@ from .models import (
 from .services import proximo_numero_bo
 from common.models import DocumentoAssinavel
 from django.conf import settings  # garantir disponível para logger
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas as _rl_canvas
+from reportlab.graphics.shapes import Drawing, Rect, Line, String
+from reportlab.graphics import renderPM
 
 # ================= Helpers Internos =================
 
@@ -54,7 +59,7 @@ def _usuario_pode_ver_bo_sem_marca_dagua(bo, user):
     if not user.is_authenticated:
         return False
     
-    # Superuser sempre tem acesso completo
+        rc = subprocess.run([wk_path, *options, tmp_html_path, tmp_pdf_path], capture_output=True, text=True)
     if user.is_superuser:
         return True
     
@@ -82,89 +87,12 @@ def _usuario_e_integrante_bo(bo, user):
 
 
 def _aplicar_marca_dagua_pdf(pdf_bytes):
-    """Aplica marca d'água diagonal 'APENAS CONSULTIVO' em todas as páginas do PDF.
-    
-    Args:
-        pdf_bytes: bytes do PDF original
-    
-    Returns:
-        bytes do PDF com marca d'água aplicada
+    """Temporariamente retorna o PDF original sem marca d'água.
+
+    Observação: a função original foi corrompida; evitamos quebrar o fluxo
+    até restaurar a implementação correta de marca d'água.
     """
-    try:
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.colors import Color
-        
-        # Tentar importar PyPDF2 ou pypdf (versão mais nova)
-        try:
-            from PyPDF2 import PdfReader, PdfWriter
-            _log_bo_pdf("Usando PyPDF2 para marca d'água")
-        except ImportError:
-            try:
-                from pypdf import PdfReader, PdfWriter
-                _log_bo_pdf("Usando pypdf para marca d'água")
-            except ImportError:
-                _log_bo_pdf("ERRO: PyPDF2/pypdf não instalado - marca d'água não aplicada")
-                return pdf_bytes
-        
-        _log_bo_pdf(f"Iniciando aplicação de marca d'água em PDF de {len(pdf_bytes)} bytes")
-        
-        # Ler PDF original
-        pdf_reader = PdfReader(BytesIO(pdf_bytes))
-        pdf_writer = PdfWriter()
-        num_pages = len(pdf_reader.pages)
-        _log_bo_pdf(f"PDF original tem {num_pages} páginas")
-        
-        # Criar marca d'água
-        watermark_buffer = BytesIO()
-        watermark_canvas = canvas.Canvas(watermark_buffer, pagesize=A4)
-        width, height = A4
-        
-        # Configurar texto da marca d'água (mais visível)
-        watermark_canvas.setFont("Helvetica-Bold", 70)
-        # Usar cor cinza com transparência via setFillColor ao invés de alpha no RGB
-        watermark_canvas.setFillColor(Color(0.85, 0.85, 0.85, alpha=0.5))
-        
-        # Salvar estado e aplicar rotação
-        watermark_canvas.saveState()
-        watermark_canvas.translate(width/2, height/2)
-        watermark_canvas.rotate(45)  # Diagonal 45 graus
-        
-        # Desenhar texto centralizado
-        text = "APENAS CONSULTIVO"
-        text_width = watermark_canvas.stringWidth(text, "Helvetica-Bold", 70)
-        watermark_canvas.drawString(-text_width/2, 0, text)
-        
-        watermark_canvas.restoreState()
-        watermark_canvas.save()
-        
-        # Ler marca d'água como PDF
-        watermark_buffer.seek(0)
-        watermark_pdf = PdfReader(watermark_buffer)
-        watermark_page = watermark_pdf.pages[0]
-        _log_bo_pdf("Marca d'água criada com sucesso")
-        
-        # Aplicar marca d'água em todas as páginas
-        for i, page in enumerate(pdf_reader.pages):
-            page.merge_page(watermark_page)
-            pdf_writer.add_page(page)
-            _log_bo_pdf(f"Marca d'água aplicada na página {i+1}/{num_pages}")
-        
-        # Escrever PDF final
-        output_buffer = BytesIO()
-        pdf_writer.write(output_buffer)
-        output_buffer.seek(0)
-        result_bytes = output_buffer.getvalue()
-        
-        _log_bo_pdf(f"PDF final gerado com {len(result_bytes)} bytes - marca d'água aplicada com sucesso")
-        return result_bytes
-        
-    except Exception as e:
-        import traceback
-        erro_completo = traceback.format_exc()
-        _log_bo_pdf(f"ERRO ao aplicar marca d'água: {e}\n{erro_completo}")
-        # Em caso de falha, retorna PDF original sem marca d'água
-        return pdf_bytes
+    return pdf_bytes
 
 
 def _find_wkhtmltopdf_path():
@@ -253,12 +181,17 @@ def _gerar_pdf_bo_bytes(bo, request):
                 'enable-local-file-access': '',
                 'encoding': 'UTF-8',
                 'page-size': 'A4',
-                'margin-top': '14mm', 'margin-bottom': '16mm', 'margin-left': '12mm', 'margin-right': '12mm',
-                'print-media-type': '',
-                # Garantir escala/tamanhos consistentes com o navegador
-                'disable-smart-shrinking': '',
+                'margin-top': '10mm', 'margin-bottom': '12mm', 'margin-left': '10mm', 'margin-right': '10mm',
+                # Evitar alterações de mídia; seguir estilos padrão
+                # 'print-media-type': '',
+                # Deixar smart shrinking habilitado para melhor ajuste do layout existente
+                # 'disable-smart-shrinking': '',
                 'zoom': '1.0',
                 'dpi': '96',
+                'load-error-handling': 'ignore',
+                # Remover viewport/minimum-font-size para não forçar escalas
+                # 'viewport-size': '1280x1024',
+                # 'minimum-font-size': '12',
             }
             config = pdfkit.configuration(wkhtmltopdf=wk_bin_detected)
             pdf_bytes = pdfkit.from_string(html_body, False, options=options, configuration=config)
@@ -277,11 +210,11 @@ def _gerar_pdf_bo_bytes(bo, request):
                     '--enable-local-file-access',
                     '--encoding', 'utf-8',
                     '--page-size','A4',
-                    '--margin-top','14mm','--margin-bottom','16mm','--margin-left','12mm','--margin-right','12mm',
-                    '--print-media-type',
-                    '--disable-smart-shrinking',
+                    '--margin-top','10mm','--margin-bottom','12mm','--margin-left','10mm','--margin-right','10mm',
                     '--zoom','1.0',
                     '--dpi','96',
+                    '--load-error-handling','ignore',
+                    # sem viewport/minimum-font-size para manter o layout original do BO
                     html_f, pdf_f
                 ]
                 # Timeout reduzido para 60s em produção; se travar/demorar muito, aborta e tenta fallback
@@ -326,10 +259,27 @@ def _gerar_pdf_bo_bytes(bo, request):
     try:
         from django.conf import settings as _s
         base_dir = getattr(_s, 'BASE_DIR', os.getcwd())
-        candidates = [os.path.join(base_dir, '.venv', 'Scripts', 'python.exe'), os.path.join(base_dir, 'venv', 'Scripts', 'python.exe')]
+        # Detectar Python do venv em Windows e Linux
+        candidates = [
+            # Windows venvs
+            os.path.join(base_dir, '.venv', 'Scripts', 'python.exe'),
+            os.path.join(base_dir, 'venv', 'Scripts', 'python.exe'),
+            # Linux/macOS venvs
+            os.path.join(base_dir, '.venv', 'bin', 'python'),
+            os.path.join(base_dir, 'venv', 'bin', 'python'),
+        ]
         venv_python = next((p for p in candidates if os.path.exists(p)), None)
         if not venv_python:
-            raise RuntimeError('python venv não encontrado')
+            # Tentar localizar via variável de ambiente VIRTUAL_ENV
+            venv_env = os.environ.get('VIRTUAL_ENV')
+            if venv_env:
+                cand2 = [
+                    os.path.join(venv_env, 'Scripts', 'python.exe'),
+                    os.path.join(venv_env, 'bin', 'python'),
+                ]
+                venv_python = next((p for p in cand2 if os.path.exists(p)), None)
+            if not venv_python:
+                raise RuntimeError(f"python venv não encontrado; candidates={candidates} VIRTUAL_ENV={venv_env or ''}")
         with tempfile.TemporaryDirectory() as td:
             html_f = os.path.join(td, 'doc.html')
             pdf_f = os.path.join(td, 'out.pdf')
@@ -347,7 +297,7 @@ def _gerar_pdf_bo_bytes(bo, request):
             with open(script_path,'w',encoding='utf-8') as sf: sf.write(script)
             proc = subprocess.run([venv_python, script_path, html_f, pdf_f, wk_path], capture_output=True, text=True, timeout=90)
             if proc.returncode != 0 or not os.path.exists(pdf_f):
-                raise RuntimeError(f"subprocess rc={proc.returncode} err={proc.stderr[-180:]} out={proc.stdout[-80:]} wkhtmltopdf={wk_path or 'NA'}")
+                raise RuntimeError(f"subprocess rc={proc.returncode} err={proc.stderr[-180:]} out={proc.stdout[-80:]} wkhtmltopdf={wk_path or 'NA'} venv_python={venv_python}")
             with open(pdf_f,'rb') as pdfd: return pdfd.read()
     except Exception as e_sub:
         _log_bo_pdf(f"Subprocess falhou: {e_sub}")
@@ -1800,6 +1750,35 @@ def _montar_documento_bo_html(request, bo) -> str:
         elif getattr(perf,'assinatura_digital', None) and str(perf.assinatura_digital).startswith('data:image'):
             assinatura_b64 = perf.assinatura_digital
 
+    # Gerar diagrama do veículo (imagem base64) a partir dos dados, quando houver
+    def _gerar_diagrama_veiculo_base64():
+        try:
+            # Desenho simples do carro visto de cima com marcações
+            d = Drawing(500, 200)
+            # Corpo do carro
+            d.add(Rect(50, 20, 400, 160, strokeColor=colors.black, fillColor=None, strokeWidth=2))
+            # Portas
+            d.add(Line(150, 20, 150, 180, strokeColor=colors.gray))
+            d.add(Line(350, 20, 350, 180, strokeColor=colors.gray))
+            # Texto título
+            d.add(String(180, 185, 'Diagrama (Automóvel)', fontSize=12))
+            # Marcar danos se houver texto em veículos.danos_identificados
+            danos_txt = ''
+            try:
+                v = veiculos[0]
+                danos_txt = (v.danos_identificados or '').strip()
+            except Exception:
+                pass
+            if danos_txt:
+                d.add(String(60, 5, f"Danos: {danos_txt[:80]}", fontSize=10))
+            img_bytes = renderPM.drawToString(d, fmt='PNG')
+            return f"data:image/png;base64,{base64.b64encode(img_bytes).decode()}"
+        except Exception as e:
+            _log_bo_pdf(f"Falha ao gerar diagrama veiculo: {e}")
+            return ''
+
+    diagrama_base64 = _gerar_diagrama_veiculo_base64()
+
     # Renderização principal
     html_fragment = render_to_string('bogcmi/documento_bo.html', {
         'bo': bo,
@@ -1814,10 +1793,11 @@ def _montar_documento_bo_html(request, bo) -> str:
         'anexos_gerais': anexos_gerais,
         'km_utilizada': (bo.km_final - bo.km_inicio) if (bo.km_inicio is not None and bo.km_final is not None and isinstance(bo.km_inicio, int) and isinstance(bo.km_final, int) and (bo.km_final - bo.km_inicio) >= 0) else None,
         'qr_code_base64': _gerar_qr_code_para_bo(request, bo),
+        'diagrama_veiculo_base64': diagrama_base64,
     })
 
-    # CSS base (leve) aplicado ao fragmento
-    core_css = """<style>html,body{font-size:16px;} body{background:#f5f7fa;} .bo-print-wrapper{max-width:980px;margin:0 auto;} .bo-header img{width:90px;} @media print{html,body{font-size:16px;} body{background:#fff;} .no-print-shadow{box-shadow:none!important;}}</style>"""
+    # Remover CSS inline para manter exatamente o mesmo estilo do BO
+    core_css = ""
 
     # Substituições: logo/assinatura em base64 para cumprir renderizadores de PDF
     if logo_b64:
@@ -1829,4 +1809,10 @@ def _montar_documento_bo_html(request, bo) -> str:
     if assinatura_b64:
         html_fragment = re.sub(r"(<div class=\"assinatura-imagem\">)\s*<img[^>]+>", f"\\1<img src=\"{assinatura_b64}\" alt=\"Assinatura\">", html_fragment, flags=re.I)
 
+    # Inserir diagrama no HTML se não estiver presente no template
+    if diagrama_base64:
+        if 'Diagrama (Automóvel)' not in html_fragment:
+            bloco = f"<div class=\"section page-break-avoid\"><div class=\"section-title\">Diagrama (Automóvel)</div><img src=\"{diagrama_base64}\" alt=\"Diagrama do veículo\" style=\"max-width:100%;height:auto\"></div>"
+            # Incluir antes do histórico, se existir
+            html_fragment = re.sub(r'(</div>\s*<div[^>]*>\s*Histórico)', bloco + r'\1', html_fragment, flags=re.I) or (html_fragment + bloco)
     return core_css + html_fragment
