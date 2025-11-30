@@ -20,11 +20,25 @@ pdfjs_tmp/
 # Backups
 db_backup_*.sqlite3
 
+# Temporários e uploads
+.tmp.driveupload/
+*.tmp
+*.temp
+
 # Credentials
 .env
 *.keystore
 *firebase*.json
 gcm-sistema-firebase-adminsdk-*.json
+*.pem
+*.key
+
+# Arquivos grandes
+*.zip
+*.tar.gz
+*.rar
+*.7z
+docs/bn/Comprovantes/ZIP/
 
 # Node
 node_modules/
