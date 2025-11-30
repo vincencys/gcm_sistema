@@ -89,6 +89,7 @@ class PanicoMessagingService : FirebaseMessagingService() {
         val body = data["body"] ?: ""
         android.util.Log.d("PanicoMsg", "Processando: kind=$kind, status=$status, action=$action, motivo=$motivo, id=$id")
         PanicoPrefs.saveStatus(this, id, status, motivo, action)
+        PanicLocationService.updateStatusNotification(this, status, motivo)
         // Notificação local amigável
         showNotification(title, body, status, motivo)
         // Broadcast para atualizar UI da MainActivity

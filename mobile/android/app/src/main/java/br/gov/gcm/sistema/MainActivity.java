@@ -14,6 +14,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.Settings;
 
 public class MainActivity extends BridgeActivity {
 	private static final int REQ_AUDIO = 9001;
@@ -72,7 +75,37 @@ public class MainActivity extends BridgeActivity {
 		boolean fineGranted = ContextCompat.checkSelfPermission(this, fine) == PackageManager.PERMISSION_GRANTED;
 		boolean coarseGranted = ContextCompat.checkSelfPermission(this, coarse) == PackageManager.PERMISSION_GRANTED;
 		if (!fineGranted && !coarseGranted) {
-			ActivityCompat.requestPermissions(this, new String[]{fine, coarse}, REQ_LOCATION);
+			boolean shouldShowRationaleFine = ActivityCompat.shouldShowRequestPermissionRationale(this, fine);
+			boolean shouldShowRationaleCoarse = ActivityCompat.shouldShowRequestPermissionRationale(this, coarse);
+			if (shouldShowRationaleFine || shouldShowRationaleCoarse) {
+				ActivityCompat.requestPermissions(this, new String[]{fine, coarse}, REQ_LOCATION);
+			} else {
+				ActivityCompat.requestPermissions(this, new String[]{fine, coarse}, REQ_LOCATION);
+			}
+		}
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		if (requestCode == REQ_LOCATION) {
+			boolean granted = false;
+			for (int r : grantResults) { if (r == PackageManager.PERMISSION_GRANTED) { granted = true; break; } }
+			if (!granted) {
+				// Usuário negou. Se marcou "não perguntar novamente", ofereça abrir configurações.
+				boolean fineDeniedForever = !ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+						&& ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+				boolean coarseDeniedForever = !ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+						&& ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+				if (fineDeniedForever || coarseDeniedForever) {
+					try {
+						Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+						intent.setData(Uri.fromParts("package", getPackageName(), null));
+						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+						startActivity(intent);
+					} catch (Exception ignored) {}
+				}
+			}
 		}
 	}
 

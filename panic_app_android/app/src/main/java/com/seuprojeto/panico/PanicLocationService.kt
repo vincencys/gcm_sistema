@@ -44,6 +44,42 @@ class PanicLocationService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, PanicLocationService::class.java))
         }
+
+        fun updateStatusNotification(context: Context, status: String?, motivo: String?) {
+            val s = status?.uppercase() ?: ""
+            val (title, body) = when (s) {
+                "ENCERRADA" -> Pair("Equipes à caminho!", "Localização ativa")
+                "CANCELADA" -> Pair("Pânico recusado", (motivo?.takeIf { it.isNotBlank() } ?: "sem motivo"))
+                "TESTE" -> Pair("Disparo em modo TESTE", "Localização ativa")
+                else -> Pair("Botão do Pânico Ativo", "Enviando localização...")
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val nm = context.getSystemService(NotificationManager::class.java)
+                val existing = nm?.getNotificationChannel(CHANNEL_ID)
+                if (existing == null) {
+                    val ch = NotificationChannel(
+                        CHANNEL_ID,
+                        "Localização de Pânico",
+                        NotificationManager.IMPORTANCE_LOW
+                    ).apply { description = "Envia localização contínua durante emergência" }
+                    nm?.createNotificationChannel(ch)
+                }
+            }
+            val intent = Intent(context, MainActivity::class.java)
+            val pi = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+            val notif = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentIntent(pi)
+                .setOngoing(s != "CANCELADA")
+                .build()
+            val nm2 = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm2.notify(NOTIFICATION_ID, notif)
+            if (s == "CANCELADA") {
+                stop(context)
+            }
+        }
     }
 
     override fun onCreate() {

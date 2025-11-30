@@ -15,12 +15,36 @@ android {
     namespace 'com.seuprojeto.panico'
     compileSdk 34
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId "com.seuprojeto.panico"
         minSdk 23
         targetSdk 34
         versionCode 1
         versionName "1.0"
+    }
+
+    flavorDimensions "city"
+    productFlavors {
+        // Flavor de produção para GCM Sistema
+        gcmsysint {
+            dimension "city"
+            applicationIdSuffix ".gcmsysint"
+            resValue "string", "app_name", "SafeBP GCM Sistema"
+            buildConfigField "String", "API_BASE_URL", '"https://gcmsysint.online"'
+            buildConfigField "String", "CITY_NAME", '"GCM Sistema"'
+        }
+        // Flavor de desenvolvimento (opcional)
+        devusb {
+            dimension "city"
+            applicationIdSuffix ".devusb"
+            resValue "string", "app_name", "SafeBP DEV USB"
+            buildConfigField "String", "API_BASE_URL", '"http://127.0.0.1:8000"'
+            buildConfigField "String", "CITY_NAME", '"DEV USB"'
+        }
     }
 
     signingConfigs {
@@ -71,7 +95,9 @@ dependencies {
 def hasGoogleServices = [
         file("google-services.json"),
         file("src/debug/google-services.json"),
-        file("src/release/google-services.json")
+        file("src/release/google-services.json"),
+        file("src/gcmsysint/google-services.json"),
+        file("src/devusb/google-services.json")
 ].any { it.exists() }
 
 if (!hasGoogleServices) {
@@ -79,6 +105,23 @@ if (!hasGoogleServices) {
     tasks.whenTaskAdded { task ->
         if (task.name.toLowerCase().contains('googleservices')) {
             task.enabled = false
+        }
+    }
+} else {
+    // Desabilitar Google Services para flavors sem google-services.json específico
+    tasks.whenTaskAdded { task ->
+        if (task.name.toLowerCase().contains('googleservices')) {
+            def flavor = null
+            if (task.name.contains('Gcmsysint')) flavor = 'gcmsysint'
+            if (task.name.contains('Devusb')) flavor = 'devusb'
+            
+            if (flavor != null) {
+                def flavorGoogleServices = file("src/${flavor}/google-services.json")
+                if (!flavorGoogleServices.exists()) {
+                    logger.lifecycle("[PanicoApp] Desabilitando Google Services para flavor ${flavor} (sem google-services.json)")
+                    task.enabled = false
+                }
+            }
         }
     }
 }

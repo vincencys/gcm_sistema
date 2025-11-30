@@ -14,27 +14,11 @@
         android:layout_height="wrap_content">
 
         <TextView
-            android:text="Selecione a cidade"
+            android:text="Informe seu token de segurança"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="18sp"
             android:layout_marginBottom="8dp"/>
-
-        <EditText
-            android:id="@+id/editBuscaCidade"
-            android:hint="Buscar cidade..."
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text"
-            android:drawableLeft="@android:drawable/ic_menu_search"
-            android:drawablePadding="8dp"
-            android:layout_marginBottom="8dp"/>
-
-        <Spinner
-            android:id="@+id/spinnerCidade"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"/>
 
         <EditText
             android:id="@+id/editToken"

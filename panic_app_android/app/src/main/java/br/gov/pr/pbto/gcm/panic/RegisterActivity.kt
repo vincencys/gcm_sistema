@@ -20,6 +20,7 @@ import kotlinx.coroutines.*
 import java.net.HttpURLConnection
 import java.net.URL
 import com.seuprojeto.panico.R
+import com.seuprojeto.panico.BuildConfig
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -315,11 +316,8 @@ class RegisterActivity : AppCompatActivity() {
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Usa BASE_URL enviada pela MainActivity ou SharedPreferences como fallback
-                val baseUrl = intent.getStringExtra("BASE_URL")
-                    ?: getSharedPreferences("panic_prefs", MODE_PRIVATE).getString("base", "")
-                    ?: ""
-                val cidade = intent.getStringExtra("CIDADE") ?: getSharedPreferences("panic_prefs", MODE_PRIVATE).getString("cidade", "") ?: ""
+                // Usa BASE_URL do flavor (BuildConfig)
+                val baseUrl = BuildConfig.API_BASE_URL
 
                 if (baseUrl.isBlank()) {
                     withContext(Dispatchers.Main) {
@@ -406,6 +404,5 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    // Mantido para compatibilidade; agora usamos BASE_URL direto.
-    private fun obterUrlBase(cidade: String): String = intent.getStringExtra("BASE_URL") ?: ""
+    // BASE_URL vem do BuildConfig via flavors
 }

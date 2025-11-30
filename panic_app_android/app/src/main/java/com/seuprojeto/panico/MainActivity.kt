@@ -29,85 +29,7 @@ class MainActivity : AppCompatActivity() {
     private val PERMISSION_REQUEST_CODE = 1001
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 1002
 
-    // Mapeie as cidades (Estado de São Paulo) para sua BASE URL.
-    // ASSUMPTION: padrão de domínio fictício "https://api.<slug>.sp.gov.br".
-    // Ajuste cada base para o domínio real do backend de cada município.
-    // A URL de disparo e de solicitação de cadastro são derivadas desta base.
-    private val cidadesBase = mapOf(
-        // === PRODUÇÃO ===
-        "GCM Sistema (Produção)" to "https://gcmsysint.online",
-        // Opções locais para desenvolvimento
-        // USB (adb reverse): execute `adb reverse tcp:8000 tcp:8000` e use 127.0.0.1
-        "USB Localhost" to "http://127.0.0.1:8000",
-        // Servidor local via Wi‑Fi (mesma rede do PC)
-        "Servidor Local" to "http://192.168.1.7:8000",
-        "Ibiúna" to "https://api.ibiuna.sp.gov.br",
-        "Amparo" to "https://api.amparo.sp.gov.br",
-        "Araçatuba" to "https://api.aracatuba.sp.gov.br",
-        "Araraquara" to "https://api.araraquara.sp.gov.br",
-        "Araras" to "https://api.araras.sp.gov.br",
-        "Assis" to "https://api.assis.sp.gov.br",
-        "Atibaia" to "https://api.atibaia.sp.gov.br",
-        "Barretos" to "https://api.barretos.sp.gov.br",
-        "Barueri" to "https://api.barueri.sp.gov.br",
-        "Bauru" to "https://api.bauru.sp.gov.br",
-        "Birigui" to "https://api.birigui.sp.gov.br",
-        "Botucatu" to "https://api.botucatu.sp.gov.br",
-        "Bragança Paulista" to "https://api.bragancapaulista.sp.gov.br",
-        "Campinas" to "https://api.campinas.sp.gov.br",
-        "Carapicuíba" to "https://api.carapicuiba.sp.gov.br",
-        "Catanduva" to "https://api.catanduva.sp.gov.br",
-        "Cotia" to "https://api.cotia.sp.gov.br",
-        "Diadema" to "https://api.diadema.sp.gov.br",
-        "Embu das Artes" to "https://api.embudasartes.sp.gov.br",
-        "Franca" to "https://api.franca.sp.gov.br",
-        "Guarujá" to "https://api.guaruja.sp.gov.br",
-        "Guarulhos" to "https://api.guarulhos.sp.gov.br",
-        "Indaiatuba" to "https://api.indaiatuba.sp.gov.br",
-        "Itapecerica da Serra" to "https://api.itapecerica.sp.gov.br",
-        "Itapetininga" to "https://api.itapetininga.sp.gov.br",
-        "Itapevi" to "https://api.itapevi.sp.gov.br",
-        "Itaquaquecetuba" to "https://api.itaquaquecetuba.sp.gov.br",
-        "Itu" to "https://api.itu.sp.gov.br",
-        "Jandira" to "https://api.jandira.sp.gov.br",
-        "Jaú" to "https://api.jau.sp.gov.br",
-        "Jundiaí" to "https://api.jundiai.sp.gov.br",
-        "Limeira" to "https://api.limeira.sp.gov.br",
-    "Mairinque" to "https://api.mairinque.sp.gov.br",
-        "Marília" to "https://api.marilia.sp.gov.br",
-        "Mauá" to "https://api.maua.sp.gov.br",
-        "Mogi das Cruzes" to "https://api.mogidascruzes.sp.gov.br",
-        "Mogi Guaçu" to "https://api.mogiguacu.sp.gov.br",
-        "Osasco" to "https://api.osasco.sp.gov.br",
-        "Ourinhos" to "https://api.ourinhos.sp.gov.br",
-    "Piedade" to "https://api.piedade.sp.gov.br",
-        "Piracicaba" to "https://api.piracicaba.sp.gov.br",
-        "Presidente Prudente" to "https://api.presidenteprudente.sp.gov.br",
-        "Praia Grande" to "https://api.praiagrande.sp.gov.br",
-        "Ribeirão Pires" to "https://api.ribeirãopires.sp.gov.br",
-        "Ribeirão Preto" to "https://api.ribeiraopreto.sp.gov.br",
-        "Rio Claro" to "https://api.rioclaro.sp.gov.br",
-        "Salto" to "https://api.salto.sp.gov.br",
-        "Santa Bárbara d'Oeste" to "https://api.santabarbaradoeste.sp.gov.br",
-        "Santana de Parnaíba" to "https://api.santanadeparnaiba.sp.gov.br",
-        "Santo André" to "https://api.santoandre.sp.gov.br",
-        "Santos" to "https://api.santos.sp.gov.br",
-        "São Bernardo do Campo" to "https://api.saobernardo.sp.gov.br",
-        "São Carlos" to "https://api.saocarlos.sp.gov.br",
-        "São Caetano do Sul" to "https://api.saocaetano.sp.gov.br",
-        "São José do Rio Preto" to "https://api.saojosedoriopreto.sp.gov.br",
-        "São José dos Campos" to "https://api.saojosedoscampos.sp.gov.br",
-        "São Paulo" to "https://api.saopaulo.sp.gov.br",
-        "São Vicente" to "https://api.saovicente.sp.gov.br",
-        "Sorocaba" to "https://api.sorocaba.sp.gov.br",
-        "Suzano" to "https://api.suzano.sp.gov.br",
-        "Taboão da Serra" to "https://api.taboaodaserra.sp.gov.br",
-        "Taubaté" to "https://api.taubate.sp.gov.br",
-        "Valinhos" to "https://api.valinhos.sp.gov.br",
-    "Vargem Grande Paulista" to "https://api.vargemgrandepaulista.sp.gov.br",
-        "Várzea Paulista" to "https://api.varzeapaulista.sp.gov.br",
-        "Votorantim" to "https://api.votorantim.sp.gov.br"
-    )
+    // Base URL definida por flavor (BuildConfig.API_BASE_URL)
 
     private fun buildDispatchUrl(base:String) = base.trimEnd('/') + "/panic/public/disparo/"
     private fun buildRegisterUrl(base:String) = base.trimEnd('/') + "/panic/public/assistida/solicitar/"
@@ -121,37 +43,24 @@ class MainActivity : AppCompatActivity() {
 
         val layoutConfirmacao = findViewById<LinearLayout>(R.id.layoutConfirmacao)
         val layoutPanico = findViewById<LinearLayout>(R.id.layoutPanico)
-    val bannerStatus = findViewById<TextView>(R.id.textStatusPanico)
-        val spinnerCidade = findViewById<Spinner>(R.id.spinnerCidade)
-        val editBuscaCidade = findViewById<EditText>(R.id.editBuscaCidade)
+        val bannerStatus = findViewById<TextView>(R.id.textStatusPanico)
         val editToken = findViewById<EditText>(R.id.editToken)
         val btnConfirmar = findViewById<Button>(R.id.btnConfirmar)
         val btnRegistro = findViewById<Button>(R.id.btnRegistro)
-        val btnPanicoBig = findViewById<Button>(R.id.btnPanicoBig)        // Prefill de persistência
+        val btnPanicoBig = findViewById<Button>(R.id.btnPanicoBig)
         val prefs = getSharedPreferences("panic_prefs", MODE_PRIVATE)
-    val lastToken = prefs.getString("token", "")
-    val lastCity = prefs.getString("cidade", null)
-    val confirmed = prefs.getBoolean("confirmed", false)
+        val lastToken = prefs.getString("token", "")
+        val confirmed = prefs.getBoolean("confirmed", false)
+        // Persistir a base do flavor para componentes que usam SharedPreferences (ex.: FCM)
+        prefs.edit().putString("base", BuildConfig.API_BASE_URL)
+            .putString("base_url", BuildConfig.API_BASE_URL)
+            .apply()
         if (!lastToken.isNullOrBlank()) editToken.setText(lastToken)
-        
-        // Lista completa e filtrada de cidades
-        val cidadesList = cidadesBase.keys.toList()
-        var cidadesFiltradas = cidadesList.toMutableList()
-        
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, cidadesFiltradas)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerCidade.adapter = adapter
-        
-        // Restaurar última cidade selecionada
-        if (lastCity != null) {
-            val idx = cidadesFiltradas.indexOf(lastCity)
-            if (idx >= 0) spinnerCidade.setSelection(idx)
-        }
         
         val textFeedback = findViewById<TextView>(R.id.textFeedback)
 
         // Mostrar layout conforme estado salvo
-        if (confirmed && !lastToken.isNullOrBlank() && lastCity != null) {
+        if (confirmed && !lastToken.isNullOrBlank()) {
             layoutConfirmacao.visibility = View.GONE
             layoutPanico.visibility = View.VISIBLE
             textFeedback.text = "Pronto para acionar o pânico."
@@ -162,30 +71,7 @@ class MainActivity : AppCompatActivity() {
             layoutPanico.visibility = View.GONE
         }
 
-        // Filtro de busca de cidades
-        editBuscaCidade.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: android.text.Editable?) {
-                val query = s.toString().trim()
-                cidadesFiltradas.clear()
-                if (query.isEmpty()) {
-                    cidadesFiltradas.addAll(cidadesList)
-                } else {
-                    cidadesFiltradas.addAll(cidadesList.filter { 
-                        it.contains(query, ignoreCase = true) 
-                    })
-                }
-                adapter.notifyDataSetChanged()
-                if (cidadesFiltradas.isNotEmpty()) {
-                    spinnerCidade.setSelection(0)
-                }
-            }
-        })
-
         btnConfirmar.setOnClickListener {
-            val cidade = spinnerCidade.selectedItem as String
-            val base = cidadesBase[cidade] ?: return@setOnClickListener
             val token = editToken.text.toString().trim()
             if (token.isEmpty()) {
                 textFeedback.text = "Informe o token."
@@ -195,9 +81,8 @@ class MainActivity : AppCompatActivity() {
             // Persistir confirmação e dados
             prefs.edit()
                 .putString("token", token)
-                .putString("cidade", cidade)
-                .putString("base", base)
-                .putString("base_url", base)
+                .putString("base", BuildConfig.API_BASE_URL)
+                .putString("base_url", BuildConfig.API_BASE_URL)
                 .putBoolean("confirmed", true)
                 .apply()
 
@@ -209,11 +94,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnRegistro.setOnClickListener {
-            val cidadeEscolhida = spinnerCidade.selectedItem as String
-            val base = cidadesBase[cidadeEscolhida] ?: return@setOnClickListener
             val intent = Intent(this, br.gov.pr.pbto.gcm.panic.RegisterActivity::class.java)
-            intent.putExtra("BASE_URL", base)
-            intent.putExtra("CIDADE", cidadeEscolhida)
             startActivity(intent)
         }
 
@@ -274,14 +155,14 @@ class MainActivity : AppCompatActivity() {
         val btnPanicoBig = findViewById<Button>(R.id.btnPanicoBig)
         val textFeedback = findViewById<TextView>(R.id.textFeedback)
         val token = prefs.getString("token", "").orEmpty().trim()
-        val base = prefs.getString("base", null)
-        if (token.isEmpty() || base.isNullOrBlank()) {
+        val base = BuildConfig.API_BASE_URL
+        if (token.isEmpty() || base.isBlank()) {
             // Caso raro: dados ausentes, volta para confirmação
             val layoutConfirmacao = findViewById<LinearLayout>(R.id.layoutConfirmacao)
             val layoutPanico = findViewById<LinearLayout>(R.id.layoutPanico)
             layoutConfirmacao.visibility = View.VISIBLE
             layoutPanico.visibility = View.GONE
-            textFeedback.text = "Configure cidade e token primeiro."
+            textFeedback.text = "Informe o token primeiro."
             textFeedback.setTextColor(0xFFB91C1C.toInt())
             return
         }
