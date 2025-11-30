@@ -6,7 +6,7 @@ set -Eeuo pipefail
 
 APP_DIR="/home/ec2-user/gcm_sistema"
 VENV="$APP_DIR/.venv"
-BRANCH="master"  # ajuste se usar 'main' ou outra branch
+BRANCH="main"  # branch de deploy
 PY="$VENV/bin/python"
 PIP="$VENV/bin/pip"
 
