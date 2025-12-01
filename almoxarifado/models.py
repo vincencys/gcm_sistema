@@ -109,7 +109,7 @@ class BemPatrimonial(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPOS)
     # Novos campos para organizar as listas de cautelas
     grupo = models.CharField(max_length=10, choices=GRUPOS, default="SUPORTE")
-    classe = models.CharField(max_length=10, choices=CLASSES, default="ARMAMENTO")
+    classe = models.CharField(max_length=20, choices=CLASSES, default="ARMAMENTO")
     subtipo_armamento = models.CharField(
         max_length=10,
         blank=True,
