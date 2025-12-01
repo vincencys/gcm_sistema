@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "")  # usado em QR/links absolutos
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0,gcmsysint.online").split(",")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0,gcmsysint.online,18.229.134.75").split(",")
 
 # Para POST/CSRF no dev e em possíveis hosts locais
 CSRF_TRUSTED_ORIGINS = [
