@@ -218,6 +218,17 @@ def iniciar_plantao_cecom(request):
 @login_required
 def encerrar_plantao_cecom(request, pk):
     plantao = get_object_or_404(PlantaoCecomPrincipal, pk=pk, usuario=request.user)
+    
+    # Validação: operador CECOM deve ter assinatura cadastrada
+    operador = plantao.aux_cecom or request.user
+    perfil_operador = getattr(operador, 'perfil', None)
+    tem_assinatura = False
+    if perfil_operador:
+        tem_assinatura = bool(getattr(perfil_operador, 'assinatura_img', None) or getattr(perfil_operador, 'assinatura_digital', None))
+    if not tem_assinatura:
+        messages.error(request, 'Cadastre sua assinatura no "Meu Perfil" antes de encerrar o plantão.')
+        return redirect('cecom:painel')
+    
     # Validações obrigatórias antes de encerrar
     # 1) Livro eletrônico deve existir com Coordenador (CGA) e Equipe definidos
     livro = getattr(plantao, 'livro', None)

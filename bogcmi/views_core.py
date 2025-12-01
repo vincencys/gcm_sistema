@@ -1488,6 +1488,15 @@ def autosave_finalizacao(request):
 def finalizar_bo(request):
     if request.method == 'POST':
         user = request.user
+        
+        # Verificar se o encarregado tem assinatura cadastrada
+        perfil = getattr(user, 'perfil', None)
+        tem_assinatura = False
+        if perfil:
+            tem_assinatura = bool(getattr(perfil, 'assinatura_img', None) or getattr(perfil, 'assinatura_digital', None))
+        if not tem_assinatura:
+            return JsonResponse({'success': False, 'error': 'Cadastre sua assinatura no "Meu Perfil" antes de finalizar o BO.'}, status=400)
+        
         data = request.POST.dict()
         bo_id = data.get('bo_id')
         bo = get_object_or_404(BO, pk=bo_id) if bo_id else BO.objects.filter(status='EDICAO', encarregado=user).order_by('-emissao').first()

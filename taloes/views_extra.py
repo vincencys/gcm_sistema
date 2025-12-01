@@ -1528,6 +1528,15 @@ def encerrar_plantao(request: HttpRequest):
         messages.error(request, "Apenas o Encarregado pode realizar essa ação.")
         return redirect("taloes:lista")
 
+    # Verificar se o encarregado tem assinatura cadastrada
+    perfil = getattr(request.user, 'perfil', None)
+    tem_assinatura = False
+    if perfil:
+        tem_assinatura = bool(getattr(perfil, 'assinatura_img', None) or getattr(perfil, 'assinatura_digital', None))
+    if not tem_assinatura:
+        messages.error(request, 'Cadastre sua assinatura no "Meu Perfil" antes de encerrar o plantão.')
+        return redirect("taloes:lista")
+
     # Verificar se há talões no período do plantão
     inicio = getattr(ativo, "inicio", None)
     if not inicio:
