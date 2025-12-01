@@ -17,6 +17,7 @@ reportlab>=4.2,<5.0
 PyPDF2>=3.0,<4.0
 whitenoise>=6.7,<7
 
+django-cors-headers>=4.6,<4.7  # CORS para APIs e canais
 # === Forms/UI ===
 django-crispy-forms>=2.1,<2.2
 crispy-tailwind==0.5.0
