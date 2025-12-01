@@ -57,9 +57,10 @@ if ($sshTest -match "OK") {
 # 4. Atualizar código no servidor
 Write-Host "`n[4/7] Atualizando código no servidor..." -ForegroundColor Green
 $updateCmd = @"
-cd $REMOTE_PATH &&
-git pull origin $GIT_BRANCH &&
-echo 'Código atualizado com sucesso!'
+cd $REMOTE_PATH || mkdir -p $REMOTE_PATH && cd $REMOTE_PATH && 
+if [ ! -d .git ]; then echo 'Clonando repositório...'; git clone https://github.com/vincencys/gcm_sistema.git .; fi && 
+ git fetch origin main && git checkout main && git pull origin main && 
+echo 'Código atualizado/clonado com sucesso!'
 "@
 
 ssh -i $AWS_KEY "$AWS_USER@$AWS_HOST" $updateCmd
@@ -67,11 +68,14 @@ ssh -i $AWS_KEY "$AWS_USER@$AWS_HOST" $updateCmd
 # 5. Instalar dependências e migrar banco
 Write-Host "`n[5/7] Instalando dependências e migrando banco..." -ForegroundColor Green
 $setupCmd = @"
-cd $REMOTE_PATH &&
-source venv/bin/activate &&
-pip install -r requirements-prod.txt --quiet &&
-python manage.py migrate --noinput &&
-python manage.py collectstatic --noinput --clear &&
+cd $REMOTE_PATH && 
+command -v python3 >/dev/null 2>&1 || sudo yum install -y python3 && 
+if [ ! -d venv ]; then python3 -m venv venv; fi && 
+source venv/bin/activate && 
+pip install --upgrade pip setuptools wheel >/dev/null 2>&1 && 
+pip install -r requirements-prod.txt --quiet || pip install -r requirements.txt --quiet && 
+python manage.py migrate --noinput && 
+python manage.py collectstatic --noinput --clear && 
 echo 'Setup concluído!'
 "@
 
@@ -81,12 +85,8 @@ ssh -i $AWS_KEY "$AWS_USER@$AWS_HOST" $setupCmd
 if (-not $SkipTests) {
     Write-Host "`n[6/7] Executando testes..." -ForegroundColor Green
     $testCmd = @"
-cd $REMOTE_PATH &&
-source venv/bin/activate &&
-python manage.py check --deploy &&
-echo 'Testes OK!'
+cd $REMOTE_PATH && source venv/bin/activate && python manage.py check --deploy && echo 'Testes OK!'
 "@
-    
     try {
         ssh -i $AWS_KEY "$AWS_USER@$AWS_HOST" $testCmd
         Write-Host "Testes passaram!" -ForegroundColor Green
@@ -97,34 +97,30 @@ echo 'Testes OK!'
     Write-Host "`n[6/7] Testes: PULADOS (--SkipTests)" -ForegroundColor Gray
 }
 
-# 7. Reiniciar serviços
+# 7. Reiniciar serviços (somente se existirem)
 Write-Host "`n[7/7] Reiniciando serviços Django..." -ForegroundColor Green
 $restartCmd = @"
-sudo systemctl restart gunicorn &&
-sudo systemctl restart daphne &&
-sudo systemctl restart celery 2>/dev/null || true &&
-sudo systemctl restart nginx 2>/dev/null || true &&
-echo 'Serviços reiniciados!'
+for svc in gunicorn daphne celery nginx; do 
+  if systemctl list-units --type=service | grep -q "${svc}.service"; then 
+    sudo systemctl restart $svc && echo "Reiniciado: $svc"; 
+  else 
+    echo "Serviço ausente (skip): $svc"; 
+  fi; 
+done; 
+echo 'Reinício concluído.'
 "@
-
 ssh -i $AWS_KEY "$AWS_USER@$AWS_HOST" $restartCmd
 
 # Verificar status dos serviços
 Write-Host "`n=== Verificando status dos serviços ===" -ForegroundColor Cyan
 $statusCmd = @"
-echo 'Gunicorn:' && sudo systemctl is-active gunicorn &&
-echo 'Daphne:' && sudo systemctl is-active daphne &&
-echo 'Nginx:' && sudo systemctl is-active nginx
+for svc in gunicorn daphne nginx; do 
+  echo "${svc}:"; systemctl is-active $svc || echo 'inactive'; 
+ done
 "@
-
 ssh -i $AWS_KEY "$AWS_USER@$AWS_HOST" $statusCmd
 
-Write-Host "`n=== Deploy Concluído com Sucesso! ===" -ForegroundColor Green
+Write-Host "`n=== Deploy Finalizado (com verificações) ===" -ForegroundColor Green
 Write-Host "Acesse: http://$AWS_HOST" -ForegroundColor Cyan
 Write-Host ""
 
-# Abrir navegador (opcional)
-$openBrowser = Read-Host "Deseja abrir o navegador? (s/n)"
-if ($openBrowser -eq 's') {
-    Start-Process "http://$AWS_HOST"
-}
