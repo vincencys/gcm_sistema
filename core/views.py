@@ -16,7 +16,7 @@ from bogcmi.models import BO
 from taloes.models import Talao
 from cecom.models import PlantaoCECOM, PlantaoCecomPrincipal
 from taloes.views_extra import SESSION_PLANTAO
-from .models import EscalaMensal, Audiencias, OrdemServico, Dispensa, NotificacaoFiscalizacao, AutoInfracaoComercio, AutoInfracaoSom, OficioInterno, OficioAcao, BancoHorasSaldo, BancoHorasLancamento
+from .models import EscalaMensal, Audiencias, OrdemServico, OficioDiverso, Dispensa, NotificacaoFiscalizacao, AutoInfracaoComercio, AutoInfracaoSom, OficioInterno, OficioAcao, BancoHorasSaldo, BancoHorasLancamento
 from common.models import AuditLog
 from .forms import DispensaSolicitacaoForm, DispensaAprovacaoForm, NotificacaoFiscalizacaoForm, AutoInfracaoComercioForm, AutoInfracaoSomForm, OficioInternoForm, OficioAcaoForm
 from .views_estatisticas import estatisticas_abordados, estatisticas_abordados_graficos, estatisticas_policiamentos, estatisticas_policiamentos_graficos
@@ -73,6 +73,7 @@ def dashboard(request):
     ultimas_escalas = EscalaMensal.objects.order_by('-updated_at', '-created_at')[:2]
     audiencia_doc = Audiencias.objects.order_by('-updated_at', '-created_at').first()
     ultimas_os = OrdemServico.objects.order_by('-updated_at', '-created_at')[:2]
+    ultimas_od = OficioDiverso.objects.order_by('-updated_at', '-created_at')[:4]
 
     # Cartão: Banco de Horas (linha do usuário logado)
     try:
@@ -111,6 +112,7 @@ def dashboard(request):
         'ultimas_escalas': ultimas_escalas,
         'audiencia_doc': audiencia_doc,
         'ultimas_os': ultimas_os,
+        'ultimas_od': ultimas_od,
         'integrantes_map': integrantes_map,
         'plantao_equipe': plantao_equipe,
         'banco_user': banco_user,
@@ -517,6 +519,71 @@ def ordem_servico_remover(request, os_id: int):
     except OrdemServico.DoesNotExist:
         pass
     return redirect('core:ordem_servico')
+
+@login_required
+def oficio_diverso(request):
+    # permissão
+    allowed_users = {"moises", "administrativo", "comandante", "subcomandante"}
+    can_manage = request.user.username.lower() in allowed_users
+    # ano selecionado
+    try:
+        ano = int(request.GET.get('ano') or timezone.localdate().year)
+    except ValueError:
+        ano = timezone.localdate().year
+    anos = list(range(2025, 2101))
+    mes_nomes = {
+        1:"Janeiro",2:"Fevereiro",3:"Março",4:"Abril",5:"Maio",6:"Junho",
+        7:"Julho",8:"Agosto",9:"Setembro",10:"Outubro",11:"Novembro",12:"Dezembro"
+    }
+    # Buscar anexos por mês
+    anexos = OficioDiverso.objects.filter(ano=ano).order_by('mes', '-updated_at')
+    por_mes = {m: [] for m in range(1,13)}
+    for a in anexos:
+        por_mes[a.mes].append(a)
+    meses = [
+        {
+            'num': m,
+            'nome': mes_nomes[m],
+            'anexos': por_mes[m],
+        }
+        for m in range(1,13)
+    ]
+    return render(request, 'core/adm_oficio_diverso.html', {
+        'ano': ano,
+        'anos': anos,
+        'meses': meses,
+        'can_manage': can_manage,
+    })
+
+@login_required
+def oficio_diverso_upload(request):
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Método inválido')
+    allowed_users = {"moises", "administrativo", "comandante", "subcomandante"}
+    if request.user.username.lower() not in allowed_users:
+        return HttpResponseForbidden('Sem permissão para enviar arquivos')
+    try:
+        ano = int(request.POST.get('ano'))
+        mes = int(request.POST.get('mes'))
+    except (TypeError, ValueError):
+        return HttpResponseBadRequest('Ano/Mês inválidos')
+    arq = request.FILES.get('arquivo')
+    if not arq:
+        return HttpResponseBadRequest('Arquivo obrigatório')
+    OficioDiverso.objects.create(ano=ano, mes=mes, arquivo=arq)
+    return redirect('core:oficio_diverso')
+
+@login_required
+def oficio_diverso_remover(request, od_id: int):
+    allowed_users = {"moises", "administrativo", "comandante", "subcomandante"}
+    if request.user.username.lower() not in allowed_users:
+        return HttpResponseForbidden('Sem permissão para remover arquivos')
+    try:
+        obj = OficioDiverso.objects.get(pk=od_id)
+        obj.delete()
+    except OficioDiverso.DoesNotExist:
+        pass
+    return redirect('core:oficio_diverso')
 
 @login_required
 def oficio_interno(request):

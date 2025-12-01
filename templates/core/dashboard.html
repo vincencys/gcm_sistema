@@ -241,6 +241,41 @@
 		{% endfor %}
 	</div>
 </div>
+
+<!-- Ofícios Diversos -->
+<div class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+	<div class="px-4 py-3 border-b font-semibold flex items-center justify-between text-sm text-slate-800" style="background:#f1f5f9;">
+		<span>Últimos Ofícios Diversos</span>
+		<a href="{% url 'core:oficio_diverso' %}" class="text-indigo-600 hover:text-indigo-700 text-xs underline">Ver todos</a>
+	</div>
+	<div class="p-3 grid sm:grid-cols-2 gap-3">
+		{% for od in ultimas_od %}
+			<div class="border rounded p-2 flex gap-3 items-center">
+				<div class="w-24 h-16 bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+					{% if od.arquivo.url|is_image %}
+						<img src="{{ od.arquivo.url }}" alt="Ofício {{ od.mes }}/{{ od.ano }}" class="max-w-full max-h-full object-contain"/>
+					{% elif od.arquivo.url|is_pdf %}
+						<span class="text-2xl" title="PDF">📄</span>
+					{% else %}
+						<span class="text-xs text-slate-500">Arquivo</span>
+					{% endif %}
+				</div>
+				<div class="min-w-0">
+					<div class="font-medium">{{ od.mes|mes_nome }} / {{ od.ano }}</div>
+					<div class="text-xs text-slate-500">Atualizado em {{ od.updated_at|date:"d/m/Y H:i" }}</div>
+					<div class="mt-2">
+						<a class="inline-flex items-center gap-1 px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-sm shadow-sm js-view-file" href="{{ od.arquivo.url }}" data-href="{{ od.arquivo.url }}" title="Abrir arquivo">
+							Abrir
+						</a>
+					</div>
+				</div>
+			</div>
+		{% empty %}
+			<div class="text-slate-500 text-sm">Sem anexos de Ofícios Diversos.</div>
+		{% endfor %}
+	</div>
+</div>
+
 <!-- Audiências -->
 <div class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
 	<div class="px-4 py-3 border-b font-semibold flex items-center justify-between text-sm text-slate-800" style="background:#f1f5f9;">

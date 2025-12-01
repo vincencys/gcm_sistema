@@ -65,6 +65,26 @@ class OrdemServico(models.Model):
         return f"OS {self.mes:02d}/{self.ano} - {os.path.basename(self.arquivo.name)}"
 
 
+def oficio_diverso_upload_path(instance, filename):
+    base, ext = os.path.splitext(filename)
+    ext = ext or ''
+    return f"oficio_diverso/{instance.ano}/{instance.mes:02d}/{base}{ext}"
+
+
+class OficioDiverso(models.Model):
+    ano = models.PositiveIntegerField()
+    mes = models.PositiveSmallIntegerField(help_text="1=Jan ... 12=Dez")
+    arquivo = models.FileField(upload_to=oficio_diverso_upload_path)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-ano", "-mes", "-updated_at", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"Ofício Diverso {self.mes:02d}/{self.ano} - {os.path.basename(self.arquivo.name)}"
+
+
 class Dispensa(models.Model):
     PLANTAO_CHOICES = (
         ("A", "Plantão A"),
