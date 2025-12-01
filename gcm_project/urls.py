@@ -24,6 +24,7 @@ urlpatterns = [
     path("bogcmi/", include(("bogcmi.urls", "bogcmi"), namespace="bogcmi")),
     path("panic/", include(("panic.urls", "panic"), namespace="panic")),
     path("cecom/", include(("cecom.urls", "cecom"), namespace="cecom")),
+    path("almoxarifado/", include(("almoxarifado.urls", "almoxarifado"), namespace="almoxarifado")),
     path("notificacoes/", include(("notificacoes.urls", "notificacoes"), namespace="notificacoes")),
     path("integracoes/", include(("integracoes.urls", "integracoes"), namespace="integracoes")),
     path("relatorios/", include(("relatorios.urls", "relatorios"), namespace="relatorios")),
