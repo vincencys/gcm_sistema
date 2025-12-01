@@ -6,7 +6,7 @@ from .models import Produto, BemPatrimonial, MovimentacaoEstoque, MovimentacaoCa
 from .forms import (
     ProdutoForm, MovimentacaoEstoqueForm,
     BemPatrimonialForm, MovimentacaoCautelaForm, CautelaPermanenteForm, DisparoArmaForm,
-    ArmamentoSuporteForm, MunicaoSuporteForm, ArmamentoFixoForm, MunicaoFixoForm,
+    ArmamentoSuporteForm, MunicaoSuporteForm, ArmamentoFixoForm, MunicaoFixoForm, PlacaBalisticaFixoForm,
     SolicitarCautelaSuporteForm, MuniicaoLinhaForm, EntregaCautelaForm, DevolucaoCautelaForm,
     
 )
@@ -50,6 +50,16 @@ def cautelas_index(request):
         )
 
     fixo_municoes = BemPatrimonial.objects.filter(classe='MUNICAO', grupo='FIXO').select_related('dono__perfil').order_by('nome')
+    # Placas balísticas fixas
+    ag_fixo_placa = (request.GET.get('ag_fixo_placa') or '').strip()
+    fixo_placas = BemPatrimonial.objects.filter(classe='PLACA_BALISTICA', grupo='FIXO').select_related('dono__perfil').order_by('placa_marca', 'placa_modelo')
+    if ag_fixo_placa:
+        fixo_placas = fixo_placas.filter(
+            Q(dono__perfil__matricula__icontains=ag_fixo_placa) |
+            Q(dono__username__icontains=ag_fixo_placa) |
+            Q(dono__first_name__icontains=ag_fixo_placa) |
+            Q(dono__last_name__icontains=ag_fixo_placa)
+        )
     if ag_fixo_mun:
         fixo_municoes = fixo_municoes.filter(
             Q(dono__perfil__matricula__icontains=ag_fixo_mun) |
@@ -92,6 +102,8 @@ def cautelas_index(request):
         'arm_reservados': arm_reservados,
         'ag_fixo': ag_fixo,
         'ag_fixo_mun': ag_fixo_mun,
+        'ag_fixo_placa': ag_fixo_placa,
+        'fixo_placas': fixo_placas,
     })
 @login_required
 def painel_disponibilidade(request):
@@ -624,6 +636,26 @@ def cautelas_municao_fixo_novo(request):
         'titulo': 'Adicionar Munição do Armamento Fixo',
         'esconder_subtipo': True,
         'esconder_numero': True,
+    })
+
+
+@login_required
+def cautelas_placa_fixo_novo(request):
+    if request.method == 'POST':
+        form = PlacaBalisticaFixoForm(request.POST)
+        if form.is_valid():
+            b = form.save(commit=False)
+            b.tipo = 'OUTRO'
+            b.grupo = 'FIXO'
+            b.classe = 'PLACA_BALISTICA'
+            b.save()
+            messages.success(request, 'Placa balística fixa adicionada.')
+            return redirect('core:almoxarifado:cautelas')
+    else:
+        form = PlacaBalisticaFixoForm()
+    return render(request, 'almoxarifado/cautelas_form_placa.html', {
+        'form': form,
+        'titulo': 'Adicionar Placa Balística Fixa dos Agentes',
     })
 
 

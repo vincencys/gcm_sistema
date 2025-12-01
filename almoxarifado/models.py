@@ -104,6 +104,7 @@ class BemPatrimonial(models.Model):
     CLASSES = (
         ("ARMAMENTO", "Armamento"),
         ("MUNICAO", "Munição"),
+        ("PLACA_BALISTICA", "Placa Balística"),
     )
     tipo = models.CharField(max_length=10, choices=TIPOS)
     # Novos campos para organizar as listas de cautelas
@@ -130,6 +131,23 @@ class BemPatrimonial(models.Model):
     # Para itens de classe MUNICAO, representa a quantidade disponível/cadastrada do item
     quantidade = models.PositiveIntegerField(default=0)
     observacoes = models.CharField(max_length=255, blank=True, default="")
+    # Campos específicos para Placa Balística
+    placa_marca = models.CharField(max_length=100, blank=True, default="")
+    placa_modelo = models.CharField(max_length=100, blank=True, default="")
+    placa_numero = models.CharField(max_length=100, blank=True, default="")
+    placa_nivel = models.CharField(max_length=20, blank=True, default="")  # ex: II-A, III-A, III, IV
+    placa_tamanho = models.CharField(
+        max_length=10,
+        blank=True,
+        default="",
+        choices=(
+            ("PP", "PP"),
+            ("P", "P"),
+            ("M", "M"),
+            ("G", "G"),
+            ("GG", "GG"),
+        ),
+    )
     # Dono/Responsável (usado principalmente para itens do grupo FIXO)
     dono = models.ForeignKey(
         settings.AUTH_USER_MODEL,

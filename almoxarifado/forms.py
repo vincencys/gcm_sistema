@@ -105,6 +105,45 @@ class MunicaoFixoForm(forms.ModelForm):
         fields = ["nome", "calibre", "lote", "quantidade", "dono", "observacoes"]
 
 
+class PlacaBalisticaFixoForm(forms.ModelForm):
+    class UserMatriculaChoiceField(forms.ModelChoiceField):
+        def label_from_instance(self, obj):
+            perfil = getattr(obj, "perfil", None)
+            matricula = getattr(perfil, "matricula", "") or getattr(obj, "username", "")
+            nome = (obj.get_full_name() or obj.first_name or obj.last_name or obj.username).upper()
+            return f"{matricula} - {nome}"
+
+    dono = UserMatriculaChoiceField(
+        queryset=get_user_model().objects.none(),
+        required=False,
+        label="Agente responsável",
+        help_text="Selecione o agente: matrícula - nome",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["dono"].widget.attrs.update({"class": "js-searchable w-full"})
+        User = get_user_model()
+        self.fields["dono"].queryset = (
+            User.objects.select_related("perfil")
+            .filter(perfil__isnull=False)
+            .order_by("perfil__matricula", "username")
+        )
+        self.fields["dono"].empty_label = "Selecione o agente: matrícula - nome"
+
+    class Meta:
+        model = BemPatrimonial
+        fields = [
+            "placa_marca",
+            "placa_modelo",
+            "placa_numero",
+            "placa_nivel",
+            "placa_tamanho",
+            "dono",
+            "observacoes",
+        ]
+
+
 class MovimentacaoCautelaForm(forms.ModelForm):
     class Meta:
         model = MovimentacaoCautela

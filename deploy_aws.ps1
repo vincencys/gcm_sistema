@@ -14,7 +14,7 @@ $AWS_HOST = "18.229.134.75"  # IP do servidor AWS
 $AWS_USER = "ec2-user"  # Usuário do servidor (Amazon Linux)
 $AWS_KEY = "$env:USERPROFILE\Downloads\sistema-gcm-key.pem"  # Caminho para chave SSH
 $REMOTE_PATH = "/home/ec2-user/GCM_Sistema"  # Caminho do projeto no servidor
-$GIT_BRANCH = "master"
+$GIT_BRANCH = "main"
 # ======================================
 
 Write-Host "`n=== Deploy Automático AWS ===" -ForegroundColor Cyan

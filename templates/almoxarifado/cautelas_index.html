@@ -25,6 +25,104 @@
       </a>
     </div>
   </div>
+  
+    <!-- 5) Placa Balística Fixa dos Agentes -->
+    <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3" style="background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg>
+          <h2 class="text-sm font-semibold text-slate-800">Placas Balísticas Fixas</h2>
+        </div>
+        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+          <form method="get" class="hidden md:flex items-center gap-2">
+            <input type="text" name="ag_fixo_placa" value="{{ ag_fixo_placa|default:'' }}" placeholder="Matrícula ou nome"
+                   class="input border border-slate-300 text-sm" />
+            <button class="btn btn-primary text-sm px-3 py-2" type="submit">Buscar</button>
+            {% if ag_fixo_placa %}
+              <a class="btn btn-outline text-sm px-3 py-2" href="{% url 'core:almoxarifado:cautelas' %}">Limpar</a>
+            {% endif %}
+          </form>
+          {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+          <a class="btn btn-outline flex items-center justify-center gap-2 text-xs md:text-sm px-3 py-2 w-full md:w-auto" href="{% url 'core:almoxarifado:cautelas_placa_fixo_novo' %}">
+            <svg width="16" height="16" class="md:w-[18px] md:h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6Z"/></svg>
+            <span>Adicionar</span>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="p-4">
+        <!-- Mobile cards -->
+        <div class="md:hidden space-y-3">
+          {% for b in fixo_placas %}
+            <div class="bg-white border rounded-xl p-3 shadow-sm border-l-4 border-indigo-600">
+              <div class="font-semibold text-sm">{{ b.placa_marca }} {{ b.placa_modelo }}</div>
+              <div class="text-sm space-y-1 mt-1">
+                {% if b.dono %}
+                  {% with mat=b.dono.perfil.matricula|default:b.dono.username nome=b.dono.get_full_name|default:b.dono.get_username %}
+                    <div class="flex justify-between"><span class="text-slate-500">Agente:</span><span class="text-xs text-right">{{ mat }} - {{ nome|upper }}</span></div>
+                  {% endwith %}
+                {% endif %}
+                <div class="flex justify-between"><span class="text-slate-500">Número:</span><span>{{ b.placa_numero|default:"-" }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Nível:</span><span>{{ b.placa_nivel|default:"-" }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Tamanho:</span><span>{{ b.placa_tamanho|default:"-" }}</span></div>
+                {% if b.observacoes %}<div class="flex justify-between"><span class="text-slate-500">Obs:</span><span class="text-xs text-right">{{ b.observacoes }}</span></div>{% endif %}
+              </div>
+              {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                <div class="mt-3">
+                  <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="text-red-600 text-xs font-medium" onclick="return confirm('Excluir este item?');">Excluir</a>
+                </div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="text-center text-slate-500 py-8 text-sm">Nenhuma placa balística fixa cadastrada.</div>
+          {% endfor %}
+        </div>
+
+        <!-- Desktop table -->
+        <div class="hidden md:block overflow-x-auto rounded-xl border">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 border-b">
+              <tr class="text-left">
+                <th class="p-2 border">Marca</th>
+                <th class="p-2 border">Modelo</th>
+                <th class="p-2 border">Agente</th>
+                <th class="p-2 border">Número</th>
+                <th class="p-2 border">Nível</th>
+                <th class="p-2 border">Tamanho</th>
+                <th class="p-2 border">Observações</th>
+                <th class="p-2 border">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in fixo_placas %}
+                <tr class="hover:bg-slate-50">
+                  <td class="p-2 border">{{ b.placa_marca }}</td>
+                  <td class="p-2 border">{{ b.placa_modelo }}</td>
+                  <td class="p-2 border">
+                    {% if b.dono %}
+                      {% with mat=b.dono.perfil.matricula|default:b.dono.username nome=b.dono.get_full_name|default:b.dono.get_username %}
+                      {{ mat }} - {{ nome|upper }}
+                      {% endwith %}
+                    {% else %}-{% endif %}
+                  </td>
+                  <td class="p-2 border">{{ b.placa_numero|default:"-" }}</td>
+                  <td class="p-2 border">{{ b.placa_nivel|default:"-" }}</td>
+                  <td class="p-2 border">{{ b.placa_tamanho|default:"-" }}</td>
+                  <td class="p-2 border">{{ b.observacoes|default:"-" }}</td>
+                  <td class="p-2 border">
+                    {% if user.username|lower == 'moises' or user.username|lower == 'admnistrativo' %}
+                      <a href="{% url 'core:almoxarifado:cautelas_bem_excluir' b.id %}" class="link text-red-600" onclick="return confirm('Excluir este item?');">Excluir</a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td class="p-3 text-center text-slate-500" colspan="8">Nenhuma placa balística fixa cadastrada.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
   <!-- 1) Armamento de Suporte -->
   <div class="mb-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
@@ -435,3 +533,4 @@
   </div>
 </div>
 {% endblock %}
+

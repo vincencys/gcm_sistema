@@ -22,6 +22,7 @@ urlpatterns = [
     path('cautelas/municao-suporte/novo/', views.cautelas_municao_suporte_novo, name='cautelas_municao_suporte_novo'),
     path('cautelas/armamento-fixo/novo/', views.cautelas_armamento_fixo_novo, name='cautelas_armamento_fixo_novo'),
     path('cautelas/municao-fixo/novo/', views.cautelas_municao_fixo_novo, name='cautelas_municao_fixo_novo'),
+    path('cautelas/placa-fixo/novo/', views.cautelas_placa_fixo_novo, name='cautelas_placa_fixo_novo'),
     path('cautelas/bem/<int:bem_id>/excluir/', views.cautelas_bem_excluir, name='cautelas_bem_excluir'),
     # Estoque CRUD
     path('estoque/produtos/novo/', views.estoque_produto_novo, name='estoque_produto_novo'),
