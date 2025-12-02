@@ -107,7 +107,7 @@
 {% endblock %}
 {% block linha_acoes_mobile %}
   <div class="flex flex-wrap gap-2">
-    <a href="{% url 'common:servir_documento' d.id %}" class="inline-flex items-center justify-center px-3 py-1 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs">Ver Doc</a>
+    <a href="{{ d.arquivo.url }}" class="inline-flex items-center justify-center px-3 py-1 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs">Ver Doc</a>
     <form method="post" action="{% url 'common:assinar_documento' d.id %}" onsubmit="return confirm('Assinar este documento?');">
       {% csrf_token %}
       <button class="bg-green-600 text-white px-3 py-1 rounded text-xs">Assinar</button>
