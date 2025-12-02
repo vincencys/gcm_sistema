@@ -1442,11 +1442,8 @@ def push_diag(request: HttpRequest):
 
 @login_required
 def servir_documento(request: HttpRequest, pk: int):
-    """Serve documento para visualização no mobile (renderiza página HTML com iframe)."""
+    """Serve documento para visualização no mobile (download direto compatível com WebView)."""
     documento = get_object_or_404(DocumentoAssinavel, pk=pk)
-    
-    # Verificar se usuário tem acesso (simplificado - pode ajustar regras)
-    # Por enquanto, qualquer usuário logado pode ver documentos pendentes/assinados
     
     # Determinar qual arquivo servir
     arquivo = documento.arquivo_assinado if documento.arquivo_assinado else documento.arquivo
@@ -1454,9 +1451,8 @@ def servir_documento(request: HttpRequest, pk: int):
     if not arquivo:
         return HttpResponse('Arquivo não encontrado.', status=404)
     
-    # Renderizar template com iframe para o PDF (funciona no WebView Android)
-    context = {
-        'documento': documento,
-        'arquivo_url': arquivo.url,
-    }
-    return render(request, 'common/visualizar_documento.html', context)
+    # Servir arquivo como download inline (abre no visualizador nativo do Android)
+    response = FileResponse(arquivo.open('rb'), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{documento.nome_arquivo}"'
+    response['Content-Type'] = 'application/pdf'
+    return response

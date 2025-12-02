@@ -4,55 +4,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Visualizar Documento</title>
-  <link rel="stylesheet" href="{% static 'build/tailwind.css' %}">
+  <title>{{ documento.nome_arquivo }}</title>
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-    }
-    .pdf-container {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-    .pdf-header {
-      background: #1e293b;
-      color: white;
-      padding: 0.75rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .pdf-viewer {
-      flex: 1;
-      border: none;
-      width: 100%;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { width: 100%; height: 100%; overflow: hidden; }
+    #pdf-viewer { width: 100%; height: 100%; border: none; }
   </style>
 </head>
 <body>
-  <div class="pdf-container">
-    <div class="pdf-header">
-      <div class="flex items-center gap-3">
-        <a href="javascript:history.back()" class="text-white hover:text-slate-300">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-        </a>
-        <span class="text-sm font-medium truncate">{{ documento.nome_arquivo }}</span>
-      </div>
-      <a href="{{ arquivo_url }}" download class="text-white hover:text-slate-300">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-        </svg>
-      </a>
-    </div>
-    <iframe src="{{ arquivo_url }}" class="pdf-viewer" title="Visualizador de PDF"></iframe>
-  </div>
+  <embed id="pdf-viewer" src="{{ arquivo_url }}" type="application/pdf" />
+  <script>
+    // Fallback: se embed não funcionar, tentar abrir diretamente
+    setTimeout(function() {
+      var embed = document.getElementById('pdf-viewer');
+      if (!embed || embed.offsetHeight === 0) {
+        window.location.href = "{{ arquivo_url }}";
+      }
+    }, 1000);
+  </script>
 </body>
 </html>
