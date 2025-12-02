@@ -98,6 +98,16 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        // Exemplo de teste: abrir um PDF remoto (pressione long-click no banner)
+        bannerStatus.setOnLongClickListener {
+            val testUrl = BuildConfig.API_BASE_URL.trimEnd('/') + "/static/teste.pdf"
+            val intent = Intent(this, PdfViewActivity::class.java)
+            intent.putExtra(PdfViewActivity.EXTRA_URL, testUrl)
+            intent.putExtra(PdfViewActivity.EXTRA_TITLE, "Teste PDF")
+            startActivity(intent)
+            true
+        }
+
         // Implementar contador de 2 segundos para acionar pânico
         val textContador = findViewById<TextView>(R.id.textContador)
         val progressBarContador = findViewById<ProgressBar>(R.id.progressBarContador)

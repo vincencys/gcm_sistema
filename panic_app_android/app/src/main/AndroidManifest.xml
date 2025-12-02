@@ -30,6 +30,11 @@
         <activity
             android:name="br.gov.pr.pbto.gcm.panic.RegisterActivity"
             android:exported="false" />
+        <!-- Activity para visualizar PDFs remotos via WebView/Google Docs Viewer -->
+        <activity
+            android:name="com.seuprojeto.panico.PdfViewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PanicoApp" />
         <service android:name=".PanicLocationService"
             android:foregroundServiceType="location"
             android:exported="false"/>
