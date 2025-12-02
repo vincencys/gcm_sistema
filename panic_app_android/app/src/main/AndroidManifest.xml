@@ -35,6 +35,21 @@
             android:name="com.seuprojeto.panico.PdfViewActivity"
             android:exported="false"
             android:theme="@style/Theme.PanicoApp" />
+
+        <!-- Permitir que o Android ofereça abrir PDFs com o app -->
+        <activity
+            android:name="com.seuprojeto.panico.PdfViewActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PanicoApp">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="application/pdf" />
+                <data android:scheme="https" />
+                <data android:scheme="http" />
+            </intent-filter>
+        </activity>
         <service android:name=".PanicLocationService"
             android:foregroundServiceType="location"
             android:exported="false"/>

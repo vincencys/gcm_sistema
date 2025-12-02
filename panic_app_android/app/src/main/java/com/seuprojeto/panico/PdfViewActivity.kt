@@ -21,7 +21,12 @@ class PdfViewActivity : AppCompatActivity() {
         val webView = WebView(this)
         setContentView(webView)
 
-        val url = intent.getStringExtra(EXTRA_URL)
+        // Suporta tanto extra explícito quanto Intent.ACTION_VIEW (data uri)
+        var url = intent.getStringExtra(EXTRA_URL)
+        val data = intent.data
+        if (url.isNullOrBlank() && data != null) {
+            url = data.toString()
+        }
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Documento"
         supportActionBar?.title = title
 
