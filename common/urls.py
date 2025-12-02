@@ -17,6 +17,7 @@ urlpatterns = [
     path('documentos/assinar-lote/', views.assinar_documentos_lote, name='assinar_documentos_lote'),
     path('documentos/<int:pk>/recusar/', views.recusar_documento, name='recusar_documento'),
     path('documentos/<int:pk>/excluir/', views.excluir_documento, name='excluir_documento'),
+    path('documentos/<int:pk>/ver/', views.servir_documento, name='servir_documento'),
     path('diagnostico/pdfs/', views.diagnostico_pdfs, name='diagnostico_pdfs'),
     
     # IA endpoints

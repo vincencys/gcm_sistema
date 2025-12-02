@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db import transaction
-from django.http import HttpResponseForbidden, HttpRequest, JsonResponse
+from django.http import HttpResponseForbidden, HttpRequest, JsonResponse, HttpResponse, FileResponse
 from .models import DocumentoAssinavel, PushDevice
 from django.utils import timezone
 from django.core.files.base import File, ContentFile
@@ -1438,3 +1438,23 @@ def push_diag(request: HttpRequest):
     if isinstance(cp, str):
         resp['credentials_exists'] = os.path.exists(cp)
     return JsonResponse(resp)
+
+
+@login_required
+def servir_documento(request: HttpRequest, pk: int):
+    """Serve documento para visualização no mobile (sem target=_blank)."""
+    documento = get_object_or_404(DocumentoAssinavel, pk=pk)
+    
+    # Verificar se usuário tem acesso (simplificado - pode ajustar regras)
+    # Por enquanto, qualquer usuário logado pode ver documentos pendentes/assinados
+    
+    # Determinar qual arquivo servir
+    arquivo = documento.arquivo_assinado if documento.arquivo_assinado else documento.arquivo
+    
+    if not arquivo:
+        return HttpResponse('Arquivo não encontrado.', status=404)
+    
+    # Retornar arquivo como FileResponse
+    response = FileResponse(arquivo.open('rb'), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{arquivo.name}"'
+    return response

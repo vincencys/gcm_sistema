@@ -70,11 +70,10 @@
 {% endblock %}
 {% block linha_acoes_mobile %}
   <div class="flex flex-wrap gap-2 items-center">
+    <a class="inline-flex items-center justify-center px-3 py-1 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs" href="{% url 'common:servir_documento' d.id %}">Ver Doc</a>
     {% if d.arquivo_assinado %}
-      <a class="inline-flex items-center justify-center px-3 py-1 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs" href="{{ d.arquivo_assinado.url }}" target="_blank">Ver Doc</a>
       <a class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px]" href="{{ d.arquivo_assinado.url }}" download>Baixar</a>
     {% else %}
-      <a class="inline-flex items-center justify-center px-3 py-1 border rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs" href="{{ d.arquivo.url }}" target="_blank">Ver Doc</a>
       <a class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px]" href="{{ d.arquivo.url }}" download>Baixar</a>
     {% endif %}
     {% if request.user.username == 'moises' %}
