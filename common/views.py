@@ -1442,7 +1442,7 @@ def push_diag(request: HttpRequest):
 
 @login_required
 def servir_documento(request: HttpRequest, pk: int):
-    """Serve documento para visualização no mobile (sem target=_blank)."""
+    """Serve documento para visualização no mobile (renderiza página HTML com iframe)."""
     documento = get_object_or_404(DocumentoAssinavel, pk=pk)
     
     # Verificar se usuário tem acesso (simplificado - pode ajustar regras)
@@ -1454,7 +1454,9 @@ def servir_documento(request: HttpRequest, pk: int):
     if not arquivo:
         return HttpResponse('Arquivo não encontrado.', status=404)
     
-    # Retornar arquivo como FileResponse
-    response = FileResponse(arquivo.open('rb'), content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="{arquivo.name}"'
-    return response
+    # Renderizar template com iframe para o PDF (funciona no WebView Android)
+    context = {
+        'documento': documento,
+        'arquivo_url': arquivo.url,
+    }
+    return render(request, 'common/visualizar_documento.html', context)
