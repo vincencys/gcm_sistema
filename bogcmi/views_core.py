@@ -1163,9 +1163,9 @@ def bo_despachar_cmt(request, pk):
     
     if bo.status not in ('FINALIZADO','DESPACHO_CMT'):
         return HttpResponseForbidden('BO precisa estar FINALIZADO para despacho.')
-    # Garante documento_html idêntico ao Visualizar Documento
+    # Garante documento_html idêntico ao Visualizar Documento, MAS com imagens redimensionadas para despacho
     if not bo.documento_html:
-        bo.documento_html = _montar_documento_bo_html(request, bo)
+        bo.documento_html = _montar_documento_bo_html(request, bo, redimensionar_imagens=True)
     bo.status = 'DESPACHO_CMT'
     bo.save(update_fields=['status','documento_html'])
     # Gerar PDF fiel; se falhar não cria documento pendente (evita PDF "zuado")
@@ -1799,13 +1799,14 @@ def _gerar_qr_code_para_bo(request, bo):
     return f"data:image/png;base64,{b64}"
 
 # ================= HTML Helper Unificado =================
-def _montar_documento_bo_html(request, bo) -> str:
+def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
     """Gera o HTML final do documento do BO (idêntico ao 'Ver Documento').
 
     - Carrega todos os relacionamentos necessários
     - Injeta logo/assinatura como base64 quando possível
     - Usa o template 'bogcmi/documento_bo.html'
     - Aplica CSS base e pequenos ajustes visuais
+    - Se redimensionar_imagens=True: redimensiona imagens para 300px (para despacho)
     """
     # Coleções relacionadas
     envolvidos = Envolvido.objects.filter(bo=bo)
@@ -1999,12 +2000,14 @@ def _montar_documento_bo_html(request, bo) -> str:
         
         return tag_completa
     
-    # Aplicar substituição em todas as imagens com classe max-h-*
-    html_fragment = re.sub(
-        r'<img[^>]+class="[^"]*max-h-(?:48|40)[^"]*"[^>]*>',
-        _substituir_img,
-        html_fragment
-    )
+    # ===== REDIMENSIONAR IMAGENS APENAS SE SOLICITADO (para despacho) =====
+    if redimensionar_imagens:
+        # Aplicar substituição em todas as imagens com classe max-h-*
+        html_fragment = re.sub(
+            r'<img[^>]+class="[^"]*max-h-(?:48|40)[^"]*"[^>]*>',
+            _substituir_img,
+            html_fragment
+        )
     
     # Inserir diagrama no HTML se não estiver presente no template
     if diagrama_base64:
