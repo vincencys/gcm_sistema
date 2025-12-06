@@ -1,4 +1,5 @@
 from django.db import models
+
 class Anexo(models.Model):
     # Pode ser um anexo geral do BO (bo) ou um anexo de Envolvido específico
     bo = models.ForeignKey('BO', on_delete=models.CASCADE, related_name='anexos_gerais', null=True, blank=True)
@@ -7,7 +8,6 @@ class Anexo(models.Model):
     arquivo = models.FileField(upload_to='anexos/')
     def __str__(self):
         return f"{self.descricao} ({self.arquivo.name})"
-from django.db import models
 
 def _normalize_cpf(cpf: str) -> str:
     try:

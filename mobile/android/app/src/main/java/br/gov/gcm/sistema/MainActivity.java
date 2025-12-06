@@ -10,6 +10,9 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.webkit.WebView;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebViewClient;
+import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.app.NotificationCompat;
@@ -28,6 +31,34 @@ public class MainActivity extends BridgeActivity {
 		super.onCreate(savedInstanceState);
 		// Habilita debug do WebView (permitindo inspecionar via chrome://inspect)
 		try { WebView.setWebContentsDebuggingEnabled(true); } catch (Exception ignored) {}
+		
+		// Interceptar links com PDF para abrir no navegador do sistema
+		try {
+			WebView webView = getBridge().getWebView();
+			if (webView != null) {
+				webView.setWebViewClient(new WebViewClient() {
+					@Override
+					public boolean shouldOverrideUrlLoading(WebView view, String url) {
+						String urlLower = url.toLowerCase();
+						// Abrir arquivos PDF e views que servem PDF no navegador externo
+						if (urlLower.endsWith(".pdf") || 
+						    urlLower.contains("/servir_documento_assinado/") ||
+						    urlLower.contains("/documento-assinado/")) {
+							try {
+								Intent intent = new Intent(Intent.ACTION_VIEW);
+								intent.setData(Uri.parse(url));
+								startActivity(intent);
+								return true;
+							} catch (Exception e) {
+								Log.e("MainActivity", "Erro ao abrir URL: " + url, e);
+							}
+						}
+						return false;
+					}
+				});
+			}
+		} catch (Exception ignored) {}
+		
 			registerPlugin(NativeSettingsPlugin.class);
 			createNotificationChannels();
 		requestAudioPermissionIfNeeded();

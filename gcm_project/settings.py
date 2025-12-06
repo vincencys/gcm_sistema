@@ -9,7 +9,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "")  # usado em QR/links absolutos
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0,gcmsysint.online,18.229.134.75").split(",")
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    "127.0.0.1,localhost,0.0.0.0,gcmsysint.online,www.gcmsysint.online,18.229.134.75",
+).split(",")
 
 # Para POST/CSRF no dev e em possíveis hosts locais
 CSRF_TRUSTED_ORIGINS = [
@@ -26,9 +29,12 @@ CSRF_TRUSTED_ORIGINS = [
 
 ]
 
-# Produção: confiar domínio público
-if "gcmsysint.online" not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append("https://gcmsysint.online")
+# Produção: confiar nos domínios públicos (com e sem www) e ambos os esquemas
+for _host in ["gcmsysint.online", "www.gcmsysint.online"]:
+    for _scheme in ("http", "https"):
+        _entry = f"{_scheme}://{_host}"
+        if _entry not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_entry)
 
 # Configurações CORS para app mobile
 if DEBUG:
@@ -284,6 +290,23 @@ LOGGING = {
 # --- IA Configuration ---
 # Groq API para assistência em relatórios (gratuito)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", None)  # Definir no .env para produção
+
+# --- Sessão / Cookies ---
+# Controla a duração da sessão quando "Lembrar-me" está marcado.
+# O RememberLoginView usa este valor via request.session.set_expiry.
+SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", str(60 * 60 * 24 * 14)))  # 14 dias padrão
+
+# Em produção, não expira ao fechar navegador se o usuário marcou "Lembrar-me".
+# Quando não marcado, o RememberLoginView aplica set_expiry(0) (sessão de navegador).
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Segurança de cookies
+SESSION_COOKIE_SECURE = not DEBUG  # exige HTTPS em produção
+CSRF_COOKIE_SECURE = not DEBUG
+
+# Lax evita bloqueio de envio de cookie em navegação normal, mantendo proteção CSRF
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 
 # --- PDF / wkhtmltopdf ---
 # Se o executável padrao existir, definir automaticamente (pode ser sobrescrito via env)

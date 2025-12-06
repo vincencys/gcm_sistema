@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import sync_views
+from . import views_debug
 
 app_name = 'bogcmi'
 
@@ -52,8 +53,12 @@ urlpatterns = [
     path('<int:pk>/baixar-documento/', views.baixar_documento_bo, name='baixar_documento_bo'),
     path('<int:pk>/baixar-pdf/', views.baixar_documento_bo_pdf, name='baixar_documento_bo_pdf'),
     path('documento-assinado/<int:doc_id>/', views.servir_documento_assinado, name='servir_documento_assinado'),
+    path('pdf-token/<str:token>/<int:doc_id>/', views.servir_documento_com_token, name='servir_documento_com_token'),
+    path('gerar-token-pdf/<int:doc_id>/', views.gerar_token_acesso_pdf, name='gerar_token_acesso_pdf'),
     path('validar/<int:pk>/<str:token>/', views.validar_documento_bo, name='validar_documento_bo'),
     path('sync-offline/', sync_views.sync_offline_bos, name='sync_offline_bos'),
+    # Debug
+    path('<int:pk>/debug-marca/', views_debug.debug_marca_dagua, name='debug_marca_dagua'),
     # API
     path('api/envolvido-por-cpf/', views.api_cadastro_envolvido_lookup, name='api_envolvido_por_cpf'),
 ]

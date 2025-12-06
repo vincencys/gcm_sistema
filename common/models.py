@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 import hashlib
 import json
+import secrets
 
 User = get_user_model()
 
@@ -318,4 +319,74 @@ class SimpleLog(models.Model):
             return json.dumps(data or {}, ensure_ascii=False, separators=(",", ":"))
         except Exception:
             return ""
+
+
+class TokenAcessoPdf(TimeStamped):
+    """Token temporário para acesso a PDFs sem autenticação na app mobile.
+    
+    Útil para documentos que requerem login mas devem ser acessados
+    diretamente da app mobile sem reauthentication.
+    """
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tokens_pdf")
+    documento_id = models.IntegerField()  # DocumentoAssinavel.id
+    valido_ate = models.DateTimeField(db_index=True)
+    usado = models.BooleanField(default=False)
+    usado_em = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["token", "usuario", "documento_id"]),
+        ]
+    
+    def __str__(self):
+        return f"Token {self.token[:8]}... para doc {self.documento_id} ({self.usuario.username})"
+    
+    @classmethod
+    def gerar_token(cls, usuario, documento_id, duracao_minutos=15):
+        """Gera um novo token válido por N minutos.
+        
+        Args:
+            usuario: User instance
+            documento_id: ID do DocumentoAssinavel
+            duracao_minutos: Quantos minutos o token é válido (padrão 15 min)
+        
+        Returns:
+            TokenAcessoPdf instance
+        """
+        token = secrets.token_urlsafe(48)
+        valido_ate = timezone.now() + timezone.timedelta(minutes=duracao_minutos)
+        
+        return cls.objects.create(
+            token=token,
+            usuario=usuario,
+            documento_id=documento_id,
+            valido_ate=valido_ate
+        )
+    
+    @classmethod
+    def validar_token(cls, token, documento_id):
+        """Valida um token e retorna a instância se válido.
+        
+        Returns:
+            TokenAcessoPdf if valid
+            None if expired, used, or not found
+        """
+        try:
+            token_obj = cls.objects.get(
+                token=token,
+                documento_id=documento_id,
+                usado=False,
+                valido_ate__gt=timezone.now()
+            )
+            return token_obj
+        except cls.DoesNotExist:
+            return None
+    
+    def marcar_como_usado(self):
+        """Marca o token como usado."""
+        self.usado = True
+        self.usado_em = timezone.now()
+        self.save(update_fields=['usado', 'usado_em'])
 

@@ -73,26 +73,112 @@ def _usuario_pode_ver_bo_sem_marca_dagua(bo, user):
 
 
 def _usuario_e_integrante_bo(bo, user):
-    """Verifica se usuário é integrante do BO (encarregado/motorista/auxiliares/cecom)."""
+    """Verifica se usuário é integrante do BO (encarregado/motorista/auxiliares/cecom).
+    
+    Também verifica se o usuário está em 'envolvidos_bo' para casos onde a atribuição
+    não foi salva nos campos principais.
+    """
     if not user.is_authenticated:
         return False
     
-    return user.id in [
+    # Verificar campos diretos
+    if user.id in [
         bo.encarregado_id,
         bo.motorista_id,
         bo.auxiliar1_id,
         bo.auxiliar2_id,
         bo.cecom_id
-    ]
+    ]:
+        return True
+    
+    # Verificar se está em envolvidos_bo (fallback para casos onde não foi salvo nos campos)
+    try:
+        return bo.envolvidos_bo.filter(usuario=user).exists()
+    except Exception:
+        return False
 
 
 def _aplicar_marca_dagua_pdf(pdf_bytes):
-    """Temporariamente retorna o PDF original sem marca d'água.
-
-    Observação: a função original foi corrompida; evitamos quebrar o fluxo
-    até restaurar a implementação correta de marca d'água.
+    """Aplica marca d'água 'APENAS CONSULTIVO' diagonal no PDF.
+    
+    Args:
+        pdf_bytes: bytes do PDF original
+    
+    Returns:
+        bytes: PDF com marca d'água aplicada
     """
-    return pdf_bytes
+    from io import BytesIO
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.colors import Color
+    
+    print(f"[MARCA] Iniciando marca d'água em PDF de {len(pdf_bytes)} bytes")
+    _log_bo_pdf(f"[MARCA] Iniciando marca d'água em PDF de {len(pdf_bytes)} bytes")
+    
+    # Importar pypdf
+    try:
+        from pypdf import PdfReader, PdfWriter
+        print("[MARCA] Usando pypdf")
+    except ImportError:
+        try:
+            from PyPDF2 import PdfReader, PdfWriter
+            print("[MARCA] Usando PyPDF2")
+        except ImportError as e:
+            print(f"[MARCA] ERRO: Nenhuma biblioteca disponível! {e}")
+            _log_bo_pdf(f"[MARCA] ERRO: Nenhuma biblioteca disponível! {e}")
+            return pdf_bytes
+    
+    # Ler PDF original
+    pdf_reader = PdfReader(BytesIO(pdf_bytes))
+    pdf_writer = PdfWriter()
+    
+    # Criar marca d'água
+    watermark_buffer = BytesIO()
+    watermark_canvas = canvas.Canvas(watermark_buffer, pagesize=A4)
+    width, height = A4
+    
+    # Configurar fonte e cor
+    watermark_canvas.setFont("Helvetica-Bold", 72)
+    watermark_canvas.setFillColor(Color(0.8, 0.8, 0.8, alpha=0.4))
+    
+    # Rotacionar e desenhar texto diagonal
+    watermark_canvas.saveState()
+    watermark_canvas.translate(width/2, height/2)
+    watermark_canvas.rotate(45)
+    
+    text = "APENAS CONSULTIVO"
+    text_width = watermark_canvas.stringWidth(text, "Helvetica-Bold", 72)
+    watermark_canvas.drawString(-text_width/2, 0, text)
+    
+    watermark_canvas.restoreState()
+    watermark_canvas.save()
+    
+    print(f"[MARCA] Marca d'água criada com sucesso")
+    
+    # Ler marca d'água
+    watermark_buffer.seek(0)
+    watermark_pdf = PdfReader(watermark_buffer)
+    watermark_page = watermark_pdf.pages[0]
+    
+    # Aplicar marca d'água em cada página
+    page_count = len(pdf_reader.pages)
+    print(f"[MARCA] Aplicando marca d'água em {page_count} páginas")
+    
+    for i, page in enumerate(pdf_reader.pages):
+        page.merge_page(watermark_page)
+        pdf_writer.add_page(page)
+        print(f"[MARCA] ✅ Página {i+1}/{page_count} com marca")
+    
+    # Gerar PDF final
+    output_buffer = BytesIO()
+    pdf_writer.write(output_buffer)
+    output_buffer.seek(0)
+    result = output_buffer.getvalue()
+    
+    print(f"[MARCA] ✅ PDF finalizado: {len(result)} bytes (original: {len(pdf_bytes)}, diferença: +{len(result) - len(pdf_bytes)})")
+    _log_bo_pdf(f"[MARCA] ✅ PDF finalizado: {len(result)} bytes (original: {len(pdf_bytes)}, diferença: +{len(result) - len(pdf_bytes)})")
+    
+    return result
 
 
 def _find_wkhtmltopdf_path():
@@ -1827,6 +1913,20 @@ def _montar_documento_bo_html(request, bo) -> str:
         html_fragment = re.sub(r"(<div class=\"assinatura-imagem\">)\s*<img[^>]+>", f"\\1<img src=\"{assinatura_b64}\" alt=\"Assinatura\">", html_fragment, flags=re.I)
 
     # Não remover tags já renderizadas; render_to_string já processou o template.
+    
+    # ===== INJETAR ESTILOS INLINE NAS IMAGENS DE ANEXOS =====
+    # Problema: wkhtmltopdf pode não carregar Tailwind CSS corretamente
+    # Solução: Adicionar estilos inline para garantir tamanho correto das imagens em PDFs
+    html_fragment = re.sub(
+        r'(<img[^>]+class="[^"]*max-h-48[^"]*"[^>]*)(>)',
+        r'\1 style="max-height: 192px !important; height: auto; width: auto; max-width: 100%; object-fit: contain; display: block;"\2',
+        html_fragment
+    )
+    html_fragment = re.sub(
+        r'(<img[^>]+class="[^"]*max-h-40[^"]*"[^>]*)(>)',
+        r'\1 style="max-height: 160px !important; height: auto; width: auto; max-width: 100%; object-fit: contain; display: block;"\2',
+        html_fragment
+    )
     
     # Inserir diagrama no HTML se não estiver presente no template
     if diagrama_base64:
