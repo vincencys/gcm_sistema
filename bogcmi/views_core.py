@@ -1914,17 +1914,99 @@ def _montar_documento_bo_html(request, bo) -> str:
 
     # Não remover tags já renderizadas; render_to_string já processou o template.
     
-    # ===== INJETAR ESTILOS INLINE NAS IMAGENS DE ANEXOS =====
-    # Problema: wkhtmltopdf pode não carregar Tailwind CSS corretamente
-    # Solução: Adicionar estilos inline para garantir tamanho correto das imagens em PDFs
+    # ===== REDIMENSIONAR IMAGENS DE ANEXOS PARA BASE64 =====
+    # Problema: wkhtmltopdf ignora CSS (mesmo inline) e renderiza imagens em tamanho original
+    # Solução: Redimensionar imagens fisicamente e convertê-las para base64
+    def _redimensionar_imagem_para_base64(url_path, max_height_px=192):
+        """Redimensiona imagem e retorna base64 data URI."""
+        try:
+            from PIL import Image
+            from io import BytesIO
+            import base64
+            import os
+            from django.conf import settings
+            
+            # Extrair caminho do arquivo a partir da URL
+            if url_path.startswith('/media/'):
+                file_path = os.path.join(settings.MEDIA_ROOT, url_path.replace('/media/', ''))
+            elif url_path.startswith('http'):
+                return None  # URL externa, não processar
+            else:
+                return None
+            
+            if not os.path.exists(file_path):
+                return None
+            
+            # Abrir e redimensionar imagem
+            img = Image.open(file_path)
+            
+            # Calcular nova dimensão mantendo proporção
+            width, height = img.size
+            if height > max_height_px:
+                ratio = max_height_px / height
+                new_width = int(width * ratio)
+                new_height = max_height_px
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Converter para base64
+            buffer = BytesIO()
+            img_format = img.format or 'PNG'
+            img.save(buffer, format=img_format)
+            buffer.seek(0)
+            
+            mime_type = f'image/{img_format.lower()}'
+            b64_data = base64.b64encode(buffer.read()).decode()
+            
+            return f'data:{mime_type};base64,{b64_data}'
+        except Exception as e:
+            _log_bo_pdf(f"Erro ao redimensionar imagem {url_path}: {e}")
+            return None
+    
+    # Substituir URLs de imagens por base64 redimensionado
+    def _substituir_img(match):
+        """Substitui <img src="/media/..." por <img src="data:image/...;base64,..." redimensionado."""
+        tag_completa = match.group(0)
+        src_match = re.search(r'src=["\']([^"\']+)["\']', tag_completa)
+        
+        if not src_match:
+            return tag_completa
+        
+        url_original = src_match.group(1)
+        
+        # Determinar altura máxima baseado na classe
+        if 'max-h-40' in tag_completa:
+            max_height = 160
+        else:  # max-h-48 ou padrão
+            max_height = 192
+        
+        # Redimensionar e converter para base64
+        base64_uri = _redimensionar_imagem_para_base64(url_original, max_height)
+        
+        if base64_uri:
+            # Substituir src por base64 e adicionar estilos inline
+            tag_nova = re.sub(
+                r'src=["\'][^"\']+["\']',
+                f'src="{base64_uri}"',
+                tag_completa
+            )
+            # Adicionar/atualizar style
+            if 'style=' in tag_nova:
+                tag_nova = re.sub(
+                    r'style=["\']([^"\']*)["\']',
+                    f'style="\\1 max-height: {max_height}px; width: auto; object-fit: contain;"',
+                    tag_nova
+                )
+            else:
+                tag_nova = tag_nova.replace('>', f' style="max-height: {max_height}px; width: auto; object-fit: contain;">', 1)
+            
+            return tag_nova
+        
+        return tag_completa
+    
+    # Aplicar substituição em todas as imagens com classe max-h-*
     html_fragment = re.sub(
-        r'(<img[^>]+class="[^"]*max-h-48[^"]*"[^>]*)(>)',
-        r'\1 style="max-height: 192px !important; height: auto; width: auto; max-width: 100%; object-fit: contain; display: block;"\2',
-        html_fragment
-    )
-    html_fragment = re.sub(
-        r'(<img[^>]+class="[^"]*max-h-40[^"]*"[^>]*)(>)',
-        r'\1 style="max-height: 160px !important; height: auto; width: auto; max-width: 100%; object-fit: contain; display: block;"\2',
+        r'<img[^>]+class="[^"]*max-h-(?:48|40)[^"]*"[^>]*>',
+        _substituir_img,
         html_fragment
     )
     
