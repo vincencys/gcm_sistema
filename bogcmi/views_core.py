@@ -1807,8 +1807,10 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
     - Injeta logo/assinatura como base64 quando possível
     - Usa o template 'bogcmi/documento_bo.html'
     - Aplica CSS base e pequenos ajustes visuais
-    - Se redimensionar_imagens=True: redimensiona imagens para 300px (para despacho)
+    - Se redimensionar_imagens=True: redimensiona imagens para 250px (para despacho)
     """
+    _log_bo_pdf(f"[_montar_documento_bo_html] Chamada para BO #{bo.id} - redimensionar_imagens={redimensionar_imagens}")
+    
     # Coleções relacionadas
     envolvidos = Envolvido.objects.filter(bo=bo)
     anexos_envolvidos = Anexo.objects.filter(envolvido__bo=bo)
