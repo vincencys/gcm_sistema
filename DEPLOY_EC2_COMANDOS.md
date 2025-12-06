@@ -4,12 +4,17 @@
 - **ID:** `i-097e96dd7175173b0`
 - **Nome:** GCM-Sistema
 - **Região:** `sa-east-1` (São Paulo)
-- **IP Público:** `ec2-18-231-248-75.sa-east-1.compute.amazonaws.com`
+- **DNS Público:** `ec2-18-231-248-75.sa-east-1.compute.amazonaws.com`
+- **IP Público:** `18.231.248.75`
 - **IP Privado:** `172.31.5.118`
+- **DNS Privado:** `ip-172-31-5-118.sa-east-1.compute.internal`
 - **Sistema:** Amazon Linux 2023
+- **AMI:** `ami-02bdb08bdecc42fc9`
 - **Usuário:** `ec2-user`
 - **Diretório do Projeto:** `/home/ec2-user/gcm_sistema`
 - **Chave SSH:** `C:\REGISTRO_SISTEMA_GCM_2025\sistema-gcm-key.pem`
+- **URL do Site:** https://gcmsystem.online
+- **DNS Público Alternativo:** `ec2-18-231-248-75.sa-east-1.compute.amazonaws.com` (endpoint aberto)
 
 ---
 
