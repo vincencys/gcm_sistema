@@ -1916,9 +1916,9 @@ def _montar_documento_bo_html(request, bo) -> str:
     
     # ===== REDIMENSIONAR IMAGENS DE ANEXOS PARA BASE64 =====
     # Problema: wkhtmltopdf ignora CSS (mesmo inline) e renderiza imagens em tamanho original
-    # Solução: Redimensionar imagens fisicamente e convertê-las para base64
-    def _redimensionar_imagem_para_base64(url_path, max_height_px=192):
-        """Redimensiona imagem e retorna base64 data URI."""
+    # Solução: Redimensionar imagens fisicamente para máximo 300px de largura
+    def _redimensionar_imagem_para_base64(url_path, max_width_px=300):
+        """Redimensiona imagem para no máximo 300px de largura e retorna base64 data URI."""
         try:
             from PIL import Image
             from io import BytesIO
@@ -1937,15 +1937,16 @@ def _montar_documento_bo_html(request, bo) -> str:
             if not os.path.exists(file_path):
                 return None
             
-            # Abrir e redimensionar imagem
+            # Abrir imagem
             img = Image.open(file_path)
             
-            # Calcular nova dimensão mantendo proporção
+            # Calcular nova dimensão baseada na LARGURA (não altura)
+            # Limitar a 300px de largura para caber bem na página
             width, height = img.size
-            if height > max_height_px:
-                ratio = max_height_px / height
-                new_width = int(width * ratio)
-                new_height = max_height_px
+            if width > max_width_px:
+                ratio = max_width_px / width
+                new_width = max_width_px
+                new_height = int(height * ratio)
                 img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
             
             # Converter para base64
@@ -1964,7 +1965,7 @@ def _montar_documento_bo_html(request, bo) -> str:
     
     # Substituir URLs de imagens por base64 redimensionado
     def _substituir_img(match):
-        """Substitui <img src="/media/..." por <img src="data:image/...;base64,..." redimensionado."""
+        """Substitui <img src="/media/..." por <img src="data:image/...;base64,..." redimensionado a 300px."""
         tag_completa = match.group(0)
         src_match = re.search(r'src=["\']([^"\']+)["\']', tag_completa)
         
@@ -1973,31 +1974,26 @@ def _montar_documento_bo_html(request, bo) -> str:
         
         url_original = src_match.group(1)
         
-        # Determinar altura máxima baseado na classe
-        if 'max-h-40' in tag_completa:
-            max_height = 160
-        else:  # max-h-48 ou padrão
-            max_height = 192
-        
-        # Redimensionar e converter para base64
-        base64_uri = _redimensionar_imagem_para_base64(url_original, max_height)
+        # Redimensionar para 300px de largura
+        base64_uri = _redimensionar_imagem_para_base64(url_original, max_width_px=300)
         
         if base64_uri:
-            # Substituir src por base64 e adicionar estilos inline
+            # Substituir src por base64 e adicionar estilos inline restritivos
             tag_nova = re.sub(
                 r'src=["\'][^"\']+["\']',
                 f'src="{base64_uri}"',
                 tag_completa
             )
-            # Adicionar/atualizar style
+            # Adicionar/atualizar style com limites estritos
+            style_value = 'max-width: 300px; max-height: 400px; width: auto; height: auto; object-fit: contain;'
             if 'style=' in tag_nova:
                 tag_nova = re.sub(
                     r'style=["\']([^"\']*)["\']',
-                    f'style="\\1 max-height: {max_height}px; width: auto; object-fit: contain;"',
+                    f'style="{style_value}"',
                     tag_nova
                 )
             else:
-                tag_nova = tag_nova.replace('>', f' style="max-height: {max_height}px; width: auto; object-fit: contain;">', 1)
+                tag_nova = tag_nova.replace('>', f' style="{style_value}">', 1)
             
             return tag_nova
         
