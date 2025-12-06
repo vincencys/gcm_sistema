@@ -1163,9 +1163,10 @@ def bo_despachar_cmt(request, pk):
     
     if bo.status not in ('FINALIZADO','DESPACHO_CMT'):
         return HttpResponseForbidden('BO precisa estar FINALIZADO para despacho.')
-    # Garante documento_html idêntico ao Visualizar Documento, MAS com imagens redimensionadas para despacho
-    if not bo.documento_html:
-        bo.documento_html = _montar_documento_bo_html(request, bo, redimensionar_imagens=True)
+    
+    # SEMPRE regerar documento_html COM imagens redimensionadas para despacho
+    # (não reutilizar o HTML do BO finalizado que tem imagens grandes)
+    bo.documento_html = _montar_documento_bo_html(request, bo, redimensionar_imagens=True)
     bo.status = 'DESPACHO_CMT'
     bo.save(update_fields=['status','documento_html'])
     # Gerar PDF fiel; se falhar não cria documento pendente (evita PDF "zuado")
