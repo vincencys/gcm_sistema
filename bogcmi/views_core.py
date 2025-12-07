@@ -1905,10 +1905,34 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
         'km_utilizada': (bo.km_final - bo.km_inicio) if (bo.km_inicio is not None and bo.km_final is not None and isinstance(bo.km_inicio, int) and isinstance(bo.km_final, int) and (bo.km_final - bo.km_inicio) >= 0) else None,
         'qr_code_base64': _gerar_qr_code_para_bo(request, bo),
         'diagrama_veiculo_base64': diagrama_base64,
+        'redimensionar_imagens': redimensionar_imagens,  # Passar para template
     })
 
-    # Não injetar CSS customizado aqui para preservar layout original do template
-    core_css = ""
+    # CSS global para redimensionamento de imagens (injetado no HEAD)
+    if redimensionar_imagens:
+        css_redimensionar = """
+<style>
+    /* Força imagens de anexos a no máximo 250px */
+    img {
+        max-width: 250px !important;
+        height: auto !important;
+        display: block !important;
+    }
+    /* Preserva logo e QR code */
+    img[alt*="Logo"], img[alt*="QR"], img[src*="logo_gcm"], img[src*="qr"] {
+        max-width: 100px !important;
+    }
+</style>
+"""
+        # Injetar CSS no HEAD (se existir) ou no início do body
+        if '<head>' in html_fragment:
+            html_fragment = html_fragment.replace('</head>', f'{css_redimensionar}</head>', 1)
+        elif '<body>' in html_fragment:
+            html_fragment = html_fragment.replace('<body>', f'<body>{css_redimensionar}', 1)
+        else:
+            html_fragment = css_redimensionar + html_fragment
+        
+        _log_bo_pdf(f"[CSS_GLOBAL] CSS de redimensionamento injetado no documento BO {bo.id}")
 
     # Substituições: logo/assinatura em base64 para cumprir renderizadores de PDF
     if logo_b64:
@@ -1920,130 +1944,39 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
     if assinatura_b64:
         html_fragment = re.sub(r"(<div class=\"assinatura-imagem\">)\s*<img[^>]+>", f"\\1<img src=\"{assinatura_b64}\" alt=\"Assinatura\">", html_fragment, flags=re.I)
 
-    # Não remover tags já renderizadas; render_to_string já processou o template.
-    
-    # ===== REDIMENSIONAR IMAGENS DE ANEXOS PARA BASE64 =====
-    # Problema: wkhtmltopdf ignora CSS (mesmo inline) e renderiza imagens em tamanho original
-    # Solução: Redimensionar imagens fisicamente para máximo 250px de largura
-    def _redimensionar_imagem_para_arquivo(url_path, max_width_px=250):
-        """Redimensiona imagem para no máximo 250px de largura e salva em arquivo temporário."""
-        try:
-            from PIL import Image
-            import os
-            import hashlib
-            from django.conf import settings
-            
-            # Extrair caminho do arquivo a partir da URL
-            if url_path.startswith('/media/'):
-                file_path = os.path.join(settings.MEDIA_ROOT, url_path.replace('/media/', ''))
-            elif url_path.startswith('http'):
-                _log_bo_pdf(f"[REDIMENSIONAR] URL externa ignorada: {url_path}")
-                return url_path  # Retorna URL original
-            else:
-                _log_bo_pdf(f"[REDIMENSIONAR] URL não reconhecida: {url_path}")
-                return url_path  # Retorna URL original
-            
-            if not os.path.exists(file_path):
-                _log_bo_pdf(f"[REDIMENSIONAR] Arquivo não encontrado: {file_path}")
-                return url_path  # Retorna URL original
-            
-            # Abrir imagem
-            img = Image.open(file_path)
-            original_size = img.size
-            _log_bo_pdf(f"[REDIMENSIONAR] Imagem original: {original_size[0]}x{original_size[1]}px - {file_path}")
-            
-            # Calcular nova dimensão baseada na LARGURA
-            width, height = img.size
-            if width <= max_width_px:
-                _log_bo_pdf(f"[REDIMENSIONAR] Imagem já é pequena ({width}x{height}px), usando original")
-                return url_path  # Retorna URL original
-            
-            # Redimensionar
-            ratio = max_width_px / width
-            new_width = max_width_px
-            new_height = int(height * ratio)
-            img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            _log_bo_pdf(f"[REDIMENSIONAR] Redimensionada para: {new_width}x{new_height}px")
-            
-            # Criar nome único para arquivo redimensionado
-            hash_suffix = hashlib.md5(file_path.encode()).hexdigest()[:8]
-            base_name = os.path.basename(file_path)
-            name_parts = os.path.splitext(base_name)
-            new_name = f"{name_parts[0]}_thumb_{hash_suffix}{name_parts[1]}"
-            
-            # Salvar na mesma pasta que o original
-            dir_path = os.path.dirname(file_path)
-            new_file_path = os.path.join(dir_path, new_name)
-            
-            img_format = img.format or 'JPEG'
-            img_resized.save(new_file_path, format=img_format, quality=85)
-            _log_bo_pdf(f"[REDIMENSIONAR] Salva em: {new_file_path}")
-            
-            # Retornar nova URL
-            new_url = url_path.replace(base_name, new_name)
-            return new_url
-            
-        except Exception as e:
-            _log_bo_pdf(f"[REDIMENSIONAR] ERRO ao redimensionar imagem {url_path}: {e}")
-            import traceback
-            _log_bo_pdf(traceback.format_exc())
-            return url_path  # Retorna URL original em caso de erro
-    
-    # ===== REDIMENSIONAR IMAGENS APENAS SE SOLICITADO (para despacho) =====
+    # ===== REDIMENSIONAR IMAGENS APENAS PARA DESPACHO (CSS INLINE SIMPLES) =====
+    # Solução: Adicionar width inline que wkhtmltopdf respeita
     if redimensionar_imagens:
-        _log_bo_pdf(f"[REDIMENSIONAR] Iniciando redimensionamento de imagens para BO {bo.id}")
+        _log_bo_pdf(f"[REDIMENSIONAR_CSS] Aplicando CSS inline para redimensionar imagens do BO {bo.id}")
         
-        # Aplicar substituição em TODAS as imagens que apontam para /media/
-        def _substituir_qualquer_img(match):
-            tag_completa = match.group(0)
-            src_match = re.search(r'src=["\']([^"\']+)["\']', tag_completa)
+        def _aplicar_css_imagem(match):
+            tag = match.group(0)
+            # Só processar imagens de /media/
+            if '/media/' not in tag:
+                return tag
             
-            if not src_match:
-                return tag_completa
+            _log_bo_pdf(f"[REDIMENSIONAR_CSS] Tag encontrada: {tag[:100]}")
             
-            url_original = src_match.group(1)
-            
-            # Só processar imagens do /media/
-            if not url_original.startswith('/media/'):
-                return tag_completa
-            
-            _log_bo_pdf(f"[REDIMENSIONAR] Processando imagem: {url_original}")
-            
-            # Redimensionar e salvar em arquivo (retorna nova URL)
-            nova_url = _redimensionar_imagem_para_arquivo(url_original, max_width_px=250)
-            
-            if nova_url != url_original:
-                _log_bo_pdf(f"[REDIMENSIONAR] Imagem redimensionada: {nova_url}")
-                # Substituir src pela nova URL
-                tag_nova = re.sub(
-                    r'src=["\'][^"\']+["\']',
-                    f'src="{nova_url}"',
-                    tag_completa
-                )
-                # Adicionar/atualizar style com limites estritos
-                style_value = 'max-width: 250px; max-height: 350px; width: auto; height: auto; object-fit: contain;'
-                if 'style=' in tag_nova:
-                    tag_nova = re.sub(
-                        r'style=["\']([^"\']*)["\']',
-                        f'style="{style_value}"',
-                        tag_nova
-                    )
-                else:
-                    tag_nova = tag_nova.replace('>', f' style="{style_value}">', 1)
-                
-                return tag_nova
+            # Adicionar width="250" e style inline (wkhtmltopdf respeita atributo width)
+            if 'width=' in tag:
+                # Substituir width existente
+                tag = re.sub(r'width\s*=\s*["\']?\d+["\']?', 'width="250"', tag)
             else:
-                _log_bo_pdf(f"[REDIMENSIONAR] Imagem não foi redimensionada (já pequena ou erro)")
+                # Adicionar width
+                tag = tag.replace('<img', '<img width="250"', 1)
             
-            return tag_completa
+            # Adicionar style inline
+            style_css = 'max-width: 250px; height: auto; display: block;'
+            if 'style=' in tag:
+                tag = re.sub(r'style=["\']([^"\']*)["\']', f'style="{style_css}"', tag)
+            else:
+                tag = tag.replace('<img', f'<img style="{style_css}"', 1)
+            
+            _log_bo_pdf(f"[REDIMENSIONAR_CSS] Tag modificada: {tag[:100]}")
+            return tag
         
-        # Substituir TODAS as tags <img> no HTML
-        html_fragment = re.sub(
-            r'<img[^>]+>',
-            _substituir_qualquer_img,
-            html_fragment
-        )
-        _log_bo_pdf(f"[REDIMENSIONAR] Redimensionamento concluído para BO {bo.id}")
+        html_fragment = re.sub(r'<img[^>]+>', _aplicar_css_imagem, html_fragment)
+        _log_bo_pdf(f"[REDIMENSIONAR_CSS] CSS aplicado para BO {bo.id}")
     
     # Inserir diagrama no HTML se não estiver presente no template
     if diagrama_base64:
