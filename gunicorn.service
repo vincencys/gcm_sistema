@@ -7,6 +7,7 @@ User=ec2-user
 Group=ec2-user
 WorkingDirectory=/home/ec2-user/gcm_sistema
 Environment="SITE_BASE_URL=https://gcmsysint.online"
+Environment="DEBUG=0"
 ExecStart=/home/ec2-user/gcm_sistema/.venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8001 --timeout 120 gcm_project.wsgi:application
 
 [Install]
