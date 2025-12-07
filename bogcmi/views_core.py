@@ -1925,13 +1925,12 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
     # ===== REDIMENSIONAR IMAGENS DE ANEXOS PARA BASE64 =====
     # Problema: wkhtmltopdf ignora CSS (mesmo inline) e renderiza imagens em tamanho original
     # Solução: Redimensionar imagens fisicamente para máximo 250px de largura
-    def _redimensionar_imagem_para_base64(url_path, max_width_px=250):
-        """Redimensiona imagem para no máximo 250px de largura e retorna base64 data URI."""
+    def _redimensionar_imagem_para_arquivo(url_path, max_width_px=250):
+        """Redimensiona imagem para no máximo 250px de largura e salva em arquivo temporário."""
         try:
             from PIL import Image
-            from io import BytesIO
-            import base64
             import os
+            import hashlib
             from django.conf import settings
             
             # Extrair caminho do arquivo a partir da URL
@@ -1939,48 +1938,56 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
                 file_path = os.path.join(settings.MEDIA_ROOT, url_path.replace('/media/', ''))
             elif url_path.startswith('http'):
                 _log_bo_pdf(f"[REDIMENSIONAR] URL externa ignorada: {url_path}")
-                return None  # URL externa, não processar
+                return url_path  # Retorna URL original
             else:
                 _log_bo_pdf(f"[REDIMENSIONAR] URL não reconhecida: {url_path}")
-                return None
+                return url_path  # Retorna URL original
             
             if not os.path.exists(file_path):
                 _log_bo_pdf(f"[REDIMENSIONAR] Arquivo não encontrado: {file_path}")
-                return None
+                return url_path  # Retorna URL original
             
             # Abrir imagem
             img = Image.open(file_path)
             original_size = img.size
-            _log_bo_pdf(f"[REDIMENSIONAR] Imagem original: {original_size[0]}x{original_size[1]}px")
+            _log_bo_pdf(f"[REDIMENSIONAR] Imagem original: {original_size[0]}x{original_size[1]}px - {file_path}")
             
             # Calcular nova dimensão baseada na LARGURA
-            # Limitar a 250px de largura para caber bem na página
             width, height = img.size
-            if width > max_width_px:
-                ratio = max_width_px / width
-                new_width = max_width_px
-                new_height = int(height * ratio)
-                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                _log_bo_pdf(f"[REDIMENSIONAR] Redimensionada para: {new_width}x{new_height}px")
-            else:
-                _log_bo_pdf(f"[REDIMENSIONAR] Imagem já é pequena, mantida em {width}x{height}px")
+            if width <= max_width_px:
+                _log_bo_pdf(f"[REDIMENSIONAR] Imagem já é pequena ({width}x{height}px), usando original")
+                return url_path  # Retorna URL original
             
-            # Converter para base64
-            buffer = BytesIO()
-            img_format = img.format or 'PNG'
-            img.save(buffer, format=img_format)
-            buffer.seek(0)
+            # Redimensionar
+            ratio = max_width_px / width
+            new_width = max_width_px
+            new_height = int(height * ratio)
+            img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            _log_bo_pdf(f"[REDIMENSIONAR] Redimensionada para: {new_width}x{new_height}px")
             
-            mime_type = f'image/{img_format.lower()}'
-            b64_data = base64.b64encode(buffer.read()).decode()
+            # Criar nome único para arquivo redimensionado
+            hash_suffix = hashlib.md5(file_path.encode()).hexdigest()[:8]
+            base_name = os.path.basename(file_path)
+            name_parts = os.path.splitext(base_name)
+            new_name = f"{name_parts[0]}_thumb_{hash_suffix}{name_parts[1]}"
             
-            _log_bo_pdf(f"[REDIMENSIONAR] Base64 gerado com {len(b64_data)} caracteres")
-            return f'data:{mime_type};base64,{b64_data}'
+            # Salvar na mesma pasta que o original
+            dir_path = os.path.dirname(file_path)
+            new_file_path = os.path.join(dir_path, new_name)
+            
+            img_format = img.format or 'JPEG'
+            img_resized.save(new_file_path, format=img_format, quality=85)
+            _log_bo_pdf(f"[REDIMENSIONAR] Salva em: {new_file_path}")
+            
+            # Retornar nova URL
+            new_url = url_path.replace(base_name, new_name)
+            return new_url
+            
         except Exception as e:
             _log_bo_pdf(f"[REDIMENSIONAR] ERRO ao redimensionar imagem {url_path}: {e}")
             import traceback
             _log_bo_pdf(traceback.format_exc())
-            return None
+            return url_path  # Retorna URL original em caso de erro
     
     # ===== REDIMENSIONAR IMAGENS APENAS SE SOLICITADO (para despacho) =====
     if redimensionar_imagens:
@@ -2002,15 +2009,15 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
             
             _log_bo_pdf(f"[REDIMENSIONAR] Processando imagem: {url_original}")
             
-            # Redimensionar para 250px de largura (menor para caber em 1 página)
-            base64_uri = _redimensionar_imagem_para_base64(url_original, max_width_px=250)
+            # Redimensionar e salvar em arquivo (retorna nova URL)
+            nova_url = _redimensionar_imagem_para_arquivo(url_original, max_width_px=250)
             
-            if base64_uri:
-                _log_bo_pdf(f"[REDIMENSIONAR] Imagem convertida para base64 com sucesso")
-                # Substituir src por base64 e adicionar estilos inline restritivos
+            if nova_url != url_original:
+                _log_bo_pdf(f"[REDIMENSIONAR] Imagem redimensionada: {nova_url}")
+                # Substituir src pela nova URL
                 tag_nova = re.sub(
                     r'src=["\'][^"\']+["\']',
-                    f'src="{base64_uri}"',
+                    f'src="{nova_url}"',
                     tag_completa
                 )
                 # Adicionar/atualizar style com limites estritos
@@ -2026,7 +2033,7 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
                 
                 return tag_nova
             else:
-                _log_bo_pdf(f"[REDIMENSIONAR] Falha ao converter imagem para base64")
+                _log_bo_pdf(f"[REDIMENSIONAR] Imagem não foi redimensionada (já pequena ou erro)")
             
             return tag_completa
         
