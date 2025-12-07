@@ -31,10 +31,11 @@ def dashboard(request):
     hoje = timezone.localdate()
     bos_abertos = BO.objects.filter(emissao__date=hoje, status__in=['EDICAO','FINALIZADO']).order_by('-emissao')[:50]
     try:
+        # Alinhar com o painel CECOM: listar todos os talões ABERTOS (não só do dia)
         taloes_abertos = (
-            Talao.objects.select_related('viatura','codigo_ocorrencia','codigo_ocorrencia__grupo')
-            .filter(status='ABERTO', iniciado_em__date=hoje)
-            .order_by('iniciado_em')
+            Talao.objects.select_related('viatura', 'codigo_ocorrencia', 'codigo_ocorrencia__grupo')
+            .filter(status='ABERTO')
+            .order_by('-iniciado_em')
         )
     except Exception:
         taloes_abertos = []
