@@ -1789,15 +1789,10 @@ def _gerar_qr_code_para_bo(request, bo):
         bo.save(update_fields=['validacao_token','validacao_hash'])
     # URL de validação (preferir SITE_BASE_URL se definido; senão request)
     from django.conf import settings as _s
-    import logging
-    logger = logging.getLogger(__name__)
-    base = getattr(_s, 'SITE_BASE_URL', '') or ''
-    logger.warning(f"SITE_BASE_URL: {base}")
+    base = getattr(_s, 'SITE_BASE_URL', None) or None
     if not base:
         base = request.build_absolute_uri('/')[:-1]
-        logger.warning(f"Usando request.build_absolute_uri: {base}")
     url_validacao = f"{base}/bogcmi/validar/{bo.id}/{bo.validacao_token}/"
-    logger.warning(f"URL QR Code: {url_validacao}")
     img = qrcode.make(url_validacao)
     buf = BytesIO()
     img.save(buf, format='PNG')
