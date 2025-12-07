@@ -177,7 +177,7 @@
       </div>
 
       <!-- Visualização somente leitura -->
-  <div id="relatorio-view-wrap" class="border rounded p-2 bg-slate-50 text-slate-800 whitespace-pre-line {% if plantao_ativo %}cursor-text{% endif %}" title="{% if plantao_ativo %}Clique para editar{% else %}Inicie o plantão para editar{% endif %}">{% if relatorio_rascunho %}{{ relatorio_rascunho|linebreaksbr }}{% else %}<span class="text-slate-400">Sem rascunho salvo.</span>{% endif %}</div>
+  <div id="relatorio-view-wrap" class="border rounded p-2 bg-slate-50 text-slate-800 whitespace-pre-line break-words overflow-wrap-anywhere {% if plantao_ativo %}cursor-text{% endif %}" style="word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%;" title="{% if plantao_ativo %}Clique para editar{% else %}Inicie o plantão para editar{% endif %}">{% if relatorio_rascunho %}{{ relatorio_rascunho|linebreaksbr }}{% else %}<span class="text-slate-400">Sem rascunho salvo.</span>{% endif %}</div>
 
       <!-- Área de edição (inicia oculta) -->
       <div id="relatorio-edit-wrap" class="hidden">
