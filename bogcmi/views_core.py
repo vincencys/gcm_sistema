@@ -1165,39 +1165,65 @@ def bo_despachar_cmt(request, pk):
     if bo.status not in ('FINALIZADO','DESPACHO_CMT'):
         return HttpResponseForbidden('BO precisa estar FINALIZADO para despacho.')
     
-    # SEMPRE regerar documento_html COM imagens redimensionadas para despacho
-    # (não reutilizar o HTML do BO finalizado que tem imagens grandes)
-    _log_bo_pdf(f"[bo_despachar_cmt] Chamando _montar_documento_bo_html com redimensionar_imagens=True para BO #{bo.id}")
-    bo.documento_html = _montar_documento_bo_html(request, bo, redimensionar_imagens=True)
+    # Simples: usar o PDF já gerado quando o BO foi finalizado
+    # Não regenera, não converte, apenas reusa o arquivo
+    _log_bo_pdf(f"[bo_despachar_cmt] Reutilizando PDF do BO #{bo.id} já gerado na finalização")
+    
     bo.status = 'DESPACHO_CMT'
-    bo.save(update_fields=['status','documento_html'])
-    _log_bo_pdf(f"[bo_despachar_cmt] BO #{bo.id} salvo com novo documento_html ({len(bo.documento_html)} chars)")
-    # Gerar PDF fiel; se falhar não cria documento pendente (evita PDF "zuado")
-    _log_bo_pdf(f"[bo_despachar_cmt] Chamando _gerar_pdf_bo_bytes para BO #{bo.id}")
+    bo.save(update_fields=['status'])
+    _log_bo_pdf(f"[bo_despachar_cmt] Status do BO #{bo.id} alterado para DESPACHO_CMT")
+    
+    # Tentar pegar PDF já salvo
     try:
-        pdf_bytes = _gerar_pdf_bo_bytes(bo, request)
+        # Buscar arquivo PDF mais recente do BO
+        from django.core.files.base import ContentFile
+        from common.models import DocumentoAssinavel
+        
+        import os
+        media_root = settings.MEDIA_ROOT
+        bo_pdf_pattern = f"*{bo.numero or ''}_*_{bo.id}_*.pdf"
+        
+        # Procurar por PDFs já salvos deste BO
+        pdf_path = None
+        if os.path.exists(os.path.join(media_root, 'documentos/origem/2025')):
+            import glob
+            pattern = os.path.join(media_root, 'documentos/origem/2025', f'*BOGCMI_{bo.numero or "*"}_{bo.id}_*.pdf')
+            files = glob.glob(pattern)
+            if files:
+                # Pegar o arquivo mais recente
+                pdf_path = max(files, key=os.path.getctime)
+                _log_bo_pdf(f"[bo_despachar_cmt] PDF encontrado: {pdf_path}")
+        
+        if pdf_path and os.path.exists(pdf_path):
+            # Ler o arquivo PDF já existente
+            with open(pdf_path, 'rb') as f:
+                pdf_bytes = f.read()
+            
+            _log_bo_pdf(f"[bo_despachar_cmt] PDF lido com sucesso: {len(pdf_bytes)} bytes")
+        else:
+            # Se não encontrar, regenerar (fallback)
+            _log_bo_pdf(f"[bo_despachar_cmt] PDF não encontrado, regenerando...")
+            pdf_bytes = _gerar_pdf_bo_bytes(bo, request)
+    
     except Exception as e:
         import traceback
         trace = traceback.format_exc()
         _log_bo_pdf(f"ABORT despacho bo_id={bo.id}: {e}\n{trace}")
         from django.contrib import messages
-        messages.error(request, f'Falha ao gerar PDF do BO para despacho: {e}. O documento foi salvo mas não pôde ser despachado. Verifique o log bo_pdf_debug.log.')
+        messages.error(request, f'Falha ao processar PDF do BO para despacho: {e}.')
         return redirect('bogcmi:editar', pk=bo.pk)
-    from django.core.files.base import ContentFile
-    doc_exist = DocumentoAssinavel.objects.filter(tipo='BOGCMI', usuario_origem=bo.encarregado, arquivo__icontains=f"{bo.pk}_").first()
-    # Simples: sempre criar novo registro para manter histórico
+    
+    # Criar DocumentoAssinavel com o PDF
     doc = DocumentoAssinavel.objects.create(
         tipo='BOGCMI',
         usuario_origem=bo.encarregado,
         status='PENDENTE',
     )
-    # Nome do arquivo agora acompanha o número real do BO (ex.: 2025-10-06_164343_BOGCM_64-2025.pdf)
+    # Nome do arquivo
     import re as _re
     numero_clean = (bo.numero or '').strip()
     if numero_clean:
-        # sanitizar: manter dígitos, letras, -, _
         numero_clean = _re.sub(r'[^0-9A-Za-z_-]+', '', numero_clean.replace(' ', '').replace('/', '-'))
-    else:
         numero_clean = f"ID{bo.pk}"
     # Novo padrão: documentos/origem/<ANO>/<timestamp>_<TIPO>_<numero>_<docid>_<hash8>.pdf
     import hashlib
@@ -1905,34 +1931,7 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
         'km_utilizada': (bo.km_final - bo.km_inicio) if (bo.km_inicio is not None and bo.km_final is not None and isinstance(bo.km_inicio, int) and isinstance(bo.km_final, int) and (bo.km_final - bo.km_inicio) >= 0) else None,
         'qr_code_base64': _gerar_qr_code_para_bo(request, bo),
         'diagrama_veiculo_base64': diagrama_base64,
-        'redimensionar_imagens': redimensionar_imagens,  # Passar para template
     })
-
-    # CSS global para redimensionamento de imagens (injetado no HEAD)
-    if redimensionar_imagens:
-        css_redimensionar = """
-<style>
-    /* Força imagens de anexos a no máximo 250px */
-    img {
-        max-width: 250px !important;
-        height: auto !important;
-        display: block !important;
-    }
-    /* Preserva logo e QR code */
-    img[alt*="Logo"], img[alt*="QR"], img[src*="logo_gcm"], img[src*="qr"] {
-        max-width: 100px !important;
-    }
-</style>
-"""
-        # Injetar CSS no HEAD (se existir) ou no início do body
-        if '<head>' in html_fragment:
-            html_fragment = html_fragment.replace('</head>', f'{css_redimensionar}</head>', 1)
-        elif '<body>' in html_fragment:
-            html_fragment = html_fragment.replace('<body>', f'<body>{css_redimensionar}', 1)
-        else:
-            html_fragment = css_redimensionar + html_fragment
-        
-        _log_bo_pdf(f"[CSS_GLOBAL] CSS de redimensionamento injetado no documento BO {bo.id}")
 
     # Substituições: logo/assinatura em base64 para cumprir renderizadores de PDF
     if logo_b64:
@@ -1944,90 +1943,6 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
     if assinatura_b64:
         html_fragment = re.sub(r"(<div class=\"assinatura-imagem\">)\s*<img[^>]+>", f"\\1<img src=\"{assinatura_b64}\" alt=\"Assinatura\">", html_fragment, flags=re.I)
 
-    # ===== CONVERTER IMAGENS PARA BASE64 (SEMPRE) =====
-    # wkhtmltopdf não consegue acessar /media/ via HTTP (ContentOperationNotPermittedError)
-    # Solução: SEMPRE converter para base64, mas só redimensionar se redimensionar_imagens=True
-    _log_bo_pdf(f"[BASE64] Convertendo imagens para base64 - Redimensionar: {redimensionar_imagens}")
-    
-    def _converter_imagem_para_base64(match):
-        tag = match.group(0)
-        # Só processar imagens de /media/
-        if '/media/' not in tag:
-            return tag
-        
-        # Extrair URL da imagem
-        src_match = re.search(r'src=["\']([^"\']+)["\']', tag)
-        if not src_match:
-            return tag
-        
-        url_path = src_match.group(1)
-        _log_bo_pdf(f"[BASE64] Processando: {url_path}")
-        
-        try:
-            from PIL import Image
-            from io import BytesIO
-            import base64
-            import os
-            from django.conf import settings
-            
-            # Construir caminho do arquivo
-            if url_path.startswith('/media/'):
-                file_path = os.path.join(settings.MEDIA_ROOT, url_path.replace('/media/', ''))
-            else:
-                _log_bo_pdf(f"[BASE64] URL não é /media/: {url_path}")
-                return tag
-            
-            if not os.path.exists(file_path):
-                _log_bo_pdf(f"[BASE64] Arquivo não encontrado: {file_path}")
-                return tag
-            
-            # Abrir imagem
-            img = Image.open(file_path)
-            orig_w, orig_h = img.size
-            _log_bo_pdf(f"[BASE64] Original: {orig_w}x{orig_h}px")
-            
-            # Redimensionar SOMENTE se redimensionar_imagens=True (despacho)
-            if redimensionar_imagens and orig_w > 250:
-                ratio = 250 / orig_w
-                new_w = 250
-                new_h = int(orig_h * ratio)
-                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-                _log_bo_pdf(f"[BASE64] Redimensionada: {new_w}x{new_h}px")
-            else:
-                _log_bo_pdf(f"[BASE64] Mantida no tamanho original")
-            
-            # Converter para base64
-            buffer = BytesIO()
-            img_format = img.format or 'JPEG'
-            if img_format == 'JPEG':
-                img = img.convert('RGB')  # JPEG não suporta transparência
-            img.save(buffer, format=img_format, quality=85)
-            buffer.seek(0)
-            
-            b64_data = base64.b64encode(buffer.read()).decode()
-            mime_type = f'image/{img_format.lower()}'
-            data_uri = f"data:{mime_type};base64,{b64_data}"
-            
-            _log_bo_pdf(f"[BASE64] Base64 gerado: {len(b64_data)} chars")
-            
-            # Substituir src
-            new_tag = re.sub(r'src=["\'][^"\']+["\']', f'src="{data_uri}"', tag)
-            
-            # Adicionar width inline SOMENTE se redimensionar
-            if redimensionar_imagens:
-                new_tag = new_tag.replace('<img', '<img width="250" style="max-width:250px; height:auto;"', 1)
-            
-            return new_tag
-            
-        except Exception as e:
-            _log_bo_pdf(f"[BASE64] ERRO: {e}")
-            import traceback
-            _log_bo_pdf(traceback.format_exc())
-            return tag
-    
-    html_fragment = re.sub(r'<img[^>]+>', _converter_imagem_para_base64, html_fragment)
-    _log_bo_pdf(f"[BASE64] Conversão concluída para BO {bo.id}")
-    
     # Inserir diagrama no HTML se não estiver presente no template
     if diagrama_base64:
         if 'Diagrama (Automóvel)' not in html_fragment:
