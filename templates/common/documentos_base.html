@@ -41,7 +41,7 @@
         </div>
 
         <div class="mt-2 space-y-1 text-sm break-words">
-          <div class="flex justify-between gap-3"><span class="text-slate-500">Arquivo</span><span class="text-right truncate max-w-[60%]"><a class="text-blue-600 underline" href="{{ d.arquivo.url }}" target="_blank">{{ d.nome_arquivo }}</a></span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Arquivo</span><span class="text-right truncate max-w-[60%]">{% if d.arquivo %}<a class="text-blue-600 underline" href="{{ d.arquivo.url }}" target="_blank">{{ d.nome_arquivo }}</a>{% else %}<span class="text-slate-400">Sem arquivo</span>{% endif %}</span></div>
           <div class="flex justify-between gap-3"><span class="text-slate-500">Origem</span><span>{{ d.usuario_origem.get_username }}</span></div>
           <div class="flex justify-between gap-3"><span class="text-slate-500">Criado</span><span class="whitespace-nowrap">{{ d.created_at|date:'d/m/Y H:i' }}</span></div>
         </div>
@@ -82,7 +82,7 @@
           <td class="p-2 border-r last:border-r-0">{{ d.id }}</td>
           <td class="p-2 border-r last:border-r-0">{{ d.get_tipo_display }}</td>
           <td class="p-2 border-r last:border-r-0">{% if d.tipo == 'BOGCMI' %}{{ d.bo_numero|default:'-' }}{% else %}-{% endif %}</td>
-          <td class="p-2 border-r last:border-r-0"><a class="text-blue-600 underline" href="{{ d.arquivo.url }}" target="_blank">{{ d.nome_arquivo }}</a></td>
+          <td class="p-2 border-r last:border-r-0">{% if d.arquivo %}<a class="text-blue-600 underline" href="{{ d.arquivo.url }}" target="_blank">{{ d.nome_arquivo }}</a>{% else %}<span class="text-slate-400">Sem arquivo</span>{% endif %}</td>
           <td class="p-2 border-r last:border-r-0">{{ d.usuario_origem.get_username }}</td>
           <td class="p-2 border-r last:border-r-0 whitespace-nowrap">{{ d.created_at|date:'d/m/Y H:i' }}</td>
           <td class="p-2 border-r last:border-r-0">{{ d.get_status_display }}</td>
