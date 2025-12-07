@@ -170,7 +170,7 @@
             <a href="{% url 'bogcmi:lista' %}" class="nav-pill text-xs">BOGCMI</a>
             <a href="{% url 'taloes:lista' %}" class="nav-pill text-xs">Talões</a>
             {% if is_comando %}
-              <a href="{% url 'common:documentos_pendentes' %}" class="nav-pill text-xs relative">Pendentes{% if assinaturas_pendentes_count %}<span class="absolute -top-1 -right-2 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] inline-flex justify-center">{{ assinaturas_pendentes_count }}</span>{% endif %}</a>
+              <a href="{% url 'common:documentos_pendentes' %}" class="nav-pill text-xs relative">Despachos Pend.{% if assinaturas_pendentes_count %}<span class="absolute -top-1 -right-2 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] inline-flex justify-center">{{ assinaturas_pendentes_count }}</span>{% endif %}</a>
               <a href="{% url 'common:documentos_assinados' %}" class="nav-pill text-xs">Despachos Ass.</a>
             {% endif %}
             <a href="{% url 'viaturas:lista' %}" class="nav-pill text-xs relative">Viaturas{% if viaturas_avarias_count %}<span class="absolute -top-1 -right-2 bg-rose-500 text-white text-[10px] rounded-full px-1 min-w-[16px] inline-flex justify-center">{{ viaturas_avarias_count }}</span>{% endif %}</a>
