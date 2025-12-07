@@ -301,9 +301,35 @@
           
           // Detectar Android WebView e usar abordagem compatível
           const isAndroidApp = navigator.userAgent.includes('wv') || typeof AndroidInterface !== 'undefined';
+          console.log('User Agent:', navigator.userAgent);
+          console.log('Is Android App:', isAndroidApp);
+          console.log('Capacitor available:', typeof Capacitor !== 'undefined');
           
-          if(isAndroidApp) {
-            // Para Android WebView: usar data URL
+          if(isAndroidApp && typeof Capacitor !== 'undefined' && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+            // Usar Capacitor Filesystem para Android
+            console.log('Usando Capacitor Filesystem');
+            const reader = new FileReader();
+            reader.onload = async function() {
+              try {
+                const base64Data = reader.result.split(',')[1];
+                const fileName = 'formulario_envolvido_offline_bo{{ bo.id }}.html';
+                
+                await Capacitor.Plugins.Filesystem.writeFile({
+                  path: fileName,
+                  data: base64Data,
+                  directory: 'DOCUMENTS'
+                });
+                
+                alert('Download concluído! Arquivo salvo em Documentos: ' + fileName);
+              } catch(err) {
+                console.error('Erro ao salvar arquivo:', err);
+                alert('Erro ao salvar arquivo: ' + err.message);
+              }
+            };
+            reader.readAsDataURL(blob);
+          } else if(isAndroidApp) {
+            // Para Android WebView sem Capacitor: usar data URL
+            console.log('Usando data URL');
             const reader = new FileReader();
             reader.onload = function() {
               const a = document.createElement('a');
