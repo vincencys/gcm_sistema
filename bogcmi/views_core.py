@@ -1827,7 +1827,7 @@ def _gerar_qr_code_para_bo(request, bo):
     url_validacao = f"{base}/bogcmi/validar/{bo.id}/{bo.validacao_token}/"
     yimg = qrcode.make(url_validacao)
     buf = BytesIO()
-    img.save(buf, format='PNG')
+    yimg.save(buf, format='PNG')
     b64 = base64.b64encode(buf.getvalue()).decode()
     return f"data:image/png;base64,{b64}"
 
