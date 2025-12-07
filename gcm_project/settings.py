@@ -132,7 +132,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "common.middleware.AuditLogMiddleware",
-    "common.middleware.TwoFAMiddleware",
+    # "common.middleware.TwoFAMiddleware",  # 2FA DESABILITADO
 ]
 
 ROOT_URLCONF = "gcm_project.urls"
