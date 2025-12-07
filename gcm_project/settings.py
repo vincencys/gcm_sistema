@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- Core ---
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DEBUG", "1") == "1"
-SITE_BASE_URL = os.getenv("SITE_BASE_URL", "")  # usado em QR/links absolutos
+SITE_BASE_URL = os.getenv("SITE_BASE_URL") or ""  # usado em QR/links absolutos - NÃO usar default aqui!
 ALLOWED_HOSTS = os.getenv(
     "ALLOWED_HOSTS",
     "127.0.0.1,localhost,0.0.0.0,gcmsysint.online,www.gcmsysint.online,18.229.134.75",
@@ -76,14 +76,15 @@ if DEBUG:
             if entry_https not in CSRF_TRUSTED_ORIGINS:
                 CSRF_TRUSTED_ORIGINS.append(entry_https)
         # Se não definir explicitamente, padroniza base como http (sem TLS) no IP local, porta 8000
-        if not SITE_BASE_URL:
+        # MAS APENAS EM DESENVOLVIMENTO (não em produção)
+        if not SITE_BASE_URL and DEBUG:
             # Escolhe um IP local preferencial para QR (evita https em dev)
             ip = next(iter(local_ips), "127.0.0.1")
             SITE_BASE_URL = f"http://{ip}:8000"
     except Exception:
         # Em último caso, permitir todos os hosts somente em DEBUG
         ALLOWED_HOSTS = list(set([*ALLOWED_HOSTS, "*"]))
-        if not SITE_BASE_URL:
+        if not SITE_BASE_URL and DEBUG:
             SITE_BASE_URL = "http://127.0.0.1:8000"
 
 # --- Apps ---
