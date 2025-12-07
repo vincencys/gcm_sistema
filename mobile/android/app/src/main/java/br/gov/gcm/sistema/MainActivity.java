@@ -12,6 +12,11 @@ import android.os.Looper;
 import android.webkit.WebView;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebViewClient;
+import android.webkit.DownloadListener;
+import android.webkit.URLUtil;
+import android.app.DownloadManager;
+import android.os.Environment;
+import android.widget.Toast;
 import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -36,6 +41,41 @@ public class MainActivity extends BridgeActivity {
 		try {
 			WebView webView = getBridge().getWebView();
 			if (webView != null) {
+				// Habilitar configurações para permitir fetch() e downloads
+				webView.getSettings().setAllowFileAccess(true);
+				webView.getSettings().setAllowContentAccess(true);
+				webView.getSettings().setAllowFileAccessFromFileURLs(false); // Segurança
+				webView.getSettings().setAllowUniversalAccessFromFileURLs(false); // Segurança
+				webView.getSettings().setDomStorageEnabled(true);
+				webView.getSettings().setDatabaseEnabled(true);
+				webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+				
+				// Configurar listener para downloads
+				webView.setDownloadListener(new DownloadListener() {
+					@Override
+					public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+						try {
+							DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+							request.setMimeType(mimetype);
+							
+							// Extrair nome do arquivo
+							String filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
+							request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+							request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+							request.setTitle(filename);
+							
+							DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+							if (dm != null) {
+								dm.enqueue(request);
+								Toast.makeText(getApplicationContext(), "Baixando: " + filename, Toast.LENGTH_SHORT).show();
+							}
+						} catch (Exception e) {
+							Log.e("MainActivity", "Erro no download: " + e.getMessage(), e);
+							Toast.makeText(getApplicationContext(), "Erro ao baixar arquivo", Toast.LENGTH_SHORT).show();
+						}
+					}
+				});
+				
 				webView.setWebViewClient(new WebViewClient() {
 					@Override
 					public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -54,6 +94,12 @@ public class MainActivity extends BridgeActivity {
 							}
 						}
 						return false;
+					}
+					
+					@Override
+					public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+						// Permitir fetch() de recursos do mesmo domínio
+						return super.shouldInterceptRequest(view, url);
 					}
 				});
 			}

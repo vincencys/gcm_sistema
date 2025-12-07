@@ -297,10 +297,36 @@
             } catch(e){}
           }
           const htmlFinal='<!DOCTYPE html>\n'+clone.outerHTML;
-          const blob = new Blob([htmlFinal],{type:'text/html'});
-          const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='formulario_envolvido_offline_bo{{ bo.id }}.html'; a.click();
+          const blob = new Blob([htmlFinal],{type:'text/html;charset=utf-8'});
+          
+          // Detectar Android WebView e usar abordagem compatível
+          const isAndroidApp = navigator.userAgent.includes('wv') || typeof AndroidInterface !== 'undefined';
+          
+          if(isAndroidApp) {
+            // Para Android WebView: usar data URL
+            const reader = new FileReader();
+            reader.onload = function() {
+              const a = document.createElement('a');
+              a.href = reader.result;
+              a.download = 'formulario_envolvido_offline_bo{{ bo.id }}.html';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              alert('Download iniciado! Verifique a pasta Downloads.');
+            };
+            reader.readAsDataURL(blob);
+          } else {
+            // Para navegadores normais
+            const a=document.createElement('a'); 
+            a.href=URL.createObjectURL(blob); 
+            a.download='formulario_envolvido_offline_bo{{ bo.id }}.html'; 
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(a.href), 100);
+          }
         }catch(err){
-          alert('Erro gerando HTML offline: '+err);
+          alert('Erro gerando HTML offline: '+err.message);
           console.error(err);
         }
       }

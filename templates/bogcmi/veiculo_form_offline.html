@@ -265,13 +265,37 @@
       // Remover dependência de URL do Django em static: já substituído por base64.
       // Serializar
       const htmlFinal = '<!DOCTYPE html>\n'+clone.outerHTML;
-      const blob = new Blob([htmlFinal], {type:'text/html'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'formulario_veiculo_offline_bo{{ bo.id }}.html';
-      a.click();
+      const blob = new Blob([htmlFinal], {type:'text/html;charset=utf-8'});
+      
+      // Detectar se está no app Android e usar abordagem diferente
+      const isAndroidApp = navigator.userAgent.includes('wv') || typeof AndroidInterface !== 'undefined';
+      
+      if(isAndroidApp) {
+        // Para Android WebView: criar um link direto com data URL
+        const reader = new FileReader();
+        reader.onload = function() {
+          const dataUrl = reader.result;
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = 'formulario_veiculo_offline_bo{{ bo.id }}.html';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          alert('Download iniciado! Verifique a pasta Downloads.');
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // Para navegadores normais: usar blob URL
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'formulario_veiculo_offline_bo{{ bo.id }}.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 100);
+      }
     }catch(err){
-      alert('Falha ao gerar HTML offline: '+err);
+      alert('Falha ao gerar HTML offline: '+err.message);
       console.error(err);
     }
   }

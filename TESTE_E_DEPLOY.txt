@@ -1,0 +1,11 @@
+TESTE RÁPIDO - Cole isso PRIMEIRO no Session Manager:
+
+===== COLE ISTO PRIMEIRO =====
+
+ls -la /home/ec2-user/GCM_sistema && echo "✅ DIRETÓRIO ENCONTRADO!" || echo "❌ DIRETÓRIO NÃO EXISTE"
+
+===== SE APARECER ✅, ENTÃO COLE O DEPLOY COMPLETO =====
+
+cd /home/ec2-user/GCM_sistema && source .venv/bin/activate && git fetch origin && git reset --hard origin/main && pip install -q --upgrade pip && pip install -q -r requirements-prod.txt 2>/dev/null || pip install -q -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && python manage.py check && sudo systemctl restart gunicorn-gcm && sleep 2 && sudo systemctl restart daphne-gcm && echo "✅ DEPLOY CONCLUÍDO!"
+
+===== FIM =====

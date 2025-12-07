@@ -1,0 +1,57 @@
+===== COMANDO ÚNICO - COLE NO SESSION MANAGER =====
+
+# Backup e limpar configs antigas
+sudo cp -r /etc/nginx /etc/nginx.backup.$(date +%Y%m%d_%H%M%S)
+sudo rm -f /etc/nginx/conf.d/*.conf
+sudo rm -f /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
+
+# Criar config correta
+sudo tee /etc/nginx/conf.d/gcm.conf > /dev/null <<'EOF'
+upstream gunicorn_gcm {
+    server 127.0.0.1:8001 fail_timeout=0;
+}
+upstream daphne_gcm {
+    server 127.0.0.1:8002 fail_timeout=0;
+}
+server {
+    listen 80 default_server;
+    server_name _;
+    client_max_body_size 20M;
+    location /static/ {
+        alias /home/ec2-user/gcm_sistema/staticfiles/;
+    }
+    location /media/ {
+        alias /home/ec2-user/gcm_sistema/media/;
+    }
+    location /ws/ {
+        proxy_pass http://daphne_gcm;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+    location / {
+        proxy_pass http://gunicorn_gcm;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+
+# Reiniciar Nginx e testar
+sudo nginx -t && sudo systemctl restart nginx && sleep 2 && curl -I http://127.0.0.1/media/documentos/origem/2025/20251130_040813_BOGCMI_4-2025_16_f857c12c.pdf
+
+===== FIM - COPIE TUDO ACIMA =====
+
+PASSO A PASSO:
+
+1. Vá em: https://sa-east-1.console.aws.amazon.com/ec2/home?region=sa-east-1#Instances
+2. Clique em "GCM-Sistema"
+3. Clique em "Conectar" > "Session Manager" > "Conectar"
+4. Cole o comando acima
+5. Aperte ENTER
+6. Aguarde aparecer "✅ NGINX CORRIGIDO!" e "HTTP/1.1 200 OK"
+
+Depois teste no navegador:
+https://gcmsysint.online/media/documentos/origem/2025/20251207_050257_BOGCMI_6-2025_110_a3b07fcc.pdf

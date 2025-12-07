@@ -1,0 +1,31 @@
+COMANDO PRONTO PARA COLAR NO SESSION MANAGER:
+
+===== COPIE E COLE TUDO ABAIXO NO TERMINAL DO SESSION MANAGER =====
+
+cd /home/ec2-user/GCM_SISTEMA && source .venv/bin/activate && git fetch origin && git reset --hard origin/main && pip install -q --upgrade pip && pip install -q -r requirements-prod.txt 2>/dev/null || pip install -q -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && python manage.py check && sudo systemctl restart gunicorn-gcm && sleep 2 && sudo systemctl restart daphne-gcm && echo "✅ DEPLOY CONCLUÍDO!" && echo "Acesse: https://gcmsysint.online"
+
+===== FIM DO COMANDO =====
+
+PASSO A PASSO:
+
+1. Vá em: https://sa-east-1.console.aws.amazon.com/ec2/home?region=sa-east-1#Instances
+
+2. Clique em "GCM-Sistema" 
+
+3. Clique em "Conectar" (botão laranja)
+
+4. Clique em "Session Manager"
+
+5. Clique em "Conectar"
+
+6. Aguarde abrir terminal (pode levar 10 segundos)
+
+7. COPIE o comando acima e COLE no terminal
+
+8. Aperte ENTER
+
+9. Aguarde 2-3 minutos
+
+10. Quando aparecer "✅ DEPLOY CONCLUÍDO!" está pronto!
+
+11. Acesse: https://gcmsysint.online para testar
