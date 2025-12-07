@@ -1944,39 +1944,86 @@ def _montar_documento_bo_html(request, bo, redimensionar_imagens=False) -> str:
     if assinatura_b64:
         html_fragment = re.sub(r"(<div class=\"assinatura-imagem\">)\s*<img[^>]+>", f"\\1<img src=\"{assinatura_b64}\" alt=\"Assinatura\">", html_fragment, flags=re.I)
 
-    # ===== REDIMENSIONAR IMAGENS APENAS PARA DESPACHO (CSS INLINE SIMPLES) =====
-    # Solução: Adicionar width inline que wkhtmltopdf respeita
+    # ===== CONVERTER IMAGENS PARA BASE64 (DESPACHO) =====
+    # wkhtmltopdf não consegue acessar /media/ via HTTP (ContentOperationNotPermittedError)
+    # Solução: Converter imagens para base64 inline + redimensionar com Pillow
     if redimensionar_imagens:
-        _log_bo_pdf(f"[REDIMENSIONAR_CSS] Aplicando CSS inline para redimensionar imagens do BO {bo.id}")
+        _log_bo_pdf(f"[BASE64_RESIZE] Convertendo imagens para base64 e redimensionando para BO {bo.id}")
         
-        def _aplicar_css_imagem(match):
+        def _converter_imagem_para_base64(match):
             tag = match.group(0)
             # Só processar imagens de /media/
             if '/media/' not in tag:
                 return tag
             
-            _log_bo_pdf(f"[REDIMENSIONAR_CSS] Tag encontrada: {tag[:100]}")
+            # Extrair URL da imagem
+            src_match = re.search(r'src=["\']([^"\']+)["\']', tag)
+            if not src_match:
+                return tag
             
-            # Adicionar width="250" e style inline (wkhtmltopdf respeita atributo width)
-            if 'width=' in tag:
-                # Substituir width existente
-                tag = re.sub(r'width\s*=\s*["\']?\d+["\']?', 'width="250"', tag)
-            else:
-                # Adicionar width
-                tag = tag.replace('<img', '<img width="250"', 1)
+            url_path = src_match.group(1)
+            _log_bo_pdf(f"[BASE64_RESIZE] Processando: {url_path}")
             
-            # Adicionar style inline
-            style_css = 'max-width: 250px; height: auto; display: block;'
-            if 'style=' in tag:
-                tag = re.sub(r'style=["\']([^"\']*)["\']', f'style="{style_css}"', tag)
-            else:
-                tag = tag.replace('<img', f'<img style="{style_css}"', 1)
-            
-            _log_bo_pdf(f"[REDIMENSIONAR_CSS] Tag modificada: {tag[:100]}")
-            return tag
+            try:
+                from PIL import Image
+                from io import BytesIO
+                import base64
+                import os
+                from django.conf import settings
+                
+                # Construir caminho do arquivo
+                if url_path.startswith('/media/'):
+                    file_path = os.path.join(settings.MEDIA_ROOT, url_path.replace('/media/', ''))
+                else:
+                    _log_bo_pdf(f"[BASE64_RESIZE] URL não é /media/: {url_path}")
+                    return tag
+                
+                if not os.path.exists(file_path):
+                    _log_bo_pdf(f"[BASE64_RESIZE] Arquivo não encontrado: {file_path}")
+                    return tag
+                
+                # Abrir e redimensionar imagem
+                img = Image.open(file_path)
+                orig_w, orig_h = img.size
+                _log_bo_pdf(f"[BASE64_RESIZE] Original: {orig_w}x{orig_h}px")
+                
+                # Redimensionar se necessário (max 250px largura)
+                if orig_w > 250:
+                    ratio = 250 / orig_w
+                    new_w = 250
+                    new_h = int(orig_h * ratio)
+                    img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                    _log_bo_pdf(f"[BASE64_RESIZE] Redimensionada: {new_w}x{new_h}px")
+                
+                # Converter para base64
+                buffer = BytesIO()
+                img_format = img.format or 'JPEG'
+                if img_format == 'JPEG':
+                    img = img.convert('RGB')  # JPEG não suporta transparência
+                img.save(buffer, format=img_format, quality=85)
+                buffer.seek(0)
+                
+                b64_data = base64.b64encode(buffer.read()).decode()
+                mime_type = f'image/{img_format.lower()}'
+                data_uri = f"data:{mime_type};base64,{b64_data}"
+                
+                _log_bo_pdf(f"[BASE64_RESIZE] Base64 gerado: {len(b64_data)} chars")
+                
+                # Substituir src
+                new_tag = re.sub(r'src=["\'][^"\']+["\']', f'src="{data_uri}"', tag)
+                # Adicionar width inline
+                new_tag = new_tag.replace('<img', '<img width="250" style="max-width:250px; height:auto;"', 1)
+                
+                return new_tag
+                
+            except Exception as e:
+                _log_bo_pdf(f"[BASE64_RESIZE] ERRO: {e}")
+                import traceback
+                _log_bo_pdf(traceback.format_exc())
+                return tag
         
-        html_fragment = re.sub(r'<img[^>]+>', _aplicar_css_imagem, html_fragment)
-        _log_bo_pdf(f"[REDIMENSIONAR_CSS] CSS aplicado para BO {bo.id}")
+        html_fragment = re.sub(r'<img[^>]+>', _converter_imagem_para_base64, html_fragment)
+        _log_bo_pdf(f"[BASE64_RESIZE] Conversão concluída para BO {bo.id}")
     
     # Inserir diagrama no HTML se não estiver presente no template
     if diagrama_base64:
