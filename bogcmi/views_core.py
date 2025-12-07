@@ -1153,6 +1153,7 @@ def bo_finalizar(request, pk):
 @login_required
 def bo_despachar_cmt(request, pk):
     """Altera status para DESPACHO_CMT e cria DocumentoAssinavel (tipo BOGCMI) pendente para assinatura do comando."""
+    _log_bo_pdf(f"[bo_despachar_cmt] INÍCIO - BO #{pk} - User: {request.user}")
     bo = get_object_or_404(BO, pk=pk)
     
     # Verificar se o usuário é o encarregado do BO
@@ -1166,10 +1167,13 @@ def bo_despachar_cmt(request, pk):
     
     # SEMPRE regerar documento_html COM imagens redimensionadas para despacho
     # (não reutilizar o HTML do BO finalizado que tem imagens grandes)
+    _log_bo_pdf(f"[bo_despachar_cmt] Chamando _montar_documento_bo_html com redimensionar_imagens=True para BO #{bo.id}")
     bo.documento_html = _montar_documento_bo_html(request, bo, redimensionar_imagens=True)
     bo.status = 'DESPACHO_CMT'
     bo.save(update_fields=['status','documento_html'])
+    _log_bo_pdf(f"[bo_despachar_cmt] BO #{bo.id} salvo com novo documento_html ({len(bo.documento_html)} chars)")
     # Gerar PDF fiel; se falhar não cria documento pendente (evita PDF "zuado")
+    _log_bo_pdf(f"[bo_despachar_cmt] Chamando _gerar_pdf_bo_bytes para BO #{bo.id}")
     try:
         pdf_bytes = _gerar_pdf_bo_bytes(bo, request)
     except Exception as e:
