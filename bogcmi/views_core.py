@@ -23,6 +23,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+from common.audit_simple import record
 from .forms import (
     EnvolvidoForm, ApreensaoForm, AnexoApreensaoForm,
     VeiculoEnvolvidoForm, AnexoVeiculoForm, EquipeApoioForm,
@@ -1681,6 +1682,19 @@ def finalizar_bo(request):
         bo.save()
         bo.documento_html = _montar_documento_bo_html(request, bo)
         bo.save()
+        
+        # Registrar no log simplificado
+        try:
+            record(
+                request,
+                event='BO_FINALIZADO',
+                obj=bo,
+                message=f'BO {bo.numero} finalizado - {bo.cod_natureza}',
+                app='bogcmi',
+            )
+        except Exception:
+            pass
+            
     return JsonResponse({'success': True, 'cod_natureza': bo.cod_natureza, 'natureza': bo.natureza})
 
 def validar_documento_bo(request, pk, token):
