@@ -2460,6 +2460,7 @@ def estatisticas_remocoes(request):
     from bogcmi.models import VeiculoEnvolvido
     from collections import Counter
     from django.contrib.auth import get_user_model
+    from django.db.models import Q
     User = get_user_model()
     
     hoje = timezone.localdate()
@@ -2494,7 +2495,6 @@ def estatisticas_remocoes(request):
     
     # Filtro por GCM (considera TODOS os campos do BO)
     if uid:
-        from django.db.models import Q
         base = base.filter(
             Q(bo__encarregado_id=uid) | 
             Q(bo__motorista_id=uid) | 
