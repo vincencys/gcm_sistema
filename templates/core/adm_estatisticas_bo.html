@@ -1,12 +1,26 @@
 {% extends "_layout/base.html" %}
 {% block title %}Estatísticas - BO (BOGCMI){% endblock %}
 {% block content %}
-<div class="max-w-7xl mx-auto px-3 md:px-0">
+<div class="max-w-7xl mx-auto px-3 md:px-6 py-4">
+  <!-- Header -->
+  <div class="mb-6 bg-white border-2 border-indigo-600 rounded-xl shadow-lg overflow-hidden">
+    <div class="px-6 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-3 bg-indigo-100 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Estatísticas · BO (BOGCMI)</h1>
+          <p class="text-sm text-slate-600">Totais por período, rankings e gráficos. Abas: Dia, Mês, Semestre, Ano.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegação e Filtros -->
   <div class="mb-6">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <h1 class="text-xl md:text-2xl font-bold">Estatísticas · BO (BOGCMI)</h1>
-        <p class="text-sm md:text-base text-slate-600">Totais por período, rankings e gráficos. Abas: Dia, Mês, Semestre, Ano.</p>
         <div class="mt-2 flex flex-wrap gap-2">
           <a class="btn btn-outline text-xs md:text-sm" href="{% url 'core:estatisticas' %}">← Estatísticas</a>
           <a class="btn btn-outline text-xs md:text-sm" href="{% url 'core:estatisticas_bo_codigo' %}">BO por Código</a>
@@ -38,12 +52,30 @@
 
   <!-- KPIs -->
   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Total de BOs</div><div class="text-xl md:text-2xl font-semibold">{{ total }}</div></div>
-    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Abertos (edição)</div><div class="text-xl md:text-2xl font-semibold">{{ abertos }}</div></div>
-    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Finalizados</div><div class="text-xl md:text-2xl font-semibold">{{ finalizados }}</div></div>
-    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Criados Offline</div><div class="text-xl md:text-2xl font-semibold">{{ offline }}</div></div>
-    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">DV Contra Mulher</div><div class="text-xl md:text-2xl font-semibold">{{ dv_total }}</div></div>
-    <div class="bg-white border rounded p-3 md:p-4 shadow-sm"><div class="text-slate-500 text-xs md:text-sm">Flagrantes</div><div class="text-xl md:text-2xl font-semibold">{{ flagrantes }}</div></div>
+    <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-lg p-4 shadow-md">
+      <div class="text-indigo-700 text-xs md:text-sm font-medium">Total de BOs</div>
+      <div class="text-2xl md:text-3xl font-bold text-indigo-900 mt-1">{{ total }}</div>
+    </div>
+    <div class="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-200 rounded-lg p-4 shadow-md">
+      <div class="text-amber-700 text-xs md:text-sm font-medium">Abertos (edição)</div>
+      <div class="text-2xl md:text-3xl font-bold text-amber-900 mt-1">{{ abertos }}</div>
+    </div>
+    <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-200 rounded-lg p-4 shadow-md">
+      <div class="text-emerald-700 text-xs md:text-sm font-medium">Finalizados</div>
+      <div class="text-2xl md:text-3xl font-bold text-emerald-900 mt-1">{{ finalizados }}</div>
+    </div>
+    <div class="bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 rounded-lg p-4 shadow-md">
+      <div class="text-slate-700 text-xs md:text-sm font-medium">Criados Offline</div>
+      <div class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{{ offline }}</div>
+    </div>
+    <div class="bg-gradient-to-br from-rose-50 to-rose-100 border-2 border-rose-200 rounded-lg p-4 shadow-md">
+      <div class="text-rose-700 text-xs md:text-sm font-medium">DV Contra Mulher</div>
+      <div class="text-2xl md:text-3xl font-bold text-rose-900 mt-1">{{ dv_total }}</div>
+    </div>
+    <div class="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-4 shadow-md">
+      <div class="text-red-700 text-xs md:text-sm font-medium">Flagrantes</div>
+      <div class="text-2xl md:text-3xl font-bold text-red-900 mt-1">{{ flagrantes }}</div>
+    </div>
   </div>
 
   <!-- Exportações -->
@@ -57,54 +89,85 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
-    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 lg:col-span-2">
-      <h2 class="font-semibold mb-3 text-sm md:text-base">Série por Dia ({{ de|date:'d/m/Y' }} a {{ ate|date:'d/m/Y' }})</h2>
-      <div class="w-full overflow-x-auto">
-        <canvas id="chartSerie" class="max-w-full"></canvas>
+    <div class="bg-white rounded-xl border-2 border-indigo-200 shadow-lg overflow-hidden lg:col-span-2">
+      <div class="px-4 py-3 bg-gradient-to-r from-indigo-50 to-indigo-100 border-b-2 border-indigo-200">
+        <h2 class="font-bold text-lg text-indigo-900">Série por Dia ({{ de|date:'d/m/Y' }} a {{ ate|date:'d/m/Y' }})</h2>
+      </div>
+      <div class="p-4">
+        {% if serie_por_dia %}
+          <div class="w-full" style="min-height: 300px;">
+            <canvas id="chartSerie"></canvas>
+          </div>
+        {% else %}
+          <div class="text-center py-12">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <p class="text-slate-500 text-sm">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        {% endif %}
       </div>
     </div>
-    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
-      <h2 class="font-semibold mb-3 text-sm md:text-base">Por Status</h2>
-      <div class="mb-4">
-        <canvas id="chartStatusPie"></canvas>
+    <div class="bg-white rounded-xl border-2 border-purple-200 shadow-lg overflow-hidden">
+      <div class="px-4 py-3 bg-gradient-to-r from-purple-50 to-purple-100 border-b-2 border-purple-200">
+        <h2 class="font-bold text-lg text-purple-900">Por Status</h2>
       </div>
-      <div class="divide-y">
-        {% for row in por_status %}
-          <div class="flex items-center justify-between py-2 text-sm">
-            <div class="text-slate-700">{{ row.status }}</div>
-            <div class="font-semibold">{{ row.qtd }}</div>
+      <div class="p-4">
+        {% if por_status %}
+          <div class="mb-4" style="min-height: 200px;">
+            <canvas id="chartStatusPie"></canvas>
           </div>
-        {% empty %}
-          <div class="text-slate-500 text-sm">Sem registros.</div>
-        {% endfor %}
+          <div class="divide-y">
+            {% for row in por_status %}
+              <div class="flex items-center justify-between py-2 text-sm">
+                <div class="text-slate-700 font-medium">{{ row.status }}</div>
+                <div class="font-bold text-purple-700">{{ row.qtd }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-8">
+            <p class="text-slate-500 text-sm">Sem registros.</p>
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
-    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
-      <h2 class="font-semibold mb-3 text-sm md:text-base">Ranking · Códigos de Ocorrência</h2>
-      <div class="mb-4">
-        <canvas id="chartCodigos"></canvas>
+    <div class="bg-white rounded-xl border-2 border-sky-200 shadow-lg overflow-hidden">
+      <div class="px-4 py-3 bg-gradient-to-r from-sky-50 to-sky-100 border-b-2 border-sky-200">
+        <h2 class="font-bold text-lg text-sky-900">Ranking · Códigos de Ocorrência</h2>
       </div>
-      <div class="divide-y max-h-96 overflow-y-auto">
+      <div class="p-4">
+        {% if chart_cod_labels %}
+          <div class="mb-4" style="min-height: 300px;">
+            <canvas id="chartCodigos"></canvas>
+          </div>
+        {% else %}
+          <div class="text-center py-8">
+            <p class="text-slate-500 text-sm">Sem dados disponíveis</p>
+          </div>
+        {% endif %}
+      </div>
+      <div class="px-4 pb-4 divide-y max-h-96 overflow-y-auto">
         {% for row in ranking_codigos %}
           <div class="flex items-center justify-between py-2 gap-2">
             <div class="text-slate-700 text-xs md:text-sm truncate flex-1">{{ row.cod_natureza|default:'—' }} — {{ row.natureza|default:'(sem descrição)' }}</div>
-            <div class="font-semibold text-sm md:text-base shrink-0">{{ row.qtd }}</div>
+            <div class="font-bold text-sky-700 text-sm md:text-base shrink-0">{{ row.qtd }}</div>
           </div>
         {% empty %}
           <div class="text-slate-500 text-sm">Sem registros.</div>
         {% endfor %}
       </div>
     </div>
-    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
-      <h2 class="font-semibold mb-3 text-sm md:text-base">Top 5 Viaturas</h2>
-      <div class="divide-y">
+    <div class="bg-white rounded-xl border-2 border-teal-200 shadow-lg overflow-hidden">
+      <div class="px-4 py-3 bg-gradient-to-r from-teal-50 to-teal-100 border-b-2 border-teal-200">
+        <h2 class="font-bold text-lg text-teal-900">Top 5 Viaturas</h2>
+      </div>
+      <div class="p-4 divide-y">
         {% for row in top_viaturas %}
           <div class="flex items-center justify-between py-2">
-            <div class="text-slate-700 text-sm">{{ row.viatura__prefixo|default:row.viatura_id }}</div>
-            <div class="font-semibold">{{ row.qtd }}</div>
+            <div class="text-slate-700 text-sm font-medium">{{ row.viatura__prefixo|default:row.viatura_id }}</div>
+            <div class="font-bold text-teal-700">{{ row.qtd }}</div>
           </div>
         {% empty %}
           <div class="text-slate-500 text-sm">Sem registros.</div>
@@ -115,22 +178,26 @@
 
   <!-- Ranking por Bairros -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
-    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
-      <h2 class="font-semibold mb-3 text-sm md:text-base">Ranking · Bairros</h2>
-      <div class="divide-y max-h-96 overflow-y-auto">
+    <div class="bg-white rounded-xl border-2 border-orange-200 shadow-lg overflow-hidden">
+      <div class="px-4 py-3 bg-gradient-to-r from-orange-50 to-orange-100 border-b-2 border-orange-200">
+        <h2 class="font-bold text-lg text-orange-900">Ranking · Bairros</h2>
+      </div>
+      <div class="p-4 divide-y max-h-96 overflow-y-auto">
         {% for row in ranking_bairros %}
           <div class="flex items-center justify-between py-2 gap-2">
-            <div class="text-slate-700 text-xs md:text-sm truncate flex-1">{{ row.bairro }}</div>
-            <div class="font-semibold text-sm md:text-base shrink-0">{{ row.qtd }}</div>
+            <div class="text-slate-700 text-xs md:text-sm truncate flex-1 font-medium">{{ row.bairro }}</div>
+            <div class="font-bold text-orange-700 text-sm md:text-base shrink-0">{{ row.qtd }}</div>
           </div>
         {% empty %}
           <div class="text-slate-500 text-sm">Sem registros.</div>
         {% endfor %}
       </div>
     </div>
-    <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4">
-      <h2 class="font-semibold mb-3 text-sm md:text-base">Códigos por Bairro</h2>
-      <div class="divide-y max-h-96 overflow-y-auto">
+    <div class="bg-white rounded-xl border-2 border-cyan-200 shadow-lg overflow-hidden">
+      <div class="px-4 py-3 bg-gradient-to-r from-cyan-50 to-cyan-100 border-b-2 border-cyan-200">
+        <h2 class="font-bold text-lg text-cyan-900">Códigos por Bairro</h2>
+      </div>
+      <div class="p-4 divide-y max-h-96 overflow-y-auto">
         {% for r in bairros_codigos %}
           <div class="py-2">
             <div class="text-slate-700 text-xs md:text-sm">{{ r.bairro }}</div>
@@ -146,31 +213,41 @@
     </div>
   </div>
 
-  <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 mt-4 md:mt-6">
-    <h2 class="font-semibold mb-3 text-sm md:text-base">Ranking · Usuários (Encarregados)</h2>
-    <div class="mb-4">
-      <canvas id="chartUsuarios"></canvas>
+  <div class="bg-white rounded-xl border-2 border-emerald-200 shadow-lg overflow-hidden mt-4 md:mt-6">
+    <div class="px-4 py-3 bg-gradient-to-r from-emerald-50 to-emerald-100 border-b-2 border-emerald-200">
+      <h2 class="font-bold text-lg text-emerald-900">Ranking · Usuários (Encarregados)</h2>
     </div>
-    <div class="overflow-x-auto -mx-3 md:mx-0">
+    <div class="p-4">
+      {% if chart_user_labels %}
+        <div class="mb-4" style="min-height: 300px;">
+          <canvas id="chartUsuarios"></canvas>
+        </div>
+      {% else %}
+        <div class="text-center py-8">
+          <p class="text-slate-500 text-sm">Sem dados disponíveis</p>
+        </div>
+      {% endif %}
+    </div>
+    <div class="px-4 pb-4 overflow-x-auto">
       <table class="min-w-full text-xs md:text-sm">
         <thead>
-          <tr class="text-left text-slate-500">
-            <th class="py-2 pr-3 pl-3 md:pl-0">Usuário</th>
-            <th class="py-2 pr-3">Total</th>
-            <th class="py-2 pr-3">Top códigos</th>
+          <tr class="text-left bg-gradient-to-r from-slate-50 to-slate-100">
+            <th class="py-3 pr-3 pl-3 font-bold text-slate-700">Usuário</th>
+            <th class="py-3 pr-3 font-bold text-slate-700">Total</th>
+            <th class="py-3 pr-3 font-bold text-slate-700">Top códigos</th>
           </tr>
         </thead>
         <tbody class="divide-y">
           {% for u in users_ranking %}
-            <tr>
-              <td class="py-2 pr-3 pl-3 md:pl-0">{{ u.nome }}</td>
-              <td class="py-2 pr-3 font-semibold">{{ u.total }}</td>
-              <td class="py-2 pr-3">
+            <tr class="hover:bg-emerald-50">
+              <td class="py-3 pr-3 pl-3 font-medium">{{ u.nome }}</td>
+              <td class="py-3 pr-3 font-bold text-emerald-700">{{ u.total }}</td>
+              <td class="py-3 pr-3">
                 <div class="flex flex-wrap gap-1">
                   {% for c in u.top_codigos %}
-                    <span class="inline-flex items-center gap-1 text-[10px] md:text-xs bg-slate-100 border rounded px-1.5 md:px-2 py-0.5 md:py-1 whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1 text-[10px] md:text-xs bg-emerald-100 border border-emerald-300 rounded px-2 py-1 whitespace-nowrap">
                       {{ c.cod|default:'—' }} {% if c.natureza %}— {{ c.natureza|truncatewords:2 }}{% endif %}
-                      <span class="opacity-70">({{ c.qtd }})</span>
+                      <span class="font-semibold text-emerald-900">({{ c.qtd }})</span>
                     </span>
                   {% empty %}
                     —
@@ -187,51 +264,53 @@
   </div>
 
   <!-- DV contra Mulher -->
-  <div class="bg-white rounded-xl border shadow-sm p-3 md:p-4 mt-4 md:mt-6">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-sm md:text-base">DV Contra Mulher</h2>
-      <a class="btn btn-secondary text-xs" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=dvcm">CSV</a>
+  <div class="bg-white rounded-xl border-2 border-rose-300 shadow-lg overflow-hidden mt-4 md:mt-6">
+    <div class="px-4 py-3 bg-gradient-to-r from-rose-50 to-rose-100 border-b-2 border-rose-200 flex items-center justify-between">
+      <h2 class="font-bold text-lg text-rose-900">DV Contra Mulher</h2>
+      <a class="px-3 py-1.5 bg-white border-2 border-rose-300 text-rose-700 rounded-lg text-xs font-semibold hover:bg-rose-50" href="?tab={{ tab }}&de={{ de|date:'Y-m-d' }}&ate={{ ate|date:'Y-m-d' }}&export=csv&what=dvcm">CSV</a>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
-      <div class="bg-rose-50 border border-rose-200 rounded p-3 md:p-4"><div class="text-rose-700 text-xs md:text-sm">Total DV</div><div class="text-xl md:text-2xl font-semibold text-rose-700">{{ dv_total }}</div></div>
-      <div class="bg-rose-50 border border-rose-200 rounded p-3 md:p-4"><div class="text-rose-700 text-xs md:text-sm">% no Período</div><div class="text-xl md:text-2xl font-semibold text-rose-700">{{ dv_percent }}%</div></div>
-      <div class="bg-white border rounded p-3 md:p-4"><div class="text-slate-500 text-xs md:text-sm">Flagrantes (geral)</div><div class="text-xl md:text-2xl font-semibold">{{ flagrantes }}</div></div>
-      <div class="bg-white border rounded p-3 md:p-4"><div class="text-slate-500 text-xs md:text-sm">BOs Totais</div><div class="text-xl md:text-2xl font-semibold">{{ total }}</div></div>
+    <div class="p-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
+        <div class="bg-gradient-to-br from-rose-100 to-rose-200 border-2 border-rose-300 rounded-lg p-4 shadow-md"><div class="text-rose-800 text-xs md:text-sm font-medium">Total DV</div><div class="text-2xl md:text-3xl font-bold text-rose-900 mt-1">{{ dv_total }}</div></div>
+        <div class="bg-gradient-to-br from-rose-100 to-rose-200 border-2 border-rose-300 rounded-lg p-4 shadow-md"><div class="text-rose-800 text-xs md:text-sm font-medium">% no Período</div><div class="text-2xl md:text-3xl font-bold text-rose-900 mt-1">{{ dv_percent }}%</div></div>
+        <div class="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-4 shadow-md"><div class="text-red-700 text-xs md:text-sm font-medium">Flagrantes (geral)</div><div class="text-2xl md:text-3xl font-bold text-red-900 mt-1">{{ flagrantes }}</div></div>
+        <div class="bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 rounded-lg p-4 shadow-md"><div class="text-slate-700 text-xs md:text-sm font-medium">BOs Totais</div><div class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{{ total }}</div></div>
+      </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-      <div>
-        <h3 class="font-semibold mb-2 text-sm md:text-base">Top Códigos (DV)</h3>
+    <div class="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+      <div class="bg-rose-50 border-2 border-rose-200 rounded-lg p-4">
+        <h3 class="font-bold mb-3 text-sm md:text-base text-rose-900">Top Códigos (DV)</h3>
         <div class="divide-y text-xs md:text-sm">
           {% for r in dv_por_codigo %}
             <div class="flex items-center justify-between py-2 gap-2">
-              <span class="truncate flex-1">{{ r.cod_natureza|default:'—' }} — {{ r.natureza|default:'(sem descrição)' }}</span>
-              <span class="font-semibold shrink-0">{{ r.qtd }}</span>
+              <span class="truncate flex-1 text-slate-700">{{ r.cod_natureza|default:'—' }} — {{ r.natureza|default:'(sem descrição)' }}</span>
+              <span class="font-bold shrink-0 text-rose-700">{{ r.qtd }}</span>
             </div>
           {% empty %}
             <div class="text-slate-500">Sem registros.</div>
           {% endfor %}
         </div>
       </div>
-      <div>
-        <h3 class="font-semibold mb-2 text-sm md:text-base">Top Usuários (DV)</h3>
+      <div class="bg-rose-50 border-2 border-rose-200 rounded-lg p-4">
+        <h3 class="font-bold mb-3 text-sm md:text-base text-rose-900">Top Usuários (DV)</h3>
         <div class="divide-y text-xs md:text-sm">
           {% for r in dv_por_usuario %}
             <div class="flex items-center justify-between py-2 gap-2">
-              <span class="truncate flex-1">{{ r.encarregado__first_name }} {{ r.encarregado__last_name }}{% if not r.encarregado__first_name and not r.encarregado__last_name %}{{ r.encarregado__username }}{% endif %}</span>
-              <span class="font-semibold shrink-0">{{ r.qtd }}</span>
+              <span class="truncate flex-1 text-slate-700">{{ r.encarregado__first_name }} {{ r.encarregado__last_name }}{% if not r.encarregado__first_name and not r.encarregado__last_name %}{{ r.encarregado__username }}{% endif %}</span>
+              <span class="font-bold shrink-0 text-rose-700">{{ r.qtd }}</span>
             </div>
           {% empty %}
             <div class="text-slate-500">Sem registros.</div>
           {% endfor %}
         </div>
       </div>
-      <div>
-        <h3 class="font-semibold mb-2 text-sm md:text-base">Top Viaturas (DV)</h3>
+      <div class="bg-rose-50 border-2 border-rose-200 rounded-lg p-4">
+        <h3 class="font-bold mb-3 text-sm md:text-base text-rose-900">Top Viaturas (DV)</h3>
         <div class="divide-y text-xs md:text-sm">
           {% for r in dv_por_viatura %}
             <div class="flex items-center justify-between py-2">
-              <span>{{ r.viatura__prefixo|default:r.viatura_id }}</span>
-              <span class="font-semibold">{{ r.qtd }}</span>
+              <span class="text-slate-700">{{ r.viatura__prefixo|default:r.viatura_id }}</span>
+              <span class="font-bold text-rose-700">{{ r.qtd }}</span>
             </div>
           {% empty %}
             <div class="text-slate-500">Sem registros.</div>
@@ -246,29 +325,211 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
   (function(){
-    const serie = JSON.parse('\n' + '{{ serie_por_dia|default:"[]"|escapejs }}');
-    const labels = serie.map(x => new Date(x.dia).toLocaleDateString('pt-BR'));
-    const data = serie.map(x => x.qtd);
-    const ctx = document.getElementById('chartSerie');
-    if(ctx){ new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'BOs/dia', data, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.2)', tension:0.25 }] }, options:{ plugins:{ legend:{ display:true } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }); }
+    try {
+      // Série por Dia
+      const serieStr = '{{ serie_por_dia|default:"[]"|escapejs }}';
+      const serie = serieStr ? JSON.parse(serieStr) : [];
+      console.log('Série por dia:', serie);
+      
+      if(serie.length > 0){
+        const labels = serie.map(x => new Date(x.dia).toLocaleDateString('pt-BR'));
+        const data = serie.map(x => x.qtd);
+        const ctx = document.getElementById('chartSerie');
+        if(ctx){ 
+          new Chart(ctx, { 
+            type:'line', 
+            data:{ 
+              labels, 
+              datasets:[{ 
+                label:'BOs por dia', 
+                data, 
+                borderColor:'#6366f1', 
+                backgroundColor:'rgba(99, 102, 241, 0.1)', 
+                borderWidth: 3,
+                pointBackgroundColor: '#6366f1',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                tension:0.4,
+                fill: true
+              }] 
+            }, 
+            options:{ 
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins:{ 
+                legend:{ 
+                  display:true,
+                  position: 'top',
+                  labels: { 
+                    font: { size: 14, weight: 'bold' },
+                    color: '#1e293b'
+                  }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  padding: 12,
+                  titleFont: { size: 14, weight: 'bold' },
+                  bodyFont: { size: 13 }
+                }
+              }, 
+              scales:{ 
+                y:{ 
+                  beginAtZero:true, 
+                  ticks:{ precision:0, font: { size: 12 } },
+                  grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { font: { size: 11 } }
+                }
+              } 
+            }
+          }); 
+        }
+      }
 
-    // Pizza Status
-  const stLabels = JSON.parse('\n' + '{{ chart_status_labels|default:"[]"|escapejs }}');
-  const stValues = JSON.parse('\n' + '{{ chart_status_values|default:"[]"|escapejs }}');
-    const ctxStatus = document.getElementById('chartStatusPie');
-    if(ctxStatus){ new Chart(ctxStatus, { type:'pie', data:{ labels: stLabels, datasets:[{ data: stValues, backgroundColor:['#0ea5e9','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4'] }] }, options:{ plugins:{ legend:{ position:'bottom' } } } }); }
+      // Pizza Status
+      const stLabelsStr = '{{ chart_status_labels|default:"[]"|escapejs }}';
+      const stValuesStr = '{{ chart_status_values|default:"[]"|escapejs }}';
+      const stLabels = stLabelsStr ? JSON.parse(stLabelsStr) : [];
+      const stValues = stValuesStr ? JSON.parse(stValuesStr) : [];
+      console.log('Status labels:', stLabels, 'values:', stValues);
+      
+      const ctxStatus = document.getElementById('chartStatusPie');
+      if(ctxStatus && stLabels.length > 0){ 
+        new Chart(ctxStatus, { 
+          type:'pie', 
+          data:{ 
+            labels: stLabels, 
+            datasets:[{ 
+              data: stValues, 
+              backgroundColor:['#8b5cf6','#10b981','#f59e0b','#ef4444','#0ea5e9','#06b6d4'],
+              borderWidth: 2,
+              borderColor: '#fff'
+            }] 
+          }, 
+          options:{ 
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins:{ 
+              legend:{ 
+                position:'bottom',
+                labels: { 
+                  font: { size: 12 },
+                  padding: 12,
+                  color: '#1e293b'
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 10,
+                bodyFont: { size: 13 }
+              }
+            } 
+          } 
+        }); 
+      }
 
-    // Barras Códigos
-  const codLabels = JSON.parse('\n' + '{{ chart_cod_labels|default:"[]"|escapejs }}');
-  const codValues = JSON.parse('\n' + '{{ chart_cod_values|default:"[]"|escapejs }}');
-    const ctxCod = document.getElementById('chartCodigos');
-    if(ctxCod){ new Chart(ctxCod, { type:'bar', data:{ labels: codLabels, datasets:[{ label:'Qtd', data: codValues, backgroundColor:'#10b981' }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }); }
+      // Barras Códigos
+      const codLabelsStr = '{{ chart_cod_labels|default:"[]"|escapejs }}';
+      const codValuesStr = '{{ chart_cod_values|default:"[]"|escapejs }}';
+      const codLabels = codLabelsStr ? JSON.parse(codLabelsStr) : [];
+      const codValues = codValuesStr ? JSON.parse(codValuesStr) : [];
+      console.log('Códigos labels:', codLabels, 'values:', codValues);
+      
+      const ctxCod = document.getElementById('chartCodigos');
+      if(ctxCod && codLabels.length > 0){ 
+        new Chart(ctxCod, { 
+          type:'bar', 
+          data:{ 
+            labels: codLabels, 
+            datasets:[{ 
+              label:'Quantidade', 
+              data: codValues, 
+              backgroundColor:'#0ea5e9',
+              borderColor: '#0284c7',
+              borderWidth: 1,
+              borderRadius: 6
+            }] 
+          }, 
+          options:{ 
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins:{ 
+              legend:{ display:false },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 10,
+                bodyFont: { size: 13 }
+              }
+            }, 
+            scales:{ 
+              y:{ 
+                beginAtZero:true, 
+                ticks:{ precision:0, font: { size: 12 } },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 10 } }
+              }
+            } 
+          }
+        }); 
+      }
 
-    // Barras Usuários
-  const uLabels = JSON.parse('\n' + '{{ chart_user_labels|default:"[]"|escapejs }}');
-  const uValues = JSON.parse('\n' + '{{ chart_user_values|default:"[]"|escapejs }}');
-    const ctxUsers = document.getElementById('chartUsuarios');
-    if(ctxUsers){ new Chart(ctxUsers, { type:'bar', data:{ labels: uLabels, datasets:[{ label:'Total', data: uValues, backgroundColor:'#6366f1' }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }); }
+      // Barras Usuários
+      const uLabelsStr = '{{ chart_user_labels|default:"[]"|escapejs }}';
+      const uValuesStr = '{{ chart_user_values|default:"[]"|escapejs }}';
+      const uLabels = uLabelsStr ? JSON.parse(uLabelsStr) : [];
+      const uValues = uValuesStr ? JSON.parse(uValuesStr) : [];
+      console.log('Usuários labels:', uLabels, 'values:', uValues);
+      
+      const ctxUsers = document.getElementById('chartUsuarios');
+      if(ctxUsers && uLabels.length > 0){ 
+        new Chart(ctxUsers, { 
+          type:'bar', 
+          data:{ 
+            labels: uLabels, 
+            datasets:[{ 
+              label:'Total de BOs', 
+              data: uValues, 
+              backgroundColor:'#10b981',
+              borderColor: '#059669',
+              borderWidth: 1,
+              borderRadius: 6
+            }] 
+          }, 
+          options:{ 
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins:{ 
+              legend:{ display:false },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 10,
+                bodyFont: { size: 13 }
+              }
+            }, 
+            scales:{ 
+              y:{ 
+                beginAtZero:true, 
+                ticks:{ precision:0, font: { size: 12 } },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 10 } }
+              }
+            } 
+          }
+        }); 
+      }
+    } catch(e) {
+      console.error('Erro ao criar gráficos:', e);
+    }
   })();
 </script>
 {% endblock %}
