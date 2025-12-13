@@ -47,13 +47,13 @@
 			</h2>
 		</div>
 		<div class="overflow-x-auto">
-			<table class="min-w-full text-sm">
+			<table class="min-w-full text-sm border-collapse">
 				<thead>
 					<tr class="bg-gradient-to-r from-sky-50 to-sky-100 text-left border-b-2 border-sky-200">
-						<th class="px-4 py-3 font-bold text-sky-900">GCM</th>
-						<th class="px-4 py-3 font-bold text-sky-900">Matrícula</th>
-						<th class="px-4 py-3 font-bold text-sky-900">Horas Positivas</th>
-						<th class="px-4 py-3 font-bold text-sky-900">Horas Devidas</th>
+						<th class="px-4 py-3 font-bold text-sky-900 border-r border-slate-200">GCM</th>
+						<th class="px-4 py-3 font-bold text-sky-900 border-r border-slate-200">Matrícula</th>
+						<th class="px-4 py-3 font-bold text-sky-900 border-r border-slate-200">Horas Positivas</th>
+						<th class="px-4 py-3 font-bold text-sky-900 border-r border-slate-200">Horas Devidas</th>
 						{% if can_manage %}
 						<th class="px-4 py-3 text-center font-bold text-sky-900">Ações</th>
 						{% endif %}
@@ -62,11 +62,11 @@
 				<tbody>
 					{% if linhas %}
 						{% for r in linhas %}
-							<tr class="hover:bg-sky-50 transition-colors border-b border-slate-100" data-user="{{ r.user_id }}">
-								<td class="px-4 py-3 font-medium text-slate-900">{{ r.nome }}</td>
-								<td class="px-4 py-3 text-slate-600">{{ r.matricula }}</td>
-								<td class="px-4 py-3 font-mono font-semibold text-emerald-700 bg-emerald-50" data-col="positivas">{{ r.positivas }}</td>
-								<td class="px-4 py-3 font-mono font-semibold text-rose-700 bg-rose-50" data-col="devidas">{{ r.devidas }}</td>
+							<tr class="hover:bg-sky-50 transition-colors border-b border-slate-200" data-user="{{ r.user_id }}">
+								<td class="px-4 py-3 font-medium text-slate-900 border-r border-slate-200">{{ r.nome }}</td>
+								<td class="px-4 py-3 text-slate-600 border-r border-slate-200">{{ r.matricula }}</td>
+								<td class="px-4 py-3 font-mono font-semibold text-emerald-700 bg-emerald-50 border-r border-slate-200" data-col="positivas">{{ r.positivas }}</td>
+								<td class="px-4 py-3 font-mono font-semibold text-rose-700 bg-rose-50 border-r border-slate-200" data-col="devidas">{{ r.devidas }}</td>
 								{% if can_manage %}
 								<td class="px-4 py-3 text-center">
 									<div class="inline-flex gap-2 flex-wrap justify-center">
