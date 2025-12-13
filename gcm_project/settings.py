@@ -17,21 +17,21 @@ ALLOWED_HOSTS = os.getenv(
 # --- Security Settings (Production) ---
 if not DEBUG:
     # HTTPS/SSL Security
-    SECURE_SSL_REDIRECT = False  # Ative quando tiver HTTPS: True
+    SECURE_SSL_REDIRECT = True  # ✅ HTTPS ativo
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
     # Cookies Security
-    SESSION_COOKIE_SECURE = False  # Ative com HTTPS: True
-    CSRF_COOKIE_SECURE = False     # Ative com HTTPS: True
+    SESSION_COOKIE_SECURE = True  # ✅ HTTPS ativo
+    CSRF_COOKIE_SECURE = True     # ✅ HTTPS ativo
     SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SAMESITE = 'Lax'
     
-    # HSTS (HTTP Strict Transport Security) - ative após HTTPS estável
-    # SECURE_HSTS_SECONDS = 31536000  # 1 ano
-    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    # SECURE_HSTS_PRELOAD = True
+    # HSTS (HTTP Strict Transport Security) - ativar após estabilidade
+    SECURE_HSTS_SECONDS = 31536000  # 1 ano
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     
     # Content Security
     SECURE_CONTENT_TYPE_NOSNIFF = True
