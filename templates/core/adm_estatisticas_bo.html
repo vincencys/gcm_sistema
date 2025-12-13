@@ -547,13 +547,13 @@
       }
 
       // Gráfico Viaturas
-      const viaturasData = {{ top_viaturas|safe }};
-      console.log('Viaturas data:', viaturasData);
-      
       const ctxViaturas = document.getElementById('chartViaturas');
-      if(ctxViaturas && viaturasData && viaturasData.length > 0){
-        const viaturasLabels = viaturasData.map(v => v.viatura__prefixo || v.viatura_id || 'S/N');
-        const viaturasValues = viaturasData.map(v => v.qtd);
+      if(ctxViaturas){
+        const viaturasLabels = [{% for row in top_viaturas %}'{{ row.viatura__prefixo|default:row.viatura_id }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+        const viaturasValues = [{% for row in top_viaturas %}{{ row.qtd }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        console.log('Viaturas labels:', viaturasLabels, 'values:', viaturasValues);
+        
+        if(viaturasLabels.length > 0){
         
         new Chart(ctxViaturas, { 
           type:'bar', 
@@ -592,16 +592,17 @@
             } 
           }
         }); 
+        }
       }
 
       // Gráfico Bairros
-      const bairrosData = {{ ranking_bairros|safe }};
-      console.log('Bairros data:', bairrosData);
-      
       const ctxBairros = document.getElementById('chartBairros');
-      if(ctxBairros && bairrosData && bairrosData.length > 0){
-        const bairrosLabels = bairrosData.slice(0, 10).map(b => b.bairro || 'Não informado');
-        const bairrosValues = bairrosData.slice(0, 10).map(b => b.qtd);
+      if(ctxBairros){
+        const bairrosLabels = [{% for row in ranking_bairros|slice:":10" %}'{{ row.bairro|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+        const bairrosValues = [{% for row in ranking_bairros|slice:":10" %}{{ row.qtd }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        console.log('Bairros labels:', bairrosLabels, 'values:', bairrosValues);
+        
+        if(bairrosLabels.length > 0){
         
         new Chart(ctxBairros, { 
           type:'bar', 
@@ -641,6 +642,7 @@
             } 
           }
         }); 
+        }
       }
     } catch(e) {
       console.error('Erro ao criar gráficos:', e);
