@@ -11,8 +11,32 @@ DEBUG = os.getenv("DEBUG", "1") == "1"
 SITE_BASE_URL = os.getenv("SITE_BASE_URL") or ""  # usado em QR/links absolutos - NÃO usar default aqui!
 ALLOWED_HOSTS = os.getenv(
     "ALLOWED_HOSTS",
-    "127.0.0.1,localhost,0.0.0.0,gcmsysint.online,www.gcmsysint.online,18.229.134.75",
+    "127.0.0.1,localhost,0.0.0.0,gcmsysint.online,www.gcmsysint.online,15.229.168.173",
 ).split(",")
+
+# --- Security Settings (Production) ---
+if not DEBUG:
+    # HTTPS/SSL Security
+    SECURE_SSL_REDIRECT = False  # Ative quando tiver HTTPS: True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # Cookies Security
+    SESSION_COOKIE_SECURE = False  # Ative com HTTPS: True
+    CSRF_COOKIE_SECURE = False     # Ative com HTTPS: True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    
+    # HSTS (HTTP Strict Transport Security) - ative após HTTPS estável
+    # SECURE_HSTS_SECONDS = 31536000  # 1 ano
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_HSTS_PRELOAD = True
+    
+    # Content Security
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
 
 # Para POST/CSRF no dev e em possíveis hosts locais
 CSRF_TRUSTED_ORIGINS = [
