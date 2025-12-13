@@ -3634,6 +3634,7 @@ def _gerar_qr_code_para_notificacao(request, n: NotificacaoFiscalizacao):
     try:
         import qrcode
         import secrets, hashlib, base64
+        from django.conf import settings
         mudou = False
         if not n.validacao_token:
             n.validacao_token = secrets.token_hex(16)
@@ -3650,7 +3651,13 @@ def _gerar_qr_code_para_notificacao(request, n: NotificacaoFiscalizacao):
                 n.save(update_fields=['validacao_token','validacao_hash'])
             except Exception:
                 pass
-        url = request.build_absolute_uri(reverse('core:fisc_notificacao_validar', args=[n.pk, n.validacao_token]))
+        # URL de validação - SEMPRE usar domínio de produção
+        base = getattr(settings, 'SITE_BASE_URL', '').strip() or 'https://gcmsysint.online'
+        # Garantir que seja o domínio correto em produção
+        if not settings.DEBUG:
+            base = 'https://gcmsysint.online'
+        url_path = reverse('core:fisc_notificacao_validar', args=[n.pk, n.validacao_token])
+        url = f"{base}{url_path}"
         img = qrcode.make(url)
         from io import BytesIO
         buf = BytesIO(); img.save(buf, format='PNG'); b = buf.getvalue(); buf.close()

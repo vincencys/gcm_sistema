@@ -1801,11 +1801,12 @@ def _gerar_qr_code_para_bo(request, bo):
         mudou=True
     if mudou:
         bo.save(update_fields=['validacao_token','validacao_hash'])
-    # URL de validação (preferir SITE_BASE_URL se definido; senão request)
+    # URL de validação - SEMPRE usar domínio de produção
     from django.conf import settings as _s
-    base = getattr(_s, 'SITE_BASE_URL', None) or None
-    if not base:
-        base = request.build_absolute_uri('/')[:-1]
+    base = getattr(_s, 'SITE_BASE_URL', '').strip() or 'https://gcmsysint.online'
+    # Garantir que seja o domínio correto em produção
+    if not _s.DEBUG:
+        base = 'https://gcmsysint.online'
     url_validacao = f"{base}/bogcmi/validar/{bo.id}/{bo.validacao_token}/"
     img = qrcode.make(url_validacao)
     buf = BytesIO()
